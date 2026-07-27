@@ -41,81 +41,94 @@
 </head>
 <body>
 <div class="container">
+    <!-- TOP LANGUAGE BAR -->
+    <div class="flex" style="justify-content: flex-end; margin-bottom: 15px;">
+        <select id="langSelect" onchange="changeLanguage(this.value)" style="width: 140px; padding: 6px;">
+            <option value="en">English</option>
+            <option value="ka">ქართული</option>
+            <option value="uk">Українська</option>
+            <option value="ru">Русский</option>
+            <option value="fr">Français</option>
+            <option value="it">Italiano</option>
+            <option value="de">Deutsch</option>
+        </select>
+    </div>
+
     <!-- LOGIN SCREEN -->
     <div id="loginSection">
-        <h2>Angler Portal Login</h2>
-        <p>Access your local event database safely.</p>
+        <h2 data-i18n="login_title">Angler Portal Login / Register</h2>
+        <p data-i18n="login_desc">Enter any username and password to log in or create a new account.</p>
         <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="usernameInput" value="angler">
+            <label data-i18n="username">Username</label>
+            <input type="text" id="usernameInput" placeholder="Username">
         </div>
         <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="passwordInput" value="fish2026">
+            <label data-i18n="password">Password</label>
+            <input type="password" id="passwordInput" placeholder="Password">
         </div>
-        <button onclick="handleLogin()" style="width: 100%;">Login</button>
-        <p style="font-size: 12px; color: #64748b; margin-top: 10px;">Default: <b>angler</b> / <b>fish2026</b></p>
+        <button onclick="handleLoginRegister()" style="width: 100%;" data-i18n="login_btn">Login / Register</button>
+        <p id="accountLimitMsg" style="font-size: 12px; color: #ef4444; margin-top: 10px;"></p>
     </div>
 
     <!-- MAIN DASHBOARD -->
     <div id="dashboardSection" class="hidden">
         <div class="flex" style="justify-content: space-between; margin-bottom: 15px;">
-            <h2>Your Fishing Events</h2>
+            <h2 data-i18n="your_events">Your Fishing Events</h2>
             <div>
                 <span id="loggedUserDisplay" style="font-weight: bold; font-size: 13px; display:block; margin-bottom:4px;"></span>
-                <button class="secondary" onclick="handleLogout()" style="padding: 6px 10px; font-size: 12px;">Logout</button>
+                <button class="secondary" onclick="handleLogout()" style="padding: 6px 10px; font-size: 12px;" data-i18n="logout">Logout</button>
             </div>
         </div>
-        <button onclick="openEventEditor()" style="width: 100%;">+ Create New Event</button>
+        <button onclick="openEventEditor()" style="width: 100%;" data-i18n="create_event">+ Create New Event</button>
         <div id="eventsList" style="margin-top: 15px;"></div>
     </div>
 
     <!-- STEP 1: EVENT SETUP & CONFIGURATION -->
     <div id="setupSection" class="hidden">
         <div class="flex" style="justify-content: space-between; margin-bottom: 15px;">
-            <h2 id="setupTitle" style="font-size: 18px;">Step 1: Event Setup</h2>
-            <button class="secondary" onclick="showDashboard()" style="padding: 6px 10px; font-size: 12px;">← Back</button>
+            <h2 id="setupTitle" style="font-size: 18px;" data-i18n="step1_title">Step 1: Event Setup</h2>
+            <button class="secondary" onclick="showDashboard()" style="padding: 6px 10px; font-size: 12px;" data-i18n="back">← Back</button>
         </div>
 
         <div class="card">
-            <h3>1. Tournament Name</h3>
+            <h3 data-i18n="tourn_name">1. Tournament Name</h3>
             <input type="text" id="eventNameInput" placeholder="e.g., Weekend Lake Championship">
         </div>
 
         <div class="card">
-            <h3>2. Bulk Add Participants</h3>
-            <p style="font-size: 12px; color: #64748b; margin-top:0;">Paste names separated by commas or new lines.</p>
-            <textarea id="bulkParticipantsInput" rows="4" placeholder="John Doe, Jane Smith\nMike Tyson\nAlex Miller"></textarea>
-            <button onclick="processBulkParticipants()" style="margin-top: 8px;">Parse & Load Participants</button>
+            <h3 data-i18n="bulk_part">2. Bulk Add Participants</h3>
+            <p style="font-size: 12px; color: #64748b; margin-top:0;" data-i18n="bulk_desc">Paste names separated by commas or new lines. Brackets, numbers, and symbols will be automatically stripped.</p>
+            <textarea id="bulkParticipantsInput" rows="4" placeholder="John (Pro) [1], Jane Smith\n123 Mike #Tyson"></textarea>
+            <button onclick="processBulkParticipants()" style="margin-top: 8px;" data-i18n="parse_btn">Parse & Load Participants</button>
             <p id="participantCountStatus" style="font-size: 13px; font-weight: bold; margin-top: 8px; color: #0369a1;"></p>
         </div>
 
         <div class="card">
-            <h3>3. Fish Species & Size-Tier Multipliers</h3>
+            <h3 data-i18n="fish_species_title">3. Fish Species & Size-Tier Multipliers</h3>
             <div class="form-group">
                 <input type="text" id="speciesName" placeholder="Species Name (e.g. Perch)" style="margin-bottom:6px;">
                 <div class="flex">
                     <input type="text" id="speciesAbbr" placeholder="Abbr (pr)" style="flex:1;">
-                    <button onclick="addSpecies()" style="flex:1;">Add Species</button>
+                    <button onclick="addSpecies()" style="flex:1;" data-i18n="add_species">Add Species</button>
                 </div>
             </div>
             <div id="speciesConfigContainer"></div>
         </div>
 
-        <button onclick="goToEventHub()" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;">Proceed to Tournament Hub →</button>
+        <button onclick="goToEventHub()" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;" data-i18n="proceed_hub">Proceed to Tournament Hub →</button>
     </div>
 
     <!-- STEP 2: TOURNAMENT HUB & LIVE CATCH LOGGING -->
     <div id="hubSection" class="hidden">
         <div class="flex" style="justify-content: space-between; margin-bottom: 15px;">
-            <h2 id="hubTitle" style="font-size: 18px;">Tournament Hub</h2>
-            <button class="secondary" onclick="backToSetup()" style="padding: 6px 10px; font-size: 12px;">← Edit Setup</button>
+            <h2 id="hubTitle" style="font-size: 18px;" data-i18n="hub_title">Tournament Hub</h2>
+            <button class="secondary" onclick="backToSetup()" style="padding: 6px 10px; font-size: 12px;" data-i18n="edit_setup">← Edit Setup</button>
         </div>
 
         <div class="card">
             <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="margin:0;">Manage Participants</h3>
-                <button onclick="openAddParticipantModal()" style="padding: 6px 12px; font-size: 13px;">+ Add New</button>
+                <h3 style="margin:0;" data-i18n="manage_part">Manage Participants</h3>
+                <button onclick="openAddParticipantModal()" style="padding: 6px 12px; font-size: 13px;" data-i18n="add_new">+ Add New</button>
             </div>
             <div class="form-group" style="margin-bottom: 10px;">
                 <input type="text" id="searchParticipant" placeholder="Search participant..." oninput="renderHubUI()">
@@ -124,33 +137,52 @@
         </div>
 
         <div class="card">
-            <h3>Leaderboard & Results</h3>
+            <h3 data-i18n="leaderboard">Leaderboard & Results</h3>
             <div id="leaderboardTopSummary" style="margin-bottom: 10px;"></div>
             <div class="form-group">
-                <label>Ranking Mode:</label>
+                <label data-i18n="ranking_mode">Ranking Mode:</label>
                 <select id="rankingMode" onchange="renderLeaderboard()">
-                    <option value="points">Total Points (Default)</option>
-                    <option value="cm">Total Centimeters</option>
+                    <option value="points" data-i18n="mode_pts">Total Points (Default)</option>
+                    <option value="cm" data-i18n="mode_cm">Total Centimeters</option>
                 </select>
             </div>
             <div id="leaderboardContainer" style="overflow-x: auto;"></div>
         </div>
 
-        <button onclick="saveCurrentEvent()" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;">Save Event to Cloud</button>
+        <button onclick="saveCurrentEvent()" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;" data-i18n="save_cloud">Save Event to Cloud</button>
     </div>
 </div>
 
 <!-- POPUP MODAL FOR ADDING PARTICIPANT -->
 <div id="participantModal" class="modal-overlay hidden">
     <div class="modal-card">
-        <h3>Add New Participant</h3>
+        <h3 data-i18n="modal_add_title">Add New Participant</h3>
         <div class="form-group">
-            <label>Participant Name</label>
+            <label data-i18n="modal_name_label">Participant Name</label>
             <input type="text" id="modalParticipantName" placeholder="Full Name">
         </div>
         <div class="flex" style="justify-content: flex-end; gap: 8px;">
-            <button class="secondary" onclick="closeAddParticipantModal()">Close</button>
-            <button onclick="confirmAddParticipantModal()">Add</button>
+            <button class="secondary" onclick="closeAddParticipantModal()" data-i18n="close">Close</button>
+            <button onclick="confirmAddParticipantModal()" data-i18n="add">Add</button>
+        </div>
+    </div>
+</div>
+
+<!-- POPUP MODAL FOR ADDING FISH -->
+<div id="fishModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h3 data-i18n="modal_fish_title">Add Fish Catch</h3>
+        <div class="form-group">
+            <label data-i18n="species_sel">Select Species</label>
+            <select id="modalSpeciesSelect"></select>
+        </div>
+        <div class="form-group">
+            <label data-i18n="size_cm">Size in cm</label>
+            <input type="number" id="modalFishSize" placeholder="cm" min="1">
+        </div>
+        <div class="flex" style="justify-content: flex-end; gap: 8px;">
+            <button class="secondary" onclick="closeFishModal()" data-i18n="close">Close</button>
+            <button onclick="confirmAddFishModal()" data-i18n="save">Save</button>
         </div>
     </div>
 </div>
@@ -158,19 +190,332 @@
 <script>
     let currentEvent = null;
     let loggedInUser = "";
+    let activeFishParticipantIndex = null;
+    let currentLang = "en";
 
-    function handleLogin() {
+    const translations = {
+        en: {
+            login_title: "Angler Portal Login / Register",
+            login_desc: "Enter any username and password to log in or create a new account.",
+            username: "Username",
+            password: "Password",
+            login_btn: "Login / Register",
+            your_events: "Your Fishing Events",
+            logout: "Logout",
+            create_event: "+ Create New Event",
+            step1_title: "Step 1: Event Setup",
+            back: "← Back",
+            tourn_name: "1. Tournament Name",
+            bulk_part: "2. Bulk Add Participants",
+            bulk_desc: "Paste names separated by commas or new lines. Brackets, numbers, and symbols will be automatically stripped.",
+            parse_btn: "Parse & Load Participants",
+            fish_species_title: "3. Fish Species & Size-Tier Multipliers",
+            add_species: "Add Species",
+            proceed_hub: "Proceed to Tournament Hub →",
+            hub_title: "Tournament Hub",
+            edit_setup: "← Edit Setup",
+            manage_part: "Manage Participants",
+            add_new: "+ Add New",
+            leaderboard: "Leaderboard & Results",
+            ranking_mode: "Ranking Mode:",
+            mode_pts: "Total Points (Default)",
+            mode_cm: "Total Centimeters",
+            save_cloud: "Save Event to Cloud",
+            modal_add_title: "Add New Participant",
+            modal_name_label: "Participant Name",
+            close: "Close",
+            add: "Add",
+            modal_fish_title: "Add Fish Catch",
+            species_sel: "Select Species",
+            size_cm: "Size in cm",
+            save: "Save",
+            add_fish_btn: "Add Fish"
+        },
+        ka: {
+            login_title: "მეთევზის პორტალი შესვლა / რეგისტრაცია",
+            login_desc: "შეიყვანეთ ნებისმიერი სახელი და პაროლი სისტემაში შესასვლელად ან ახალი ანგარიშის შესაქმნელად.",
+            username: "მომხმარებელი",
+            password: "პაროლი",
+            login_btn: "შესვლა / რეგისტრაცია",
+            your_events: "თქვენი თევზაობის ღონისძიებები",
+            logout: "გასვლა",
+            create_event: "+ ახალი ღონისძიების შექმნა",
+            step1_title: "ნაბიჯი 1: ღონისძიების პარამეტრები",
+            back: "← უკან",
+            tourn_name: "1. ტურნირის სახელი",
+            bulk_part: "2. მონაწილეთა მასობრივი დამატება",
+            bulk_desc: "ჩასვით სახელები მძიმეებით ან ახალი ხაზებით. ფრჩხილები, ციფრები და სიმბოლოები ავტომატურად წაიშლება.",
+            parse_btn: "მონაწილეების დამუშავება და ჩატვირთვა",
+            fish_species_title: "3. თევზის სახეობები და ზომის მრავლობითი კოეფიციენტები",
+            add_species: "სახეობის დამატება",
+            proceed_hub: "ტურნირის ჰაბზე გადასვლა →",
+            hub_title: "ტურნირის ჰაბი",
+            edit_setup: "← პარამეტრების შეცვლა",
+            manage_part: "მონაწილეების მართვა",
+            add_new: "+ ახლის დამატება",
+            leaderboard: "ლიდერბორდი და შედეგები",
+            ranking_mode: "რეიტინგის რეჟიმი:",
+            mode_pts: "ჯამური ქულები (ნაგულისხმევი)",
+            mode_cm: "ჯამური სანტიმეტრები",
+            save_cloud: "ღონისძიების შენახვა ღრუბელში",
+            modal_add_title: "ახალი მონაწილის დამატება",
+            modal_name_label: "მონაწილის სახელი",
+            close: "დახურვა",
+            add: "დამატება",
+            modal_fish_title: "თევზის დამატება",
+            species_sel: "აირჩიეთ სახეობა",
+            size_cm: "ზომა სმ-ში",
+            save: "შენახვა",
+            add_fish_btn: "თევზის დამატება"
+        },
+        uk: {
+            login_title: "Вхід / Реєстрація для риალობლევ",
+            login_desc: "Введіть будь-яке ім'я користувача та пароль для входу або створення нового облікового запису.",
+            username: "Користувач",
+            password: "Пароль",
+            login_btn: "Вхід / Реєстрація",
+            your_events: "Ваші риболовні події",
+            logout: "Вийти",
+            create_event: "+ Створити нову подію",
+            step1_title: "Крок 1: Налаштування події",
+            back: "← Назад",
+            tourn_name: "1. Назва турніру",
+            bulk_part: "2. масове додавання учасників",
+            bulk_desc: "Вставте імена через кому або з нового рядка. Дужки, цифри та символи видаляються автоматично.",
+            parse_btn: "Обробити та завантажити учасників",
+            fish_species_title: "3. Види риб та коефіцієнти",
+            add_species: "Додати вид",
+            proceed_hub: "Перейти до хабу турніру →",
+            hub_title: "Хаб турніру",
+            edit_setup: "← Редагувати налаштування",
+            manage_part: "Керування учасниками",
+            add_new: "+ Додати новий",
+            leaderboard: "Таблиця лідерів",
+            ranking_mode: "Режим рейтингу:",
+            mode_pts: "Загальні бали (За замовчуванням)",
+            mode_cm: "Загальні сантиметри",
+            save_cloud: "Зберегти подію в хмару",
+            modal_add_title: "Додати нового учасника",
+            modal_name_label: "Ім'я учасника",
+            close: "Закрити",
+            add: "Додати",
+            modal_fish_title: "Додати рибу",
+            species_sel: "Вибрати вид",
+            size_cm: "Розмір у см",
+            save: "Зберегти",
+            add_fish_btn: "Додати рибу"
+        },
+        ru: {
+            login_title: "Вход / Регистрация в портале",
+            login_desc: "Введите любые имя пользователя и пароль для входа или создания нового аккаунта.",
+            username: "Имя пользователя",
+            password: "Пароль",
+            login_btn: "Вход / Регистрация",
+            your_events: "Ваши рыболовные события",
+            logout: "Выйти",
+            create_event: "+ Создать новое событие",
+            step1_title: "Шаг 1: Настройка события",
+            back: "← Назад",
+            tourn_name: "1. Название турнира",
+            bulk_part: "2. Массовое добавление участников",
+            bulk_desc: "Вставьте имена через запятую или с новой строки. Скобки, цифры и символы будут удалены автоматически.",
+            parse_btn: "Разобрать и загрузить участников",
+            fish_species_title: "3. Виды рыб и коэффициенты",
+            add_species: "Добавить вид",
+            proceed_hub: "Перейти в хаб турнира →",
+            hub_title: "Хаб турнира",
+            edit_setup: "← Изменить настройки",
+            manage_part: "Управление участниками",
+            add_new: "+ Добавить",
+            leaderboard: "Таблица лидеров",
+            ranking_mode: "Режим рейтинга:",
+            mode_pts: "Всего очков (По умолчанию)",
+            mode_cm: "Всего сантиметров",
+            save_cloud: "Сохранить событие в облако",
+            modal_add_title: "Добавить участника",
+            modal_name_label: "Имя участника",
+            close: "Закрыть",
+            add: "Добавить",
+            modal_fish_title: "Добавить рыбу",
+            species_sel: "Выберите вид",
+            size_cm: "Размер в см",
+            save: "Сохранить",
+            add_fish_btn: "Добавить рыбу"
+        },
+        fr: {
+            login_title: "Connexion / Inscription du Pêcheur",
+            login_desc: "Entrez un nom d'utilisateur et un mot de passe pour vous connecter ou créer un compte.",
+            username: "Nom d'utilisateur",
+            password: "Mot de passe",
+            login_btn: "Connexion / Inscription",
+            your_events: "Vos Événements de Pêche",
+            logout: "Déconnexion",
+            create_event: "+ Créer un nouvel événement",
+            step1_title: "Étape 1 : Configuration de l'événement",
+            back: "← Retour",
+            tourn_name: "1. Nom du Tournoi",
+            bulk_part: "2. Ajout en masse de participants",
+            bulk_desc: "Collez les noms séparés par des virgules ou des retours à la ligne.",
+            parse_btn: "Analyser et charger",
+            fish_species_title: "3. Espèces de poissons et coefficients",
+            add_species: "Ajouter une espèce",
+            proceed_hub: "Accéder au Hub →",
+            hub_title: "Hub du Tournoi",
+            edit_setup: "← Modifier la configuration",
+            manage_part: "Gérer les participants",
+            add_new: "+ Ajouter",
+            leaderboard: "Classement",
+            ranking_mode: "Mode de classement:",
+            mode_pts: "Points totaux (Par défaut)",
+            mode_cm: "Centimètres totaux",
+            save_cloud: "Enregistrer l'événement",
+            modal_add_title: "Ajouter un participant",
+            modal_name_label: "Nom du participant",
+            close: "Fermer",
+            add: "Ajouter",
+            modal_fish_title: "Ajouter une prise",
+            species_sel: "Sélectionner l'espèce",
+            size_cm: "Taille en cm",
+            save: "Enregistrer",
+            add_fish_btn: "Ajouter du poisson"
+        },
+        it: {
+            login_title: "Accesso / Registrazione Portale Pescatore",
+            login_desc: "Inserisci un nome utente e una password per accedere o creare un account.",
+            username: "Nome utente",
+            password: "Password",
+            login_btn: "Accedi / Registrati",
+            your_events: "I tuoi eventi di pesca",
+            logout: "Esci",
+            create_event: "+ Crea nuovo evento",
+            step1_title: "Passo 1: Configurazione evento",
+            back: "← Indietro",
+            tourn_name: "1. Nome del Torneo",
+            bulk_part: "2. Aggiunta massiva partecipanti",
+            bulk_desc: "Incolla i nomi separati da virgole o righe.",
+            parse_btn: "Analizza e carica",
+            fish_species_title: "3. Specie di pesci e moltiplicatori",
+            add_species: "Aggiungi specie",
+            proceed_hub: "Vai all'Hub del Torneo →",
+            hub_title: "Hub del Torneo",
+            edit_setup: "← Modifica configurazione",
+            manage_part: "Gestisci partecipanti",
+            add_new: "+ Aggiungi",
+            leaderboard: "Classifica",
+            ranking_mode: "Modalità classifica:",
+            mode_pts: "Punti totali (Predefinito)",
+            mode_cm: "Centimetri totali",
+            save_cloud: "Salva evento",
+            modal_add_title: "Aggiungi partecipante",
+            modal_name_label: "Nome partecipante",
+            close: "Chiudi",
+            add: "Aggiungi",
+            modal_fish_title: "Aggiungi pesce",
+            species_sel: "Seleziona specie",
+            size_cm: "Misura in cm",
+            save: "Salva",
+            add_fish_btn: "Aggiungi pesce"
+        },
+        de: {
+            login_title: "Angler Portal Anmeldung / Registrierung",
+            login_desc: "Geben Sie einen Benutzernamen und ein Passwort ein, um sich anzumelden oder ein Konto zu erstellen.",
+            username: "Benutzername",
+            password: "Passwort",
+            login_btn: "Anmelden / Registrieren",
+            your_events: "Ihre Angelveranstaltungen",
+            logout: "Abmelden",
+            create_event: "+ Neues Event erstellen",
+            step1_title: "Schritt 1: Event-Setup",
+            back: "← Zurück",
+            tourn_name: "1. Turniername",
+            bulk_part: "2. Teilnehmer per Massenimport hinzufügen",
+            bulk_desc: "Namen durch Kommas oder neue Zeilen getrennt einfügen.",
+            parse_btn: "Analysieren & Laden",
+            fish_species_title: "3. Fischarten & Multiplikatoren",
+            add_species: "Art hinzufügen",
+            proceed_hub: "Weiter zum Turnier-Hub →",
+            hub_title: "Turnier-Hub",
+            edit_setup: "← Setup bearbeiten",
+            manage_part: "Teilnehmer verwalten",
+            add_new: "+ Neu hinzufügen",
+            leaderboard: "Bestenliste",
+            ranking_mode: "Ranglistenmodus:",
+            mode_pts: "Gesamtpunkte (Standard)",
+            mode_cm: "Gesamte Zentimeter",
+            save_cloud: "Event in Cloud speichern",
+            modal_add_title: "Teilnehmer hinzufügen",
+            modal_name_label: "Teilnehmername",
+            close: "Schließen",
+            add: "Hinzufügen",
+            modal_fish_title: "Fisch hinzufügen",
+            species_sel: "Art auswählen",
+            size_cm: "Größe in cm",
+            save: "Speichern",
+            add_fish_btn: "Fisch hinzufügen"
+        }
+    };
+
+    function changeLanguage(lang) {
+        currentLang = lang;
+        document.querySelectorAll("[data-i18n]").forEach(el => {
+            let key = el.getAttribute("data-i18n");
+            if (translations[lang] && translations[lang][key]) {
+                el.innerText = translations[lang][key];
+            }
+        });
+    }
+
+    function cleanParticipantName(rawName) {
+        // Remove text inside brackets (parentheses, square brackets, curly braces)
+        let cleaned = rawName.replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}/g, '');
+        // Remove numbers and symbols, keeping letters (including unicode names) and basic spaces
+        cleaned = cleaned.replace(/[0-9#@!$%^&*_+=\-\[\]{};':"\\|,.<>\/?~`]/g, ' ');
+        // Collapse multiple spaces
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+        return cleaned;
+    }
+
+    function handleLoginRegister() {
         let user = document.getElementById("usernameInput").value.trim();
         let pass = document.getElementById("passwordInput").value.trim();
-        if (user === "angler" && pass === "fish2026") {
-            loggedInUser = user;
-            document.getElementById("loggedUserDisplay").innerText = "User: " + user;
-            document.getElementById("loginSection").classList.add("hidden");
-            document.getElementById("dashboardSection").classList.remove("hidden");
-            loadEvents();
-        } else {
-            alert("Invalid username or password.");
+        let msgEl = document.getElementById("accountLimitMsg");
+        msgEl.innerText = "";
+
+        if (!user || !pass) {
+            alert("Please enter both username and password.");
+            return;
         }
+
+        let accountsData = JSON.parse(localStorage.getItem("fishing_portal_accounts") || "{}");
+        
+        if (accountsData[user]) {
+            // Existing account login
+            if (accountsData[user].password === pass) {
+                loginSuccess(user);
+            } else {
+                alert("Incorrect password for existing account.");
+            }
+        } else {
+            // New account creation check IP limit (simulated per browser storage IP tracking)
+            let ipAccountsCount = parseInt(localStorage.getItem("fishing_ip_acc_count") || "0");
+            if (ipAccountsCount >= 5) {
+                msgEl.innerText = "Account creation limit reached (Max 5 new accounts per IP/device).";
+                return;
+            }
+            // Register new account
+            accountsData[user] = { password: pass };
+            localStorage.setItem("fishing_portal_accounts", JSON.stringify(accountsData));
+            localStorage.setItem("fishing_ip_acc_count", (ipAccountsCount + 1).toString());
+            loginSuccess(user);
+        }
+    }
+
+    function loginSuccess(user) {
+        loggedInUser = user;
+        document.getElementById("loggedUserDisplay").innerText = "User: " + user;
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        loadEvents();
     }
 
     function handleLogout() {
@@ -180,7 +525,7 @@
     }
 
     function getStorageKey() {
-        return "fishing_events_v3_" + loggedInUser;
+        return "fishing_events_v4_" + loggedInUser;
     }
 
     function loadEvents() {
@@ -278,7 +623,7 @@
             updateParticipantCountStatus();
             return;
         }
-        let items = rawText.split(/[\n,]+/).map(n => n.trim()).filter(n => n.length > 0);
+        let items = rawText.split(/[\n,]+/).map(n => cleanParticipantName(n)).filter(n => n.length > 0);
         
         let existingMap = {};
         currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = p.catches);
@@ -294,7 +639,7 @@
 
     function updateParticipantCountStatus() {
         let rawText = document.getElementById("bulkParticipantsInput").value;
-        let count = rawText.trim() ? rawText.split(/[\n,]+/).map(n => n.trim()).filter(n => n.length > 0).length : 0;
+        let count = rawText.trim() ? rawText.split(/[\n,]+/).map(n => cleanParticipantName(n)).filter(n => n.length > 0).length : 0;
         document.getElementById("participantCountStatus").innerText = count + " participants detected.";
     }
 
@@ -347,8 +692,8 @@
                     <div class="flex" style="margin-bottom:6px;">
                         <input type="number" placeholder="From cm" value="${t.from}" onchange="updateTierData(${sIdx}, ${tIdx}, 'from', this.value)" style="flex:1;">
                         <select onchange="updateTierData(${sIdx}, ${tIdx}, 'to', this.value); refreshSetupUI();" style="flex:1.2;">
-                            <option value="number" ${t.to !== 'above' ? 'selected' : ''}>To: Number</option>
-                            <option value="above" ${t.to === 'above' ? 'selected' : ''}>To: And Above</option>
+                            <option value="number" ${t.to !== 'above' ? 'selected' : ''}>From/To: Number</option>
+                            <option value="above" ${t.to === 'above' ? 'selected' : ''}>From: And Above</option>
                         </select>
                         ${t.to !== 'above' ? `<input type="number" placeholder="To cm" value="${t.to}" onchange="updateTierData(${sIdx}, ${tIdx}, 'to', this.value)" style="flex:1;">` : ''}
                         <input type="number" step="0.1" placeholder="Multiplier" value="${t.multiplier}" onchange="updateTierData(${sIdx}, ${tIdx}, 'multiplier', this.value)" style="flex:1;">
@@ -385,31 +730,41 @@
 
     function confirmAddParticipantModal() {
         let nameInput = document.getElementById("modalParticipantName");
-        let name = nameInput.value.trim();
+        let name = cleanParticipantName(nameInput.value.trim());
         if (!name) return;
         currentEvent.participants.push({ name: name, catches: [] });
         closeAddParticipantModal();
         renderHubUI();
     }
 
-    function removeParticipant(pIndexReal) {
-        currentEvent.participants.splice(pIndexReal, 1);
-        renderHubUI();
+    function openFishModal(pIndexReal) {
+        activeFishParticipantIndex = pIndexReal;
+        let selectEl = document.getElementById("modalSpeciesSelect");
+        selectEl.innerHTML = currentEvent.species.map(s => `<option value="${s.abbr}">${s.name} (${s.abbr.toUpperCase()})</option>`).join("");
+        document.getElementById("modalFishSize").value = "";
+        document.getElementById("fishModal").classList.remove("hidden");
     }
 
-    function addFish(pIndexReal) {
-        let abbr = document.getElementById(`species_sel_${pIndexReal}`).value;
-        let size = parseFloat(document.getElementById(`size_inp_${pIndexReal}`).value);
+    function closeFishModal() {
+        document.getElementById("fishModal").classList.add("hidden");
+        activeFishParticipantIndex = null;
+    }
+
+    function confirmAddFishModal() {
+        if (activeFishParticipantIndex === null) return;
+        let abbr = document.getElementById("modalSpeciesSelect").value;
+        let size = parseFloat(document.getElementById("modalFishSize").value);
         if (isNaN(size) || size <= 0) {
             alert("Enter valid fish size in cm.");
             return;
         }
-        currentEvent.participants[pIndexReal].catches.push({ abbr, size });
+        currentEvent.participants[activeFishParticipantIndex].catches.push({ abbr, size });
+        closeFishModal();
         renderHubUI();
     }
 
     function removeFish(pIndexReal, cIdx) {
-        currentEvent.participants[pIndexReal].catches.splice(pIndexReal, 1);
+        currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
         renderHubUI();
     }
 
@@ -437,20 +792,12 @@
         currentEvent.participants.forEach((p, pIndexReal) => {
             if (!p.name.toLowerCase().includes(query)) return;
 
-            filteredHtml += `<div class="card" style="background:#fff;">
-                <div class="flex" style="justify-content: space-between; margin-bottom: 6px;">
+            filteredHtml += `<div class="card" style="background:#fff; padding:8px 12px; margin-bottom:8px;">
+                <div class="flex" style="justify-content: space-between; align-items: center;">
                     <b style="font-size:14px;">${p.name}</b>
-                    <button class="danger" style="padding:2px 6px; font-size:11px;" onclick="removeParticipant(${pIndexReal})">Remove</button>
+                    <button onclick="openFishModal(${pIndexReal})" style="padding:6px 12px; font-size:12px;">Add Fish</button>
                 </div>
-                <div class="flex" style="margin-bottom:6px;">
-                    <select id="species_sel_${pIndexReal}" style="flex:1.5;">
-                        ${currentEvent.species.map(s => `<option value="${s.abbr}">${s.name} (${s.abbr})</option>`).join("")}
-                    </select>
-                    <input type="number" id="size_inp_${pIndexReal}" placeholder="cm" style="flex:1;" min="1">
-                    <button onclick="addFish(${pIndexReal})" style="padding:10px;">Add Fish</button>
-                </div>
-                <div>
-                    ${p.catches.length === 0 ? '<span style="font-size:12px; color:#64748b;">No catches recorded</span>' : ''}
+                <div style="margin-top: 4px;">
                     ${p.catches.map((c, cIdx) => `
                         <span class="fish-tag">${c.size}cm <span class="badge">${c.abbr.toUpperCase()}</span> 
                         <span onclick="removeFish(${pIndexReal}, ${cIdx})">&times;</span></span>
