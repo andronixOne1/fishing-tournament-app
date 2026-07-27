@@ -76,7 +76,7 @@
 
         /* Grid for Tiers */
         .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
-        .tier-grid input, .tier-grid select { padding: 10px; }
+        .tier-grid input, .tier-grid select { padding: 10px; font-size: 14px; }
         .tier-grid .full-width { grid-column: span 2; }
     </style>
 </head>
@@ -211,6 +211,19 @@
     </div>
 </div>
 
+<!-- BOTTOM SHEET MODAL: RULES EDITOR -->
+<div id="rulesModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'rulesModal')">
+    <div class="modal-card">
+        <div class="modal-indicator"></div>
+        <h3 id="rulesModalTitle" style="font-size: 18px;">Edit Rules</h3>
+        <div id="rulesContainer" style="max-height: 50vh; overflow-y: auto; margin-top:16px;"></div>
+        <div class="flex" style="margin-top: 16px; gap:10px;">
+            <button class="secondary" onclick="addNewRule()" data-i18n="add_rule">+ Add New Rule</button>
+            <button onclick="closeRulesModal()" class="primary-dark" data-i18n="done">Done</button>
+        </div>
+    </div>
+</div>
+
 <!-- BOTTOM SHEET MODAL: ADD PARTICIPANT -->
 <div id="participantModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'participantModal')">
     <div class="modal-card">
@@ -253,6 +266,7 @@
     let currentEvent = null;
     let loggedInUser = "";
     let activeFishParticipantIndex = null;
+    let activeSpeciesIndex = null;
     let currentLang = "en";
 
     const translations = {
@@ -288,7 +302,13 @@
             species_sel: "Species",
             size_cm: "Size (cm)",
             save: "Save Catch",
-            add_fish_btn: "Add Fish"
+            add_fish_btn: "Add Fish",
+            edit_rules: "Edit Rules",
+            add_rule: "+ Add New Rule",
+            done: "Done",
+            rule_from: "From",
+            rule_to: "To",
+            rule_mult: "Multiplier"
         },
         ka: {
             login_title: "შესვლა / რეგისტრაცია",
@@ -322,7 +342,13 @@
             species_sel: "სახეობა",
             size_cm: "ზომა (სმ)",
             save: "შენახვა",
-            add_fish_btn: "თევზის დამატება"
+            add_fish_btn: "თევზის დამატება",
+            edit_rules: "წესები",
+            add_rule: "+ ახალი წესი",
+            done: "მზადაა",
+            rule_from: "-დან",
+            rule_to: "-მდე",
+            rule_mult: "კოეფიციენტი"
         },
         uk: {
             login_title: "Вхід / Реєстрація",
@@ -356,7 +382,13 @@
             species_sel: "Вид",
             size_cm: "Розмір (см)",
             save: "Зберегти",
-            add_fish_btn: "Додати рибу"
+            add_fish_btn: "Додати рибу",
+            edit_rules: "Правила",
+            add_rule: "+ Нове правило",
+            done: "Готово",
+            rule_from: "Від",
+            rule_to: "До",
+            rule_mult: "Множник"
         },
         ru: {
             login_title: "Вход / Регистрация",
@@ -390,7 +422,13 @@
             species_sel: "Вид",
             size_cm: "Размер (см)",
             save: "Сохранить",
-            add_fish_btn: "Добавить рыбу"
+            add_fish_btn: "Добавить рыбу",
+            edit_rules: "Правила",
+            add_rule: "+ Новое правило",
+            done: "Готово",
+            rule_from: "От",
+            rule_to: "До",
+            rule_mult: "Множитель"
         },
         fr: {
             login_title: "Connexion / Inscription",
@@ -424,7 +462,13 @@
             species_sel: "Espèce",
             size_cm: "Taille (cm)",
             save: "Enregistrer",
-            add_fish_btn: "Ajouter"
+            add_fish_btn: "Ajouter",
+            edit_rules: "Règles",
+            add_rule: "+ Nouvelle Règle",
+            done: "Terminé",
+            rule_from: "De",
+            rule_to: "À",
+            rule_mult: "Multiplicateur"
         },
         it: {
             login_title: "Accesso / Registrazione",
@@ -458,7 +502,13 @@
             species_sel: "Specie",
             size_cm: "Misura (cm)",
             save: "Salva",
-            add_fish_btn: "Aggiungi"
+            add_fish_btn: "Aggiungi",
+            edit_rules: "Regole",
+            add_rule: "+ Nuova Regola",
+            done: "Fatto",
+            rule_from: "Da",
+            rule_to: "A",
+            rule_mult: "Moltiplicatore"
         },
         de: {
             login_title: "Anmeldung / Registrierung",
@@ -492,7 +542,13 @@
             species_sel: "Art",
             size_cm: "Größe (cm)",
             save: "Speichern",
-            add_fish_btn: "Hinzufügen"
+            add_fish_btn: "Hinzufügen",
+            edit_rules: "Regeln",
+            add_rule: "+ Neue Regel",
+            done: "Fertig",
+            rule_from: "Von",
+            rule_to: "Bis",
+            rule_mult: "Multiplikator"
         }
     };
 
@@ -510,6 +566,9 @@
         if(document.getElementById("hubSection").classList.contains("hidden") === false) {
             renderHubUI();
         }
+        if(document.getElementById("rulesModal").classList.contains("hidden") === false && activeSpeciesIndex !== null) {
+            renderRules();
+        }
     }
     
     function t(key) {
@@ -520,19 +579,17 @@
         if (e.target.id === modalId) {
             if (modalId === 'participantModal') closeAddParticipantModal();
             if (modalId === 'fishModal') closeFishModal();
+            if (modalId === 'rulesModal') closeRulesModal();
         }
     }
 
     function parseParticipants(rawText) {
         if (!rawText.trim()) return [];
-        
         let cleaned = rawText.replace(/\([\s\S]*?\)|\[[\s\S]*?\]|\{[\s\S]*?\}/g, '');
         cleaned = cleaned.replace(/[0-9!@#$%^&*_+=\-\[\]{};':"\\|.<>\/?~`“”„«»]/g, ' ');
-        
         let items = cleaned.split(/[\n,]+/)
             .map(n => n.replace(/\s+/g, ' ').trim())
             .filter(n => n.length > 0);
-            
         return items;
     }
 
@@ -583,7 +640,7 @@
     }
 
     function getStorageKey() {
-        return "fishing_events_v5_" + loggedInUser;
+        return "fishing_events_v6_" + loggedInUser;
     }
 
     function loadEvents() {
@@ -622,8 +679,8 @@
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
         } else {
             // LOAD DEFAULTS IF THEY EXIST
-            let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: "", to: "above", multiplier: "" }] }];
-            let savedDefaults = localStorage.getItem("fishing_defaults_v5_" + loggedInUser);
+            let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
+            let savedDefaults = localStorage.getItem("fishing_defaults_v6_" + loggedInUser);
             if (savedDefaults) {
                 try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {}
             }
@@ -672,11 +729,12 @@
         document.getElementById("participantCountStatus").innerText = items.length;
     }
 
+    // SPECIES & RULES LOGIC
     function addSpecies() {
         let name = document.getElementById("speciesName").value.trim();
         let abbr = document.getElementById("speciesAbbr").value.trim().toLowerCase();
         if (!name || !abbr) return;
-        currentEvent.species.push({ name, abbr, tiers: [{ from: "", to: "above", multiplier: "" }] });
+        currentEvent.species.push({ name, abbr, tiers: [{ from: 0, to: "above", multiplier: 1.0 }] });
         document.getElementById("speciesName").value = "";
         document.getElementById("speciesAbbr").value = "";
         refreshSetupUI();
@@ -687,49 +745,150 @@
         refreshSetupUI();
     }
 
-    function addTier(sIdx) {
-        currentEvent.species[sIdx].tiers.push({ from: "", to: "", multiplier: "" });
-        refreshSetupUI();
-    }
-
-    function removeTier(sIdx, tIdx) {
-        currentEvent.species[sIdx].tiers.splice(tIdx, 1);
-        refreshSetupUI();
-    }
-
-    function updateTierData(sIdx, tIdx, field, val) {
-        let cleanVal = val.toString().replace(',', '.');
-        
-        if (field === 'from' || field === 'multiplier') {
-            currentEvent.species[sIdx].tiers[tIdx][field] = cleanVal === '' ? '' : (parseFloat(cleanVal) || 0);
-        } else if (field === 'to') {
-            currentEvent.species[sIdx].tiers[tIdx][field] = cleanVal === 'above' ? 'above' : (cleanVal === '' ? '' : parseFloat(cleanVal) || 0);
-        }
-    }
-
     function refreshSetupUI() {
         let container = document.getElementById("speciesConfigContainer");
         container.innerHTML = currentEvent.species.map((s, sIdx) => `
             <div class="card" style="padding:16px; border:1px solid #e2e8f0; margin-bottom:12px; background:#fff;">
-                <div class="flex flex-between" style="margin-bottom:12px;">
-                    <b style="font-size:16px; color:var(--primary-dark);">${s.name} <span class="badge" style="background:#f1f5f9; color:var(--text);">${s.abbr.toUpperCase()}</span></b>
-                    <button class="danger icon-btn" style="padding:6px 10px;" onclick="removeSpecies(${sIdx})">✕</button>
-                </div>
-                ${s.tiers.map((t, tIdx) => `
-                    <div class="tier-grid">
-                        <input type="text" inputmode="decimal" placeholder="From" value="${t.from}" onchange="updateTierData(${sIdx}, ${tIdx}, 'from', this.value)">
-                        <select onchange="updateTierData(${sIdx}, ${tIdx}, 'to', this.value); refreshSetupUI();">
-                            <option value="number" ${t.to !== 'above' ? 'selected' : ''}>To: Number</option>
-                            <option value="above" ${t.to === 'above' ? 'selected' : ''}>To: Above</option>
-                        </select>
-                        ${t.to !== 'above' ? `<input type="text" inputmode="decimal" placeholder="To" value="${t.to}" onchange="updateTierData(${sIdx}, ${tIdx}, 'to', this.value)">` : ''}
-                        <input type="text" inputmode="decimal" placeholder="Multiplier" value="${t.multiplier}" onchange="updateTierData(${sIdx}, ${tIdx}, 'multiplier', this.value)" class="${t.to === 'above' ? 'full-width' : ''}">
-                        <button class="secondary full-width" style="padding:8px; font-size:13px; color:var(--danger);" onclick="removeTier(${sIdx}, ${tIdx})">✕ Remove Tier</button>
+                <div class="flex flex-between">
+                    <div>
+                        <b style="font-size:16px; color:var(--primary-dark);">${s.name}</b>
+                        <span class="badge" style="background:#f1f5f9; color:var(--text);">${s.abbr.toUpperCase()}</span>
                     </div>
-                `).join("")}
-                <button class="secondary icon-btn" style="width:100%; margin-top:4px;" onclick="addTier(${sIdx})">+ Add Tier Rule</button>
+                    <div class="flex">
+                        <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})">${t('edit_rules')}</button>
+                        <button class="danger icon-btn" style="padding:6px 10px;" onclick="removeSpecies(${sIdx})">✕</button>
+                    </div>
+                </div>
             </div>
         `).join("");
+    }
+
+    function openRulesModal(sIdx) {
+        activeSpeciesIndex = sIdx;
+        document.getElementById("rulesModal").classList.remove("hidden");
+        renderRules();
+    }
+
+    function closeRulesModal() {
+        document.getElementById("rulesModal").classList.add("hidden");
+        activeSpeciesIndex = null;
+        refreshSetupUI();
+    }
+
+    function addNewRule() {
+        let s = currentEvent.species[activeSpeciesIndex];
+        let lastTier = s.tiers[s.tiers.length - 1];
+        
+        if (lastTier && lastTier.to === 'above') {
+            alert("Cannot add a rule after an 'Above' limit. Change the previous rule to a specific number first.");
+            return;
+        }
+        
+        let newFrom = lastTier ? (parseFloat(lastTier.to) + 1 || 0) : 0;
+        s.tiers.push({ from: newFrom, to: 'above', multiplier: 1.0 });
+        renderRules();
+    }
+
+    function removeRule(tIdx) {
+        let s = currentEvent.species[activeSpeciesIndex];
+        s.tiers.splice(tIdx, 1);
+        if(s.tiers.length === 0) s.tiers.push({ from: 0, to: 'above', multiplier: 1.0 });
+        recalcRulesCascading();
+        renderRules();
+    }
+
+    function updateRuleField(tIdx, field, val) {
+        let s = currentEvent.species[activeSpeciesIndex];
+        
+        if (field === 'toType') {
+            if (val === 'above') {
+                s.tiers[tIdx].to = 'above';
+                s.tiers.splice(tIdx + 1); // remove subsequent rules
+            } else {
+                let fromVal = parseFloat(s.tiers[tIdx].from) || 0;
+                s.tiers[tIdx].to = fromVal + 10; 
+            }
+        } 
+        else if (field === 'to') {
+            s.tiers[tIdx].to = parseFloat(val) || 0;
+        } 
+        else if (field === 'from') {
+            let v = parseFloat(val) || 0;
+            let minFrom = 0;
+            if (tIdx > 0 && s.tiers[tIdx-1].to !== 'above') {
+                minFrom = parseFloat(s.tiers[tIdx-1].to) + 1;
+            }
+            if (v < minFrom) v = minFrom; // Enforce minimum Logic
+            s.tiers[tIdx].from = v;
+        } 
+        else if (field === 'multiplier') {
+            s.tiers[tIdx].multiplier = parseFloat(val);
+        }
+        
+        recalcRulesCascading();
+        renderRules();
+    }
+
+    function recalcRulesCascading() {
+        let s = currentEvent.species[activeSpeciesIndex];
+        for (let i = 1; i < s.tiers.length; i++) {
+            let prevTo = s.tiers[i-1].to;
+            if (prevTo !== 'above') {
+                let requiredMin = parseFloat(prevTo) + 1;
+                if (parseFloat(s.tiers[i].from) < requiredMin) {
+                    s.tiers[i].from = requiredMin;
+                }
+            }
+        }
+    }
+
+    function renderRules() {
+        let s = currentEvent.species[activeSpeciesIndex];
+        document.getElementById('rulesModalTitle').innerText = t('edit_rules') + ': ' + s.name;
+        
+        let html = '';
+        s.tiers.forEach((tData, tIdx) => {
+            // Auto Constraint calculations
+            let prevTo = (tIdx > 0 && s.tiers[tIdx-1].to !== 'above') ? parseFloat(s.tiers[tIdx-1].to) : -1;
+            let minFrom = tIdx > 0 ? prevTo + 1 : 0;
+            
+            // Build 1.0 to 3.0 Dropdown options
+            let multOptions = '';
+            for(let i = 10; i <= 30; i += 1) { 
+                let v = (i/10).toFixed(1);
+                multOptions += `<option value="${v}" ${parseFloat(tData.multiplier) === parseFloat(v) ? 'selected' : ''}>${v}x</option>`;
+            }
+
+            html += `
+            <div class="tier-grid" style="grid-template-columns: 1fr 1fr; background:#f8fafc; padding:12px; border-radius:12px; margin-bottom:12px; border:1px solid #e2e8f0; position:relative;">
+                <button class="danger icon-btn" style="position:absolute; top:-8px; right:-8px; padding:4px 8px; font-size:11px; border-radius:50%;" onclick="removeRule(${tIdx})">✕</button>
+                
+                <div>
+                    <label style="font-size:12px; margin-bottom:4px;">${t('rule_from')}</label>
+                    <input type="number" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)" style="padding:10px; width:100%; border:1px solid #cbd5e1; border-radius:8px;">
+                </div>
+                
+                <div>
+                    <label style="font-size:12px; margin-bottom:4px;">${t('rule_to')}</label>
+                    <div style="display:flex; gap:4px;">
+                        <select onchange="updateRuleField(${tIdx}, 'toType', this.value)" style="padding:10px; width:100%; border:1px solid #cbd5e1; border-radius:8px; flex:1;">
+                            <option value="number" ${tData.to !== 'above' ? 'selected' : ''}>Number</option>
+                            <option value="above" ${tData.to === 'above' ? 'selected' : ''}>Above</option>
+                        </select>
+                        ${tData.to !== 'above' ? `<input type="number" value="${tData.to}" onchange="updateRuleField(${tIdx}, 'to', this.value)" style="padding:10px; width:100%; border:1px solid #cbd5e1; border-radius:8px; flex:1;">` : ''}
+                    </div>
+                </div>
+
+                <div class="full-width" style="margin-top:4px;">
+                    <label style="font-size:12px; margin-bottom:4px;">${t('rule_mult')}</label>
+                    <select onchange="updateRuleField(${tIdx}, 'multiplier', this.value)" style="padding:10px; width:100%; border:1px solid #cbd5e1; border-radius:8px; background:#fff;">
+                        ${multOptions}
+                    </select>
+                </div>
+            </div>`;
+        });
+        
+        document.getElementById('rulesContainer').innerHTML = html;
     }
 
     function goToEventHub() {
@@ -798,7 +957,6 @@
     function confirmAddFishModal() {
         if (activeFishParticipantIndex === null) return;
         let abbr = document.getElementById("modalSpeciesSelect").value;
-        
         let rawSize = document.getElementById("modalFishSize").value.replace(',', '.');
         let size = parseFloat(rawSize);
         
@@ -831,7 +989,6 @@
         let container = document.getElementById("participantsHubContainer");
         let addBtnText = t("add_fish_btn");
 
-        // Update Total Participant Count for Hub UI
         let countEl = document.getElementById("hubParticipantCount");
         if(countEl) countEl.innerText = currentEvent.participants.length;
 
@@ -932,14 +1089,11 @@
             events.push({ id: currentEvent.id, name: currentEvent.name, details: currentEvent });
         }
         
-        // SAVE DEFAULT SPECIES RULES FOR NEXT TIME
-        localStorage.setItem("fishing_defaults_v5_" + loggedInUser, JSON.stringify(currentEvent.species));
-        
+        localStorage.setItem("fishing_defaults_v6_" + loggedInUser, JSON.stringify(currentEvent.species));
         localStorage.setItem(getStorageKey(), JSON.stringify(events));
         showDashboard();
     }
     
-    // Initialize language on load based on dropdown selection
     changeLanguage(document.getElementById("langSelect").value);
 </script>
 </body>
