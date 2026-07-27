@@ -36,12 +36,12 @@
         .flex-between { justify-content: space-between; }
         .hidden { display: none !important; }
 
-        /* Forms & Inputs (Optimized for Thumbs) */
+        /* Forms & Inputs */
         .form-group { margin-bottom: 16px; width: 100%; }
         label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; color: var(--text-muted); }
         input, select, textarea { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; font-family: inherit; background: #f8fafc; transition: border 0.2s; appearance: none; outline: none; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); background: #fff; }
-        textarea { resize: vertical; min-height: 100px; }
+        textarea { resize: vertical; min-height: 120px; }
 
         /* Buttons */
         button { background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%; }
@@ -150,8 +150,7 @@
                 <span id="participantCountStatus" class="badge">0</span>
             </div>
             <p data-i18n="bulk_desc" style="font-size: 13px; color: var(--text-muted); margin: 8px 0 12px 0;">Paste names. Symbols/brackets are auto-removed.</p>
-            <textarea id="bulkParticipantsInput" placeholder="John (Pro)\nMike Tyson"></textarea>
-            <button onclick="processBulkParticipants()" class="secondary" style="margin-top: 12px;" data-i18n="parse_btn">Parse Names</button>
+            <textarea id="bulkParticipantsInput" placeholder="1. John (Pro)\n2. Mike Tyson" oninput="updateParticipantCountStatus()"></textarea>
         </div>
 
         <div class="card">
@@ -268,7 +267,6 @@
             tourn_name: "1. Tournament Name",
             bulk_part: "2. Participants List",
             bulk_desc: "Paste names. Symbols/brackets are auto-removed.",
-            parse_btn: "Parse Names",
             fish_species_title: "3. Species & Multipliers",
             add_species: "+ Add Species",
             proceed_hub: "Proceed to Hub →",
@@ -303,7 +301,6 @@
             tourn_name: "1. ტურნირის სახელი",
             bulk_part: "2. მონაწილეთა სია",
             bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.",
-            parse_btn: "დამუშავება",
             fish_species_title: "3. სახეობები და კოეფიციენტები",
             add_species: "+ სახეობის დამატება",
             proceed_hub: "ჰაბზე გადასვლა →",
@@ -338,7 +335,6 @@
             tourn_name: "1. Назва турніру",
             bulk_part: "2. Список учасників",
             bulk_desc: "Вставте імена. Дужки та символи видаляються.",
-            parse_btn: "Обробити імена",
             fish_species_title: "3. Види та коефіцієнти",
             add_species: "+ Додати вид",
             proceed_hub: "Перейти до хабу →",
@@ -373,7 +369,6 @@
             tourn_name: "1. Название турнира",
             bulk_part: "2. Список участников",
             bulk_desc: "Вставьте имена. Скобки и символы удалятся.",
-            parse_btn: "Обработать имена",
             fish_species_title: "3. Виды и коэффициенты",
             add_species: "+ Добавить вид",
             proceed_hub: "Перейти в хаб →",
@@ -408,7 +403,6 @@
             tourn_name: "1. Nom du Tournoi",
             bulk_part: "2. Participants",
             bulk_desc: "Collez les noms. Les symboles sont ignorés.",
-            parse_btn: "Analyser",
             fish_species_title: "3. Espèces & Multiplicateurs",
             add_species: "+ Espèce",
             proceed_hub: "Accéder au Hub →",
@@ -443,7 +437,6 @@
             tourn_name: "1. Nome Torneo",
             bulk_part: "2. Partecipanti",
             bulk_desc: "Incolla i nomi. I simboli vengono rimossi.",
-            parse_btn: "Analizza",
             fish_species_title: "3. Specie & Moltiplicatori",
             add_species: "+ Specie",
             proceed_hub: "Vai all'Hub →",
@@ -478,7 +471,6 @@
             tourn_name: "1. Turniername",
             bulk_part: "2. Teilnehmer",
             bulk_desc: "Namen einfügen. Symbole werden entfernt.",
-            parse_btn: "Analysieren",
             fish_species_title: "3. Arten & Multiplikatoren",
             add_species: "+ Art",
             proceed_hub: "Weiter zum Hub →",
@@ -510,7 +502,7 @@
             }
         });
         if(document.getElementById("setupSection").classList.contains("hidden") === false) {
-            refreshSetupUI(); // refresh JS injected html
+            refreshSetupUI();
         }
         if(document.getElementById("hubSection").classList.contains("hidden") === false) {
             renderHubUI();
@@ -528,11 +520,21 @@
         }
     }
 
-    function cleanParticipantName(rawName) {
-        let cleaned = rawName.replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}/g, '');
-        cleaned = cleaned.replace(/[0-9#@!$%^&*_+=\-\[\]{};':"\\|,.<>\/?~`]/g, ' ');
-        cleaned = cleaned.replace(/\s+/g, ' ').trim();
-        return cleaned;
+    function parseParticipants(rawText) {
+        if (!rawText.trim()) return [];
+        
+        // 1. Completely remove all brackets and their inner contents (handles multi-line content safely)
+        let cleaned = rawText.replace(/\([\s\S]*?\)|\[[\s\S]*?\]|\{[\s\S]*?\}/g, '');
+        
+        // 2. Remove numbers, standard punctuation, and quotes (keeping commas and newlines for splitting)
+        cleaned = cleaned.replace(/[0-9!@#$%^&*_+=\-\[\]{};':"\\|.<>\/?~`“”„«»]/g, ' ');
+        
+        // 3. Split by commas or newlines, normalize spaces, and remove empty entries
+        let items = cleaned.split(/[\n,]+/)
+            .map(n => n.replace(/\s+/g, ' ').trim())
+            .filter(n => n.length > 0);
+            
+        return items;
     }
 
     function handleLoginRegister() {
@@ -661,28 +663,10 @@
         loadEvents();
     }
 
-    function processBulkParticipants() {
-        let rawText = document.getElementById("bulkParticipantsInput").value;
-        if (!rawText.trim()) {
-            currentEvent.participants = [];
-            updateParticipantCountStatus();
-            return;
-        }
-        let items = rawText.split(/[\n,]+/).map(n => cleanParticipantName(n)).filter(n => n.length > 0);
-        let existingMap = {};
-        currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = p.catches);
-
-        currentEvent.participants = items.map(name => ({
-            name: name,
-            catches: existingMap[name.toLowerCase()] || []
-        }));
-        updateParticipantCountStatus();
-    }
-
     function updateParticipantCountStatus() {
         let rawText = document.getElementById("bulkParticipantsInput").value;
-        let count = rawText.trim() ? rawText.split(/[\n,]+/).map(n => cleanParticipantName(n)).filter(n => n.length > 0).length : 0;
-        document.getElementById("participantCountStatus").innerText = count;
+        let items = parseParticipants(rawText);
+        document.getElementById("participantCountStatus").innerText = items.length;
     }
 
     function addSpecies() {
@@ -745,7 +729,18 @@
 
     function goToEventHub() {
         currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
-        processBulkParticipants();
+        
+        let rawText = document.getElementById("bulkParticipantsInput").value;
+        let items = parseParticipants(rawText);
+        
+        let existingMap = {};
+        currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = p.catches);
+
+        currentEvent.participants = items.map(name => ({
+            name: name,
+            catches: existingMap[name.toLowerCase()] || []
+        }));
+        
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.remove("hidden");
         window.scrollTo(0, 0);
@@ -770,9 +765,13 @@
 
     function confirmAddParticipantModal() {
         let nameInput = document.getElementById("modalParticipantName");
-        let name = cleanParticipantName(nameInput.value.trim());
-        if (!name) return;
-        currentEvent.participants.push({ name: name, catches: [] });
+        let parsedNames = parseParticipants(nameInput.value);
+        if (parsedNames.length === 0) return;
+        
+        parsedNames.forEach(name => {
+            currentEvent.participants.push({ name: name, catches: [] });
+        });
+        
         closeAddParticipantModal();
         renderHubUI();
     }
@@ -796,7 +795,7 @@
         let abbr = document.getElementById("modalSpeciesSelect").value;
         let size = parseFloat(document.getElementById("modalFishSize").value);
         if (isNaN(size) || size <= 0) return;
-        currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); // add to start of array for visibility
+        currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
         closeFishModal();
         renderHubUI();
     }
