@@ -34,6 +34,9 @@
         .fish-tag { background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 6px; margin: 4px; font-size: 13px; }
         .fish-tag span { cursor: pointer; color: #ef4444; font-weight: bold; }
         .card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 15px; }
+        /* Modal Popup Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-card { background: #fff; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -110,17 +113,19 @@
         </div>
 
         <div class="card">
-            <h3>Manage Participants</h3>
-            <div class="flex" style="margin-bottom: 10px;">
-                <input type="text" id="searchParticipant" placeholder="Search participant..." oninput="renderHubUI()" style="flex:2;">
-                <input type="text" id="singleParticipantName" placeholder="New Name" style="flex:1.5;">
-                <button onclick="addSingleParticipant()" style="flex:1;">Add</button>
+            <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin:0;">Manage Participants</h3>
+                <button onclick="openAddParticipantModal()" style="padding: 6px 12px; font-size: 13px;">+ Add New</button>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+                <input type="text" id="searchParticipant" placeholder="Search participant..." oninput="renderHubUI()">
             </div>
             <div id="participantsHubContainer" style="max-height: 350px; overflow-y: auto;"></div>
         </div>
 
         <div class="card">
             <h3>Leaderboard & Results</h3>
+            <div id="leaderboardTopSummary" style="margin-bottom: 10px;"></div>
             <div class="form-group">
                 <label>Ranking Mode:</label>
                 <select id="rankingMode" onchange="renderLeaderboard()">
@@ -132,6 +137,21 @@
         </div>
 
         <button onclick="saveCurrentEvent()" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;">Save Event to Cloud</button>
+    </div>
+</div>
+
+<!-- POPUP MODAL FOR ADDING PARTICIPANT -->
+<div id="participantModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h3>Add New Participant</h3>
+        <div class="form-group">
+            <label>Participant Name</label>
+            <input type="text" id="modalParticipantName" placeholder="Full Name">
+        </div>
+        <div class="flex" style="justify-content: flex-end; gap: 8px;">
+            <button class="secondary" onclick="closeAddParticipantModal()">Close</button>
+            <button onclick="confirmAddParticipantModal()">Add</button>
+        </div>
     </div>
 </div>
 
@@ -160,7 +180,7 @@
     }
 
     function getStorageKey() {
-        return "fishing_events_v2_" + loggedInUser;
+        return "fishing_events_v3_" + loggedInUser;
     }
 
     function loadEvents() {
@@ -258,10 +278,8 @@
             updateParticipantCountStatus();
             return;
         }
-        // Split by newlines or commas
         let items = rawText.split(/[\n,]+/).map(n => n.trim()).filter(n => n.length > 0);
         
-        // Retain existing catches if participants already existed
         let existingMap = {};
         currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = p.catches);
 
@@ -329,8 +347,8 @@
                     <div class="flex" style="margin-bottom:6px;">
                         <input type="number" placeholder="From cm" value="${t.from}" onchange="updateTierData(${sIdx}, ${tIdx}, 'from', this.value)" style="flex:1;">
                         <select onchange="updateTierData(${sIdx}, ${tIdx}, 'to', this.value); refreshSetupUI();" style="flex:1.2;">
-                            <option value="number" ${t.to !== 'above' ? 'selected' : ''}>To (Number)</option>
-                            <option value="above" ${t.to === 'above' ? 'selected' : ''}>And Above</option>
+                            <option value="number" ${t.to !== 'above' ? 'selected' : ''}>To: Number</option>
+                            <option value="above" ${t.to === 'above' ? 'selected' : ''}>To: And Above</option>
                         </select>
                         ${t.to !== 'above' ? `<input type="number" placeholder="To cm" value="${t.to}" onchange="updateTierData(${sIdx}, ${tIdx}, 'to', this.value)" style="flex:1;">` : ''}
                         <input type="number" step="0.1" placeholder="Multiplier" value="${t.multiplier}" onchange="updateTierData(${sIdx}, ${tIdx}, 'multiplier', this.value)" style="flex:1;">
@@ -356,12 +374,21 @@
         document.getElementById("setupSection").classList.remove("hidden");
     }
 
-    function addSingleParticipant() {
-        let nameInput = document.getElementById("singleParticipantName");
+    function openAddParticipantModal() {
+        document.getElementById("modalParticipantName").value = "";
+        document.getElementById("participantModal").classList.remove("hidden");
+    }
+
+    function closeAddParticipantModal() {
+        document.getElementById("participantModal").classList.add("hidden");
+    }
+
+    function confirmAddParticipantModal() {
+        let nameInput = document.getElementById("modalParticipantName");
         let name = nameInput.value.trim();
         if (!name) return;
         currentEvent.participants.push({ name: name, catches: [] });
-        nameInput.value = "";
+        closeAddParticipantModal();
         renderHubUI();
     }
 
@@ -382,13 +409,13 @@
     }
 
     function removeFish(pIndexReal, cIdx) {
-        currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
+        currentEvent.participants[pIndexReal].catches.splice(pIndexReal, 1);
         renderHubUI();
     }
 
     function calculateFishPoints(abbr, size, speciesList) {
         let sp = speciesList.find(s => s.abbr === abbr);
-        if (!sp) return size; // fallback
+        if (!sp) return size;
         
         let matchingTier = sp.tiers.find(t => {
             if (t.to === 'above') {
@@ -439,42 +466,53 @@
     function renderLeaderboard() {
         let mode = document.getElementById("rankingMode").value;
         let container = document.getElementById("leaderboardContainer");
+        let topSummaryContainer = document.getElementById("leaderboardTopSummary");
 
         let processed = currentEvent.participants.map(p => {
             let totalCm = 0;
             let totalPts = 0;
             let maxFishCm = 0;
+            let maxFishAbbr = "";
+            let amountCatches = p.catches.length;
 
             p.catches.forEach(c => {
                 totalCm += c.size;
-                if (c.size > maxFishCm) maxFishCm = c.size;
+                if (c.size > maxFishCm) {
+                    maxFishCm = c.size;
+                    maxFishAbbr = c.abbr.toUpperCase();
+                }
                 totalPts += calculateFishPoints(c.abbr, c.size, currentEvent.species);
             });
 
-            return { name: p.name, totalCm, totalPts, maxFishCm };
+            return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches };
         });
 
         let sortedByMain = [...processed].sort((a, b) => mode === 'points' ? b.totalPts - a.totalPts : b.totalCm - a.totalCm);
         let sortedByBiggest = [...processed].sort((a, b) => b.maxFishCm - a.maxFishCm);
 
+        // Render Top Summary for Biggest Fish
+        if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishCm > 0) {
+            topSummaryContainer.innerHTML = `<p style="margin:0 0 10px 0; font-size:13px;">🏆 <b>Biggest Fish:</b> ${sortedByBiggest[0].name} (${sortedByBiggest[0].maxFishCm} cm <span class="badge">${sortedByBiggest[0].maxFishAbbr}</span>)</p>`;
+        } else {
+            topSummaryContainer.innerHTML = "";
+        }
+
         let html = `<table>
-            <tr><th>Place</th><th>Name</th><th>Pts</th><th>Cm</th><th>Max</th></tr>`;
+            <tr><th>Place</th><th>Name</th><th>Pts</th><th>Cm</th><th>Amount</th><th>Max</th></tr>`;
 
         sortedByMain.forEach((p, idx) => {
             let placeBadge = (idx === 0) ? "🥇 1st" : (idx === 1) ? "🥈 2nd" : (idx === 2) ? "🥉 3rd" : `${idx + 1}th`;
+            let maxDisplay = p.maxFishCm > 0 ? `${p.maxFishCm}cm <span class="badge">${p.maxFishAbbr}</span>` : `-`;
             html += `<tr>
                 <td><b>${placeBadge}</b></td>
                 <td>${p.name}</td>
                 <td>${p.totalPts.toFixed(1)}</td>
                 <td>${p.totalCm.toFixed(1)}</td>
-                <td>${p.maxFishCm}</td>
+                <td>${p.amountCatches}</td>
+                <td>${maxDisplay}</td>
             </tr>`;
         });
         html += `</table>`;
-
-        if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishCm > 0) {
-            html += `<p style="margin-top:10px; font-size:13px;">🏆 <b>Biggest Fish:</b> ${sortedByBiggest[0].name} (${sortedByBiggest[0].maxFishCm} cm)</p>`;
-        }
 
         container.innerHTML = html;
     }
