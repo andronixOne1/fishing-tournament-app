@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fishing Event Manager</title>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: var(--card-bg); padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h2, h3 { margin-top: 0; color: #0f172a; }
+        .hidden { display: none !important; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        button:hover { background: var(--primary-dark); }
+        button.danger { background: #ef4444; }
+        button.danger:hover { background: #dc2626; }
+        button.secondary { background: #64748b; }
+        button.secondary:hover { background: #475569; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid var(--border); padding: 10px; text-align: left; font-size: 14px; }
+        th { background: #f1f5f9; }
+        .flex { display: flex; gap: 10px; align-items: center; }
+        .badge { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 4px; display: inline-block; }
+        .fish-tag { background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 6px; margin: 4px; font-size: 13px; }
+        .fish-tag span { cursor: pointer; color: #ef4444; font-weight: bold; }
+        .card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- LOGIN SCREEN -->
+    <div id="loginSection">
+        <h2>Angler Portal Login</h2>
+        <p>Access your database 24/7 securely.</p>
+        <div class="form-group" style="max-width: 300px;">
+            <label>Username</label>
+            <input type="text" id="usernameInput" value="angler">
+        </div>
+        <div class="form-group" style="max-width: 300px;">
+            <label>Password</label>
+            <input type="password" id="passwordInput" value="fish2026">
+        </div>
+        <button onclick="handleLogin()">Login</button>
+        <p style="font-size: 12px; color: #64748b; margin-top: 10px;">Default user: <b>angler</b> / <b>fish2026</b></p>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboardSection" class="hidden">
+        <div class="flex" style="justify-content: space-between; margin-bottom: 20px;">
+            <h2>Your Fishing Events</h2>
+            <div>
+                <span id="loggedUserDisplay" style="margin-right: 15px; font-weight: bold;"></span>
+                <button class="secondary" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+        <button onclick="openEventEditor()">+ Create New Event</button>
+        <div id="eventsList" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- EVENT EDITOR & MANAGEMENT WINDOW -->
+    <div id="editorSection" class="hidden">
+        <div class="flex" style="justify-content: space-between; margin-bottom: 15px;">
+            <h2 id="editorTitle">Create/Edit Event</h2>
+            <button class="secondary" onclick="showDashboard()">← Back to Events</button>
+        </div>
+
+        <div class="card">
+            <h3>1. Event Name</h3>
+            <input type="text" id="eventNameInput" placeholder="e.g., Weekend Lake Championship">
+        </div>
+
+        <div class="card">
+            <h3>2. Fish Species & Multipliers (cm to Points)</h3>
+            <div class="flex" style="margin-bottom: 10px;">
+                <input type="text" id="newSpeciesName" placeholder="Species Name (e.g. Perch)">
+                <input type="text" id="newSpeciesAbbr" placeholder="Abbr (e.g. pr)" style="width: 100px;">
+                <input type="number" step="0.1" id="newSpeciesMultiplier" placeholder="Points per cm (e.g. 1)" style="width: 140px;">
+                <button onclick="addSpecies()">Add Species</button>
+            </div>
+            <div id="speciesListContainer"></div>
+        </div>
+
+        <div class="card">
+            <h3>3. Participants & Catches</h3>
+            <div class="flex" style="margin-bottom: 10px;">
+                <input type="text" id="newParticipantName" placeholder="Participant Full Name">
+                <button onclick="addParticipant()">Add Participant</button>
+            </div>
+            <div id="participantsContainer"></div>
+        </div>
+
+        <div class="card">
+            <h3>4. Leaderboard & Results</h3>
+            <div class="flex" style="margin-bottom: 10px;">
+                <label style="margin:0;">Ranking Mode:</label>
+                <select id="rankingMode" onchange="renderLeaderboard()" style="width: 200px;">
+                    <option value="points">Total Points (Default)</option>
+                    <option value="cm">Total Centimeters</option>
+                </select>
+            </div>
+            <div id="leaderboardContainer"></div>
+        </div>
+
+        <button onclick="saveCurrentEvent()" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;">Save Event to Cloud</button>
+    </div>
+</div>
+
+<script>
+    let currentEvent = null;
+    let allEvents = [];
+    let loggedInUser = "";
+
+    function handleLogin() {
+        let user = document.getElementById("usernameInput").value;
+        let pass = document.getElementById("passwordInput").value;
+        google.script.run.withSuccessHandler(res => {
+            if (res.success) {
+                loggedInUser = user;
+                document.getElementById("loggedUserDisplay").innerText = "User: " + user;
+                document.getElementById("loginSection").classList.add("hidden");
+                document.getElementById("dashboardSection").classList.remove("hidden");
+                loadEvents();
+            } else {
+                alert(res.error);
+            }
+        }).authenticateUser(user, pass);
+    }
+
+    function handleLogout() {
+        loggedInUser = "";
+        document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("loginSection").classList.remove("hidden");
+    }
+
+    function loadEvents() {
+        google.script.run.withSuccessHandler(data => {
+            allEvents = data;
+            renderEventsList();
+        }).getEvents();
+    }
+
+    function renderEventsList() {
+        let container = document.getElementById("eventsList");
+        let myEvents = allEvents.filter(e => e.username === loggedInUser);
+        if (myEvents.length === 0) {
+            container.innerHTML = "<p>No events found. Create your first one!</p>";
+            return;
+        }
+        let html = "<table><tr><th>Event Name</th><th>Participants</th><th>Actions</th></tr>";
+        myEvents.forEach(ev => {
+            html += `<tr>
+                <td><b>${ev.name}</b></td>
+                <td>${ev.details.participants.length} registered</td>
+                <td>
+                    <button onclick="editEvent('${ev.id}')">Edit</button>
+                    <button class="danger" onclick="deleteEvent('${ev.id}')">Delete</button>
+                </td>
+            </tr>`;
+        });
+        html += "</table>";
+        container.innerHTML = html;
+    }
+
+    function openEventEditor(eventObj = null) {
+        document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("editorSection").classList.remove("hidden");
+
+        if (eventObj) {
+            currentEvent = JSON.parse(JSON.stringify(eventObj)); // clone
+            document.getElementById("editorTitle").innerText = "Edit Event: " + currentEvent.name;
+            document.getElementById("eventNameInput").value = currentEvent.name;
+        } else {
+            currentEvent = {
+                id: "ev_" + Date.now(),
+                name: "New Fishing Trip",
+                species: [
+                    { name: "Perch", abbr: "pr", multiplier: 1.0 },
+                    { name: "Pike", abbr: "pk", multiplier: 1.5 },
+                    { name: "Zander", abbr: "zd", multiplier: 2.0 }
+                ],
+                participants: []
+            };
+            document.getElementById("editorTitle").innerText = "Create New Event";
+            document.getElementById("eventNameInput").value = currentEvent.name;
+        }
+        refreshEditorUI();
+    }
+
+    function editEvent(id) {
+        let found = allEvents.find(e => e.id === id);
+        if (found) openEventEditor(found.details);
+    }
+
+    function deleteEvent(id) {
+        if (confirm("Are you sure you want to delete this event?")) {
+            google.script.run.withSuccessHandler(() => loadEvents()).deleteEvent(id);
+        }
+    }
+
+    function showDashboard() {
+        document.getElementById("editorSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        loadEvents();
+    }
+
+    function refreshEditorUI() {
+        // Render Species
+        let spContainer = document.getElementById("speciesListContainer");
+        spContainer.innerHTML = currentEvent.species.map((s, idx) => `
+            <span class="fish-tag"><b>${s.name}</b> (${s.abbr}) - ${s.multiplier} pts/cm 
+            <span onclick="removeSpecies(${idx})">&times;</span></span>
+        `).join("");
+
+        // Render Participants Window
+        let pContainer = document.getElementById("participantsContainer");
+        if (currentEvent.participants.length === 0) {
+            pContainer.innerHTML = "<p style='color:#64748b; font-size:13px;'>No participants added yet.</p>";
+        } else {
+            let pHtml = "";
+            currentEvent.participants.forEach((p, pIdx) => {
+                pHtml += `<div class="card" style="background:#fff; margin-bottom:10px;">
+                    <div class="flex" style="justify-content: space-between;">
+                        <h4>${p.name}</h4>
+                        <button class="danger" style="padding:4px 8px; font-size:12px;" onclick="removeParticipant(${pIdx})">Remove Participant</button>
+                    </div>
+                    <div class="flex" style="margin-top:8px;">
+                        <select id="species_sel_${pIdx}" style="flex:2;">
+                            ${currentEvent.species.map(s => `<option value="${s.abbr}">${s.name} (${s.abbr})</option>`).join("")}
+                        </select>
+                        <input type="number" id="size_inp_${pIdx}" placeholder="Size in cm" style="flex:1;" min="1">
+                        <button onclick="addFishToParticipant(${pIdx})">Add Fish</button>
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <b>Catches:</b> ${p.catches.length === 0 ? 'None yet' : ''}
+                        ${p.catches.map((c, cIdx) => `
+                            <span class="fish-tag">${c.size}cm <span class="badge">${c.abbr.toUpperCase()}</span> 
+                            <span onclick="removeFishFromParticipant(${pIdx}, ${cIdx})">&times;</span></span>
+                        `).join("")}
+                    </div>
+                </div>`;
+            });
+            pContainer.innerHTML = pHtml;
+        }
+
+        renderLeaderboard();
+    }
+
+    function addSpecies() {
+        let name = document.getElementById("newSpeciesName").value.trim();
+        let abbr = document.getElementById("newSpeciesAbbr").value.trim().toLowerCase();
+        let mult = parseFloat(document.getElementById("newSpeciesMultiplier").value);
+        if (!name || !abbr || isNaN(mult)) {
+            alert("Please fill out valid species name, abbreviation, and multiplier.");
+            return;
+        }
+        currentEvent.species.push({ name, abbr, multiplier: mult });
+        document.getElementById("newSpeciesName").value = "";
+        document.getElementById("newSpeciesAbbr").value = "";
+        document.getElementById("newSpeciesMultiplier").value = "";
+        refreshEditorUI();
+    }
+
+    function removeSpecies(idx) {
+        currentEvent.species.splice(idx, 1);
+        refreshEditorUI();
+    }
+
+    function addParticipant() {
+        let name = document.getElementById("newParticipantName").value.trim();
+        if (!name) return;
+        currentEvent.participants.push({ name: name, catches: [] });
+        document.getElementById("newParticipantName").value = "";
+        refreshEditorUI();
+    }
+
+    function removeParticipant(pIdx) {
+        currentEvent.participants.splice(pIdx, 1);
+        refreshEditorUI();
+    }
+
+    function addFishToParticipant(pIdx) {
+        let abbrSelect = document.getElementById(`species_sel_${pIdx}`).value;
+        let sizeInput = parseFloat(document.getElementById(`size_inp_${pIdx}`).value);
+        if (isNaN(sizeInput) || sizeInput <= 0) {
+            alert("Please enter a valid fish size in cm.");
+            return;
+        }
+        currentEvent.participants[pIdx].catches.push({ abbr: abbrSelect, size: sizeInput });
+        refreshEditorUI();
+    }
+
+    function removeFishFromParticipant(pIdx, cIdx) {
+        currentEvent.participants[pIdx].catches.splice(cIdx, 1);
+        refreshEditorUI();
+    }
+
+    function renderLeaderboard() {
+        let mode = document.getElementById("rankingMode").value;
+        let container = document.getElementById("leaderboardContainer");
+
+        // Compute metrics for each participant
+        let processed = currentEvent.participants.map(p => {
+            let totalCm = 0;
+            let totalPts = 0;
+            let maxFishCm = 0;
+
+            p.catches.forEach(c => {
+                totalCm += c.size;
+                if (c.size > maxFishCm) maxFishCm = c.size;
+                let spObj = currentEvent.species.find(s => s.abbr === c.abbr);
+                let mult = spObj ? spObj.multiplier : 1.0;
+                totalPts += (c.size * mult);
+            });
+
+            return { name: p.name, totalCm, totalPts, maxFishCm };
+        });
+
+        // Sort for 1st, 2nd, 3rd places
+        let sortedByMain = [...processed].sort((a, b) => mode === 'points' ? b.totalPts - a.totalPts : b.totalCm - a.totalCm);
+        let sortedByBiggest = [...processed].sort((a, b) => b.maxFishCm - a.maxFishCm);
+
+        let html = `<table>
+            <tr><th>Place</th><th>Participant</th><th>Total Points</th><th>Total Cm</th><th>Biggest Fish</th></tr>`;
+
+        sortedByMain.forEach((p, idx) => {
+            let placeBadge = (idx === 0) ? "🥇 1st" : (idx === 1) ? "🥈 2nd" : (idx === 2) ? "🥉 3rd" : `${idx + 1}th`;
+            html += `<tr>
+                <td><b>${placeBadge}</b></td>
+                <td>${p.name}</td>
+                <td>${p.totalPts.toFixed(1)} pts</td>
+                <td>${p.totalCm.toFixed(1)} cm</td>
+                <td>${p.maxFishCm} cm</td>
+            </tr>`;
+        });
+        html += `</table>`;
+
+        // Biggest Fish winner highlight
+        if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishCm > 0) {
+            html += `<p style="margin-top:12px; font-size:14px;">🏆 <b>Biggest Fish Award:</b> ${sortedByBiggest[0].name} (${sortedByBiggest[0].maxFishCm} cm)</p>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function saveCurrentEvent() {
+        currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
+        let payload = {
+            id: currentEvent.id,
+            name: currentEvent.name,
+            username: loggedInUser,
+            details: currentEvent
+        };
+        google.script.run.withSuccessHandler(res => {
+            if (res.success) {
+                alert("Event successfully saved to cloud database!");
+                showDashboard();
+            }
+        }).saveEvent(payload);
+    }
+</script>
+</body>
+</html>
