@@ -621,12 +621,17 @@
             document.getElementById("eventNameInput").value = currentEvent.name;
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
         } else {
+            // LOAD DEFAULTS IF THEY EXIST
+            let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: "", to: "above", multiplier: "" }] }];
+            let savedDefaults = localStorage.getItem("fishing_defaults_v5_" + loggedInUser);
+            if (savedDefaults) {
+                try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {}
+            }
+
             currentEvent = {
                 id: "ev_" + Date.now(),
                 name: "New Fishing Trip",
-                species: [
-                    { name: "Perch", abbr: "pr", tiers: [{ from: "", to: "above", multiplier: "" }] }
-                ],
+                species: defaultSpecies,
                 participants: []
             };
             document.getElementById("eventNameInput").value = "";
@@ -926,6 +931,10 @@
         } else {
             events.push({ id: currentEvent.id, name: currentEvent.name, details: currentEvent });
         }
+        
+        // SAVE DEFAULT SPECIES RULES FOR NEXT TIME
+        localStorage.setItem("fishing_defaults_v5_" + loggedInUser, JSON.stringify(currentEvent.species));
+        
         localStorage.setItem(getStorageKey(), JSON.stringify(events));
         showDashboard();
     }
