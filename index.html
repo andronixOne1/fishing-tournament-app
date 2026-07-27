@@ -747,20 +747,35 @@
 
     function refreshSetupUI() {
         let container = document.getElementById("speciesConfigContainer");
-        container.innerHTML = currentEvent.species.map((s, sIdx) => `
+        container.innerHTML = currentEvent.species.map((s, sIdx) => {
+            
+            // Generate Small Summaries for Rules
+            let rulesSummary = s.tiers.map(t => {
+                let fromVal = t.from === "" ? 0 : t.from;
+                let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
+                let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
+                return `${fromVal}-${toVal}cm ${mult}x`;
+            }).join(' | ');
+
+            return `
             <div class="card" style="padding:16px; border:1px solid #e2e8f0; margin-bottom:12px; background:#fff;">
                 <div class="flex flex-between">
                     <div>
-                        <b style="font-size:16px; color:var(--primary-dark);">${s.name}</b>
-                        <span class="badge" style="background:#f1f5f9; color:var(--text);">${s.abbr.toUpperCase()}</span>
+                        <div class="flex">
+                            <b style="font-size:16px; color:var(--primary-dark);">${s.name}</b>
+                            <span class="badge" style="background:#f1f5f9; color:var(--text);">${s.abbr.toUpperCase()}</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">
+                            ${rulesSummary}
+                        </div>
                     </div>
                     <div class="flex">
                         <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})">${t('edit_rules')}</button>
                         <button class="danger icon-btn" style="padding:6px 10px;" onclick="removeSpecies(${sIdx})">✕</button>
                     </div>
                 </div>
-            </div>
-        `).join("");
+            </div>`;
+        }).join("");
     }
 
     function openRulesModal(sIdx) {
