@@ -244,7 +244,7 @@
                         ${p.catches.length === 0 ? '<span style="font-size:12px; color:#64748b;">No catches recorded</span>' : ''}
                         ${p.catches.map((c, cIdx) => `
                             <span class="fish-tag">${c.size}cm <span class="badge">${c.abbr.toUpperCase()}</span> 
-                            <span onclick="removeFishFromParticipant(${pIdx},${cIdx})">&times;</span></span>
+                            <span onclick="removeFishFromParticipant(${pIdx}, ${cIdx})">&times;</span></span>
                         `).join("")}
                     </div>
                 </div>`;
@@ -300,7 +300,7 @@
     }
 
     function removeFishFromParticipant(pIdx, cIdx) {
-        currentEvent.participants[pIdx].catches.splice(pIdx, 1);
+        currentEvent.participants[pIdx].catches.splice(cIdx, 1);
         refreshEditorUI();
     }
 
@@ -349,7 +349,22 @@
         container.innerHTML = html;
     }
 
-### Step 3: Commit Changes
-1. Scroll down on GitHub, click **Commit changes...**, and tap **Commit changes** to save.
-2. Render will automatically update your site in about 30 seconds. 
-3. Refresh your mobile page, log back in (`angler` / `fish2026`), and it will instantly open your event dashboard and work smoothly.
+    function saveCurrentEvent() {
+        currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
+        let data = localStorage.getItem(getStorageKey());
+        let events = data ? JSON.parse(data) : [];
+        
+        let index = events.findIndex(e => e.id === currentEvent.id);
+        if (index > -1) {
+            events[index] = { id: currentEvent.id, name: currentEvent.name, details: currentEvent };
+        } else {
+            events.push({ id: currentEvent.id, name: currentEvent.name, details: currentEvent });
+        }
+        
+        localStorage.setItem(getStorageKey(), JSON.stringify(events));
+        alert("Event saved successfully!");
+        showDashboard();
+    }
+</script>
+</body>
+</html>
