@@ -178,7 +178,10 @@
 
         <div class="card">
             <div class="flex flex-between" style="margin-bottom: 16px;">
-                <h3 data-i18n="manage_part" style="margin:0;">Participants</h3>
+                <div class="flex">
+                    <h3 data-i18n="manage_part" style="margin:0;">Participants</h3>
+                    <span id="hubParticipantCount" class="badge">0</span>
+                </div>
                 <button onclick="openAddParticipantModal()" class="icon-btn" data-i18n="add_new">+ Add</button>
             </div>
             <input type="text" id="searchParticipant" placeholder="Search name..." oninput="renderHubUI()" style="margin-bottom: 16px;">
@@ -523,13 +526,9 @@
     function parseParticipants(rawText) {
         if (!rawText.trim()) return [];
         
-        // 1. Completely remove all brackets and their inner contents (handles multi-line content safely)
         let cleaned = rawText.replace(/\([\s\S]*?\)|\[[\s\S]*?\]|\{[\s\S]*?\}/g, '');
-        
-        // 2. Remove numbers, standard punctuation, and quotes (keeping commas and newlines for splitting)
         cleaned = cleaned.replace(/[0-9!@#$%^&*_+=\-\[\]{};':"\\|.<>\/?~`“”„«»]/g, ' ');
         
-        // 3. Split by commas or newlines, normalize spaces, and remove empty entries
         let items = cleaned.split(/[\n,]+/)
             .map(n => n.replace(/\s+/g, ' ').trim())
             .filter(n => n.length > 0);
@@ -817,6 +816,10 @@
         let container = document.getElementById("participantsHubContainer");
         let addBtnText = t("add_fish_btn");
 
+        // Update Total Participant Count for Hub UI
+        let countEl = document.getElementById("hubParticipantCount");
+        if(countEl) countEl.innerText = currentEvent.participants.length;
+
         let filteredHtml = "";
         currentEvent.participants.forEach((p, pIndexReal) => {
             if (!p.name.toLowerCase().includes(query)) return;
@@ -824,7 +827,7 @@
             filteredHtml += `
             <div class="card" style="padding:12px 16px; margin-bottom:12px;">
                 <div class="flex flex-between" style="align-items:center;">
-                    <b style="font-size:16px;">${p.name}</b>
+                    <b style="font-size:16px;">${pIndexReal + 1}. ${p.name}</b>
                     <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:8px 16px; border-radius:20px;">+ ${addBtnText}</button>
                 </div>
                 ${p.catches.length > 0 ? `<div style="margin-top:12px; display:flex; flex-wrap:wrap;">` : ''}
