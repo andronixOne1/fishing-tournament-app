@@ -439,7 +439,7 @@
             
             <div class="form-group">
                 <label data-i18n="size_cm">Size (cm)</label>
-                <input type="text" id="modalFishSize" placeholder="Enter size" inputmode="decimal">
+                <input type="number" id="modalFishSize" placeholder="Enter size" inputmode="decimal">
             </div>
             
             <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_fish_btn">+ Add Fish</button>
@@ -450,6 +450,18 @@
 
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
             <button class="secondary full-width" onclick="closeFishModal()" data-i18n="done" style="box-shadow: none;">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- SMALL FISH WARNING MODAL (Centered) -->
+<div id="smallFishWarningModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'smallFishWarningModal')" style="align-items: center; z-index: 1050;">
+    <div class="card" style="width: 90%; max-width: 340px; text-align: center; padding: 28px 24px; margin-bottom: 0; display: block; border-radius: 24px;">
+        <h3 data-i18n="too_small_title" style="color: var(--danger); margin-bottom: 12px; font-size: 20px;">Fish Too Small</h3>
+        <p data-i18n="too_small_desc" style="color: var(--text-muted); margin-bottom: 24px;">The fish is too small based on the rules.</p>
+        <div class="flex" style="gap: 12px;">
+            <button class="secondary" onclick="cancelSmallFish()" data-i18n="ok" style="box-shadow: none;">OK</button>
+            <button class="danger" onclick="ignoreSmallFish()" data-i18n="ignore" style="box-shadow: none;">Ignore</button>
         </div>
     </div>
 </div>
@@ -479,6 +491,7 @@
     let activeFishParticipantIndex = null;
     let activeSpeciesIndex = null;
     let selectedModalSpecies = "";
+    let pendingSmallFish = null; // Stores catch details if warning is triggered
     let currentLang = "en";
 
     const translations = {
@@ -523,7 +536,11 @@
             rule_mult: "Multiplier",
             download_chart: "⬇ PDF",
             current_catches: "Current Catches",
-            no_catches: "No catches logged."
+            no_catches: "No catches logged.",
+            too_small_title: "Fish Too Small",
+            too_small_desc: "The fish is too small based on the rules.",
+            ok: "OK",
+            ignore: "Ignore"
         },
         ka: {
             login_title: "შესვლა / რეგისტრაცია",
@@ -566,7 +583,11 @@
             rule_mult: "კოეფიციენტი",
             download_chart: "⬇ PDF",
             current_catches: "მიმდინარე თევზები",
-            no_catches: "თევზი არ არის."
+            no_catches: "თევზი არ არის.",
+            too_small_title: "თევზი ძალიან პატარაა",
+            too_small_desc: "წესების მიხედვით თევზი ძალიან პატარაა.",
+            ok: "OK",
+            ignore: "იგნორირება"
         },
         uk: {
             login_title: "Вхід / Реєстрація",
@@ -609,7 +630,11 @@
             rule_mult: "Множник",
             download_chart: "⬇ PDF",
             current_catches: "Поточний улов",
-            no_catches: "Немає улову."
+            no_catches: "Немає улову.",
+            too_small_title: "Риба занадто мала",
+            too_small_desc: "За правилами риба занадто мала.",
+            ok: "OK",
+            ignore: "Ігнорувати"
         },
         ru: {
             login_title: "Вход / Регистрация",
@@ -652,7 +677,11 @@
             rule_mult: "Множитель",
             download_chart: "⬇ PDF",
             current_catches: "Текущий улов",
-            no_catches: "Нет улова."
+            no_catches: "Нет улова.",
+            too_small_title: "Рыба слишком мала",
+            too_small_desc: "По правилам рыба слишком мала.",
+            ok: "OK",
+            ignore: "Игнорировать"
         },
         fr: {
             login_title: "Connexion / Inscription",
@@ -695,7 +724,11 @@
             rule_mult: "Multiplicateur",
             download_chart: "⬇ PDF",
             current_catches: "Prises Actuelles",
-            no_catches: "Aucune prise."
+            no_catches: "Aucune prise.",
+            too_small_title: "Poisson trop petit",
+            too_small_desc: "Le poisson est trop petit selon les règles.",
+            ok: "OK",
+            ignore: "Ignorer"
         },
         it: {
             login_title: "Accesso / Registrazione",
@@ -738,7 +771,11 @@
             rule_mult: "Moltiplicatore",
             download_chart: "⬇ PDF",
             current_catches: "Catture Attuali",
-            no_catches: "Nessuna cattura."
+            no_catches: "Nessuna cattura.",
+            too_small_title: "Pesce troppo piccolo",
+            too_small_desc: "Il pesce è troppo piccolo secondo le regole.",
+            ok: "OK",
+            ignore: "Ignora"
         },
         de: {
             login_title: "Anmeldung / Registrierung",
@@ -781,7 +818,11 @@
             rule_mult: "Multiplikator",
             download_chart: "⬇ PDF",
             current_catches: "Aktuelle Fänge",
-            no_catches: "Keine Fänge."
+            no_catches: "Keine Fänge.",
+            too_small_title: "Fisch zu klein",
+            too_small_desc: "Der Fisch ist nach den Regeln zu klein.",
+            ok: "OK",
+            ignore: "Ignorieren"
         }
     };
 
@@ -816,6 +857,7 @@
             if (modalId === 'participantModal') closeAddParticipantModal();
             if (modalId === 'fishModal') closeFishModal();
             if (modalId === 'rulesModal') closeRulesModal();
+            if (modalId === 'smallFishWarningModal') cancelSmallFish();
         }
     }
 
@@ -1217,7 +1259,6 @@
     function openFishModal(pIndexReal) {
         activeFishParticipantIndex = pIndexReal;
         
-        // Build Tabs for Species Selection
         let tabsContainer = document.getElementById("modalSpeciesTabs");
         tabsContainer.innerHTML = currentEvent.species.map((s, idx) => `
             <div class="species-tab ${idx === 0 ? 'active' : ''}" onclick="selectModalSpecies('${s.abbr}', this)">
@@ -1256,12 +1297,43 @@
         let size = parseFloat(rawSize);
         
         if (isNaN(size) || size <= 0) return;
+
+        // Validation: Is the fish too small?
+        let sp = currentEvent.species.find(s => s.abbr === abbr);
+        if (sp && sp.tiers && sp.tiers.length > 0) {
+            let firstFrom = parseFloat(sp.tiers[0].from);
+            if (!isNaN(firstFrom) && size < firstFrom) {
+                pendingSmallFish = { abbr, size };
+                document.getElementById("smallFishWarningModal").classList.remove("hidden");
+                return;
+            }
+        }
+
+        executeAddFish(abbr, size);
+    }
+
+    function executeAddFish(abbr, size) {
         currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
         
         document.getElementById("modalFishSize").value = ""; 
         renderModalCatches();
         renderHubUI();
         document.getElementById("modalFishSize").focus();
+    }
+
+    function cancelSmallFish() {
+        document.getElementById("smallFishWarningModal").classList.add("hidden");
+        document.getElementById("modalFishSize").value = ""; 
+        pendingSmallFish = null;
+        document.getElementById("modalFishSize").focus();
+    }
+
+    function ignoreSmallFish() {
+        document.getElementById("smallFishWarningModal").classList.add("hidden");
+        if (pendingSmallFish) {
+            executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size);
+            pendingSmallFish = null;
+        }
     }
 
     function removeFish(pIndexReal, cIdx) {
