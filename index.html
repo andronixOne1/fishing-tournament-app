@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lureboard</title>
     
-    <!-- Updated PDF Generation Library (Supports all languages/alphabets) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
     <style>
+        /* =========================================
+           THEME 1: CLASSIC (Default)
+           ========================================= */
         :root {
             --primary: #0ea5e9;
             --primary-dark: #0284c7;
@@ -20,11 +24,41 @@
             --danger: #ef4444;
             --danger-dark: #dc2626;
             --success: #10b981;
+            
+            --card-radius: 16px;
+            --input-radius: 12px;
+            --btn-radius: 12px;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            --header-bg: #ffffff;
+            --header-text: #0284c7;
+        }
+
+        /* =========================================
+           THEME 2: MODERN (Indigo/Purple via data-theme)
+           ========================================= */
+        body[data-theme="modern"] {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --bg: #e0e7ff;
+            --card-bg: #ffffff;
+            --text: #1e1b4b;
+            --text-muted: #6b7280;
+            --border: #c7d2fe;
+            --danger: #e11d48;
+            --danger-dark: #be123c;
+            --success: #059669;
+
+            --card-radius: 24px;
+            --input-radius: 16px;
+            --btn-radius: 20px;
+            --card-shadow: 0 12px 35px rgba(49, 46, 129, 0.06);
+            --header-bg: #4f46e5;
+            --header-text: #ffffff;
         }
 
         /* Reset & Mobile Optimization */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; padding-bottom: 90px; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; padding-bottom: 90px; transition: background 0.3s; }
         
         /* Typography */
         h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
@@ -32,9 +66,9 @@
         p { margin-bottom: 12px; line-height: 1.4; }
 
         /* Layout */
-        .header-bar { background: var(--card-bg); padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+        .header-bar { background: var(--header-bg); color: var(--header-text); padding: 12px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; transition: background 0.3s, color 0.3s; }
         .container { max-width: 600px; margin: 0 auto; padding: 16px; }
-        .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.02); }
+        .card { background: var(--card-bg); border-radius: var(--card-radius); padding: 16px; margin-bottom: 16px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); transition: box-shadow 0.3s, border-radius 0.3s; }
         .flex { display: flex; gap: 10px; align-items: center; }
         .flex-wrap { flex-wrap: wrap; }
         .flex-between { justify-content: space-between; }
@@ -43,18 +77,28 @@
         /* Forms & Inputs */
         .form-group { margin-bottom: 16px; width: 100%; }
         label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; color: var(--text-muted); }
-        input, select, textarea { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; font-family: inherit; background: #f8fafc; transition: border 0.2s; appearance: none; outline: none; }
+        input, select, textarea { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--input-radius); font-size: 16px; font-family: inherit; background: #f8fafc; transition: border 0.2s, background 0.2s, border-radius 0.3s; appearance: none; outline: none; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); background: #fff; }
         textarea { resize: vertical; min-height: 120px; }
+        
+        body[data-theme="modern"] input, body[data-theme="modern"] select, body[data-theme="modern"] textarea { border-width: 2px; }
 
         /* Buttons */
-        button { background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%; }
+        button { background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: var(--btn-radius); font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%; }
         button:active { transform: scale(0.98); }
         button.primary-dark { background: var(--primary-dark); }
         button.danger { background: #fee2e2; color: var(--danger-dark); }
         button.secondary { background: #e2e8f0; color: var(--text); }
         button.success { background: var(--success); color: white; }
         button.icon-btn { padding: 10px 14px; width: auto; font-size: 14px; }
+        
+        body[data-theme="modern"] button.secondary { background: #c7d2fe; color: #3730a3; }
+        body[data-theme="modern"] button.danger { background: #ffe4e6; color: #be123c; }
+
+        /* Header specifics */
+        .header-bar select, .header-bar button { background: var(--bg); color: var(--text); border-radius: 20px; padding: 6px 12px; font-weight: 600; border: none; font-size: 13px; }
+        body[data-theme="modern"] .header-bar select, body[data-theme="modern"] .header-bar button { background: rgba(255,255,255,0.2); color: #fff; }
+        body[data-theme="modern"] .header-bar select option { color: #000; }
         
         /* Floating Bottom Action Bar */
         .bottom-action-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 16px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: center; }
@@ -70,6 +114,7 @@
         
         /* Tags & Badges */
         .badge { background: #e0f2fe; color: var(--primary-dark); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        body[data-theme="modern"] .badge { background: #e0e7ff; color: #3730a3; }
 
         /* Mobile Bottom Sheet Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 1; transition: opacity 0.3s; }
@@ -82,22 +127,34 @@
         .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
         .tier-grid input, .tier-grid select { padding: 10px; font-size: 14px; }
         .tier-grid .full-width { grid-column: span 2; }
+        body[data-theme="modern"] .tier-grid { border: none; background: #e0e7ff; }
     </style>
 </head>
 <body>
 
     <!-- TOP HEADER -->
     <div class="header-bar">
-        <div style="font-weight: 800; color: var(--primary-dark); font-size: 20px; letter-spacing: -0.5px;">Lureboard</div>
-        <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto; padding: 6px 12px; border-radius: 20px; font-size: 14px; background: var(--bg); border: none; font-weight: 600;">
-            <option value="en">English</option>
-            <option value="ka">ქართული</option>
-            <option value="uk">Українська</option>
-            <option value="ru">Русский</option>
-            <option value="fr">Français</option>
-            <option value="it">Italiano</option>
-            <option value="de">Deutsch</option>
-        </select>
+        <div class="flex" style="gap: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
+                <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
+                <circle cx="12" cy="3" r="1.5"/>
+            </svg>
+            <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard</div>
+        </div>
+        
+        <div class="flex" style="gap: 8px;">
+            <button onclick="toggleTheme()" class="icon-btn" title="Toggle Theme" style="padding: 6px 10px;">🎨</button>
+            <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
+            <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
+                <option value="en">🇬🇧 EN</option>
+                <option value="ka">🇬🇪 KA</option>
+                <option value="uk">🇺🇦 UK</option>
+                <option value="ru">🇷🇺 RU</option>
+                <option value="fr">🇫🇷 FR</option>
+                <option value="it">🇮🇹 IT</option>
+                <option value="de">🇩🇪 DE</option>
+            </select>
+        </div>
     </div>
 
 <div class="container">
@@ -128,7 +185,6 @@
                 <h2 data-i18n="your_events" style="margin: 0;">Your Events</h2>
                 <span id="loggedUserDisplay" style="font-size: 13px; color: var(--text-muted);"></span>
             </div>
-            <button class="secondary icon-btn" onclick="handleLogout()" data-i18n="logout">Logout</button>
         </div>
         
         <button onclick="openEventEditor()" data-i18n="create_event" style="margin-bottom: 20px; padding: 16px;">+ Create New Event</button>
@@ -168,7 +224,7 @@
         </div>
 
         <!-- Sticky Bottom Bar for Step 1 -->
-        <div class="bottom-action-bar">
+        <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex">
                 <button onclick="goToEventHub()" class="primary-dark" data-i18n="proceed_hub">Proceed to Hub →</button>
             </div>
@@ -213,7 +269,7 @@
         <!-- Sticky Bottom Bar for Step 2 -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex">
-                <button onclick="downloadChart()" class="success" data-i18n="download_chart" style="flex: 0.4;">⬇ Chart</button>
+                <button onclick="downloadChart()" class="success" data-i18n="download_chart" style="flex: 0.4;">⬇ PDF</button>
                 <button onclick="saveCurrentEvent()" class="primary-dark" data-i18n="save_cloud" style="flex: 0.6;">Save to Cloud</button>
             </div>
         </div>
@@ -278,6 +334,22 @@
 </div>
 
 <script>
+    // THEME INITIALIZATION
+    if (localStorage.getItem("lureboard_theme") === "modern") {
+        document.body.setAttribute("data-theme", "modern");
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        if (body.hasAttribute("data-theme")) {
+            body.removeAttribute("data-theme");
+            localStorage.setItem("lureboard_theme", "classic");
+        } else {
+            body.setAttribute("data-theme", "modern");
+            localStorage.setItem("lureboard_theme", "modern");
+        }
+    }
+
     let currentEvent = null;
     let loggedInUser = "";
     let activeFishParticipantIndex = null;
@@ -324,7 +396,7 @@
             rule_from: "From",
             rule_to: "To",
             rule_mult: "Multiplier",
-            download_chart: "⬇ Download PDF",
+            download_chart: "⬇ PDF",
             current_catches: "Current Catches",
             no_catches: "No catches logged."
         },
@@ -367,7 +439,7 @@
             rule_from: "-დან",
             rule_to: "-მდე",
             rule_mult: "კოეფიციენტი",
-            download_chart: "⬇ PDF-ის გადმოწერა",
+            download_chart: "⬇ PDF",
             current_catches: "მიმდინარე თევზები",
             no_catches: "თევზი არ არის."
         },
@@ -410,7 +482,7 @@
             rule_from: "Від",
             rule_to: "До",
             rule_mult: "Множник",
-            download_chart: "⬇ Завантажити PDF",
+            download_chart: "⬇ PDF",
             current_catches: "Поточний улов",
             no_catches: "Немає улову."
         },
@@ -453,7 +525,7 @@
             rule_from: "От",
             rule_to: "До",
             rule_mult: "Множитель",
-            download_chart: "⬇ Скачать PDF",
+            download_chart: "⬇ PDF",
             current_catches: "Текущий улов",
             no_catches: "Нет улова."
         },
@@ -496,7 +568,7 @@
             rule_from: "De",
             rule_to: "À",
             rule_mult: "Multiplicateur",
-            download_chart: "⬇ Télécharger PDF",
+            download_chart: "⬇ PDF",
             current_catches: "Prises Actuelles",
             no_catches: "Aucune prise."
         },
@@ -539,7 +611,7 @@
             rule_from: "Da",
             rule_to: "A",
             rule_mult: "Moltiplicatore",
-            download_chart: "⬇ Scarica PDF",
+            download_chart: "⬇ PDF",
             current_catches: "Catture Attuali",
             no_catches: "Nessuna cattura."
         },
@@ -582,7 +654,7 @@
             rule_from: "Von",
             rule_to: "Bis",
             rule_mult: "Multiplikator",
-            download_chart: "⬇ PDF Herunterladen",
+            download_chart: "⬇ PDF",
             current_catches: "Aktuelle Fänge",
             no_catches: "Keine Fänge."
         }
@@ -669,17 +741,21 @@
         document.getElementById("loggedUserDisplay").innerText = user;
         document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.remove("hidden");
+        document.getElementById("headerLogoutBtn").classList.remove("hidden");
         loadEvents();
     }
 
     function handleLogout() {
         loggedInUser = "";
         document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.add("hidden");
         document.getElementById("loginSection").classList.remove("hidden");
+        document.getElementById("headerLogoutBtn").classList.add("hidden");
     }
 
     function getStorageKey() {
-        return "fishing_events_v6_" + loggedInUser;
+        return "fishing_events_v7_" + loggedInUser;
     }
 
     function loadEvents() {
@@ -693,10 +769,11 @@
         }
         let html = "";
         events.forEach(ev => {
+            let publishDate = ev.details.date || "Unknown Date";
             html += `<div class="card flex flex-between" style="padding: 12px 16px;">
                 <div style="flex:1;">
                     <div style="font-weight:700; margin-bottom:4px; font-size:16px;">${ev.name}</div>
-                    <div style="font-size:13px; color:var(--text-muted);">${ev.details.participants.length} Participants</div>
+                    <div style="font-size:13px; color:var(--text-muted);">📅 ${publishDate} • ${ev.details.participants.length} Participants</div>
                 </div>
                 <div class="flex" style="gap:6px;">
                     <button onclick="downloadChart('${ev.id}')" class="success icon-btn" title="Download PDF">⬇ PDF</button>
@@ -719,7 +796,7 @@
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
         } else {
             let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
-            let savedDefaults = localStorage.getItem("fishing_defaults_v6_" + loggedInUser);
+            let savedDefaults = localStorage.getItem("fishing_defaults_v7_" + loggedInUser);
             if (savedDefaults) {
                 try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {}
             }
@@ -727,6 +804,7 @@
             currentEvent = {
                 id: "ev_" + Date.now(),
                 name: "New Fishing Trip",
+                date: new Date().toLocaleDateString(),
                 species: defaultSpecies,
                 participants: []
             };
@@ -795,12 +873,12 @@
             }).join(' | ');
 
             return `
-            <div class="card" style="padding:16px; border:1px solid #e2e8f0; margin-bottom:12px; background:#fff;">
+            <div class="card" style="padding:16px; border:1px solid #e2e8f0; margin-bottom:12px; background:var(--card-bg);">
                 <div class="flex flex-between">
                     <div>
                         <div class="flex">
                             <b style="font-size:16px; color:var(--primary-dark);">${s.name}</b>
-                            <span class="badge" style="background:#f1f5f9; color:var(--text);">${s.abbr.toUpperCase()}</span>
+                            <span class="badge" style="background:#f1f5f9; color:#0284c7;">${s.abbr.toUpperCase()}</span>
                         </div>
                         <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">
                             ${rulesSummary}
@@ -910,28 +988,28 @@
             }
 
             html += `
-            <div class="tier-grid" style="grid-template-columns: 1fr 1fr; background:#f8fafc; padding:12px; border-radius:12px; margin-bottom:12px; border:1px solid #e2e8f0; position:relative;">
+            <div class="tier-grid" style="grid-template-columns: 1fr 1fr; position:relative;">
                 <button class="danger icon-btn" style="position:absolute; top:-8px; right:-8px; padding:4px 8px; font-size:11px; border-radius:50%;" onclick="removeRule(${tIdx})">✕</button>
                 
                 <div>
                     <label style="font-size:12px; margin-bottom:4px;">${t('rule_from')}</label>
-                    <input type="number" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)" style="padding:10px; width:100%; border:1px solid #cbd5e1; border-radius:8px;">
+                    <input type="number" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:8px; background:var(--card-bg);">
                 </div>
                 
                 <div>
                     <label style="font-size:12px; margin-bottom:4px;">${t('rule_to')}</label>
                     <div style="display:flex; gap:4px;">
-                        <select onchange="updateRuleField(${tIdx}, 'toType', this.value)" style="padding:10px; width:100%; border:1px solid #cbd5e1; border-radius:8px; flex:1;">
+                        <select onchange="updateRuleField(${tIdx}, 'toType', this.value)" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:8px; flex:1; background:var(--card-bg);">
                             <option value="number" ${tData.to !== 'above' ? 'selected' : ''}>Number</option>
                             <option value="above" ${tData.to === 'above' ? 'selected' : ''}>Above</option>
                         </select>
-                        ${tData.to !== 'above' ? `<input type="number" value="${tData.to}" onchange="updateRuleField(${tIdx}, 'to', this.value)" style="padding:10px; width:100%; border:1px solid #cbd5e1; border-radius:8px; flex:1;">` : ''}
+                        ${tData.to !== 'above' ? `<input type="number" value="${tData.to}" onchange="updateRuleField(${tIdx}, 'to', this.value)" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:8px; flex:1; background:var(--card-bg);">` : ''}
                     </div>
                 </div>
 
                 <div class="full-width" style="margin-top:4px;">
                     <label style="font-size:12px; margin-bottom:4px;">${t('rule_mult')}</label>
-                    <select onchange="updateRuleField(${tIdx}, 'multiplier', this.value)" style="padding:10px; width:100%; border:1px solid #cbd5e1; border-radius:8px; background:#fff;">
+                    <select onchange="updateRuleField(${tIdx}, 'multiplier', this.value)" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:8px; background:var(--card-bg);">
                         ${multOptions}
                     </select>
                 </div>
@@ -1040,7 +1118,7 @@
         p.catches.forEach((c, cIdx) => {
             html += `
             <div class="flex flex-between" style="padding:8px 0; border-bottom:1px solid var(--border); font-size:15px;">
-                <span><b>${c.size}</b>cm <span class="badge" style="background:#f1f5f9; padding:2px 4px;">${c.abbr.toUpperCase()}</span></span>
+                <span><b>${c.size}</b>cm <span class="badge" style="background:#f1f5f9; padding:2px 4px; color:#0284c7;">${c.abbr.toUpperCase()}</span></span>
                 <button class="danger icon-btn" style="padding:4px 8px;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">✕</button>
             </div>`;
         });
@@ -1074,13 +1152,13 @@
 
             let catchesText = p.catches.length > 0 
                 ? p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ') 
-                : `<span style="color:var(--border); font-style:italic;">${t('no_catches')}</span>`;
+                : `<span style="color:var(--text-muted); font-style:italic;">${t('no_catches')}</span>`;
 
             filteredHtml += `
             <div class="card" style="padding:12px 16px; margin-bottom:12px;">
                 <div class="flex flex-between" style="align-items:center;">
                     <b style="font-size:16px;">${pIndexReal + 1}. ${p.name}</b>
-                    <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:8px 16px; border-radius:20px;">${addRemoveText}</button>
+                    <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:8px 16px;">${addRemoveText}</button>
                 </div>
                 <div style="margin-top:12px; font-size:13px; color:var(--text-muted); line-height: 1.4;">
                     ${catchesText}
@@ -1158,13 +1236,18 @@
         let data = localStorage.getItem(getStorageKey());
         let events = data ? JSON.parse(data) : [];
         let index = events.findIndex(e => e.id === currentEvent.id);
+        
+        if (!currentEvent.date) {
+            currentEvent.date = new Date().toLocaleDateString();
+        }
+
         if (index > -1) {
             events[index] = { id: currentEvent.id, name: currentEvent.name, details: currentEvent };
         } else {
             events.push({ id: currentEvent.id, name: currentEvent.name, details: currentEvent });
         }
         
-        localStorage.setItem("fishing_defaults_v6_" + loggedInUser, JSON.stringify(currentEvent.species));
+        localStorage.setItem("fishing_defaults_v7_" + loggedInUser, JSON.stringify(currentEvent.species));
         localStorage.setItem(getStorageKey(), JSON.stringify(events));
         showDashboard();
     }
@@ -1201,33 +1284,33 @@
         // Default sort by points for the PDF
         processed.sort((a, b) => b.totalPts - a.totalPts);
 
-        // Build HTML template for the PDF
+        // Build HTML template for html2pdf
         let htmlContent = `
-            <div style="font-family: system-ui, -apple-system, sans-serif; padding: 20px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
-                <h2 style="margin-bottom: 5px; color: #0284c7;">Tournament Results: ${ev.name}</h2>
+            <div style="font-family: system-ui, -apple-system, sans-serif; padding: 30px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
+                <h2 style="margin-bottom: 5px; color: #0284c7; font-size:24px;">Tournament Results: ${ev.name}</h2>
                 <p style="font-size: 14px; color: #64748b; margin-bottom: 20px;">Generated on: ${new Date().toLocaleDateString()}</p>
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                     <thead>
                         <tr style="background-color: #0284c7; color: #ffffff;">
-                            <th style="padding: 10px; border: 1px solid #cbd5e1;">Place</th>
-                            <th style="padding: 10px; border: 1px solid #cbd5e1;">Name</th>
-                            <th style="padding: 10px; border: 1px solid #cbd5e1;">Points</th>
-                            <th style="padding: 10px; border: 1px solid #cbd5e1;">Total Cm</th>
-                            <th style="padding: 10px; border: 1px solid #cbd5e1;">Catches</th>
-                            <th style="padding: 10px; border: 1px solid #cbd5e1;">Biggest Fish</th>
-                            <th style="padding: 10px; border: 1px solid #cbd5e1; width: 40%;">Details</th>
+                            <th style="padding: 12px; border: 1px solid #cbd5e1;">Place</th>
+                            <th style="padding: 12px; border: 1px solid #cbd5e1;">Name</th>
+                            <th style="padding: 12px; border: 1px solid #cbd5e1;">Points</th>
+                            <th style="padding: 12px; border: 1px solid #cbd5e1;">Total Cm</th>
+                            <th style="padding: 12px; border: 1px solid #cbd5e1;">Catches</th>
+                            <th style="padding: 12px; border: 1px solid #cbd5e1;">Biggest Fish</th>
+                            <th style="padding: 12px; border: 1px solid #cbd5e1; width: 40%;">Details</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${processed.map((p, index) => `
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">${index + 1}</td>
-                                <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">${p.name}</td>
-                                <td style="padding: 10px; border: 1px solid #cbd5e1; color: #0284c7; font-weight: bold;">${p.totalPts.toFixed(1)}</td>
-                                <td style="padding: 10px; border: 1px solid #cbd5e1;">${p.totalCm.toFixed(1)}</td>
-                                <td style="padding: 10px; border: 1px solid #cbd5e1;">${p.amountCatches}</td>
-                                <td style="padding: 10px; border: 1px solid #cbd5e1;">${p.maxFishCm > 0 ? `${p.maxFishCm}cm ${p.maxFishAbbr}` : '-'}</td>
-                                <td style="padding: 10px; border: 1px solid #cbd5e1; color: #64748b; font-size: 12px; line-height: 1.4;">${p.allCatchesStr}</td>
+                            <tr style="${index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
+                                <td style="padding: 12px; border: 1px solid #cbd5e1; font-weight: bold;">${index + 1}</td>
+                                <td style="padding: 12px; border: 1px solid #cbd5e1; font-weight: bold;">${p.name}</td>
+                                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #0284c7; font-weight: bold;">${p.totalPts.toFixed(1)}</td>
+                                <td style="padding: 12px; border: 1px solid #cbd5e1;">${p.totalCm.toFixed(1)}</td>
+                                <td style="padding: 12px; border: 1px solid #cbd5e1;">${p.amountCatches}</td>
+                                <td style="padding: 12px; border: 1px solid #cbd5e1;">${p.maxFishCm > 0 ? `${p.maxFishCm}cm ${p.maxFishAbbr}` : '-'}</td>
+                                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #475569; font-size: 13px; line-height: 1.4;">${p.allCatchesStr}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -1238,20 +1321,20 @@
         let safeName = ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "tournament";
         
         let opt = {
-            margin:       0.2,
+            margin:       0.3,
             filename:     `${safeName}_results.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' } // Landscape provides more room for details
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
         };
 
-        // Render from a temporary unmounted div
         let tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlContent;
         
         html2pdf().set(opt).from(tempDiv).save();
     }
     
+    // Init language toggle
     changeLanguage(document.getElementById("langSelect").value);
 </script>
 </body>
