@@ -10,6 +10,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+    <!-- Firebase Realtime Cloud SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
     <style>
         /* =========================================
            THEME 1: CLASSIC (Default)
@@ -50,7 +54,7 @@
             --text-muted: #6366f1;
             --border: rgba(99, 102, 241, 0.15);
             --danger: #f43f5e;
-            --danger-dark: #e11d48;
+            --danger-dark: #be123c;
             --success: #10b981;
 
             --card-radius: 24px;
@@ -436,6 +440,24 @@
 </div>
 
 <script>
+    // =========================================================================
+    // 1. FIREBASE REALTIME CLOUD DATABASE CONFIGURATION
+    // Replace the keys below with your exact credentials from Step 1!
+    // =========================================================================
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase Cloud Database
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let unsubscribeEventsListener = null;
+
     // THEME INITIALIZATION
     if (localStorage.getItem("lureboard_theme") === "modern") {
         document.body.setAttribute("data-theme", "modern");
@@ -454,6 +476,7 @@
 
     let currentEvent = null;
     let loggedInUser = "";
+    let loadedEvents = [];
     let activeFishParticipantIndex = null;
     let activeSpeciesIndex = null;
     let currentLang = "en";
@@ -806,8 +829,9 @@
         return items;
     }
 
+    // REALTIME CLOUD AUTHENTICATION & REGISTRATION
     function handleLoginRegister() {
-        let user = document.getElementById("usernameInput").value.trim();
+        let user = document.getElementById("usernameInput").value.trim().toLowerCase();
         let pass = document.getElementById("passwordInput").value.trim();
         let msgEl = document.getElementById("accountLimitMsg");
         msgEl.innerText = "";
@@ -817,25 +841,25 @@
             return;
         }
 
-        let accountsData = JSON.parse(localStorage.getItem("fishing_portal_accounts") || "{}");
+        const userRef = db.collection("users").doc(user);
         
-        if (accountsData[user]) {
-            if (accountsData[user].password === pass) {
-                loginSuccess(user);
+        userRef.get().then(doc => {
+            if (doc.exists) {
+                if (doc.data().password === pass) {
+                    loginSuccess(user);
+                } else {
+                    alert("Incorrect password for existing account.");
+                }
             } else {
-                alert("Incorrect password for existing account.");
+                // Register account in Firestore
+                userRef.set({ password: pass, createdAt: new Date() }).then(() => {
+                    loginSuccess(user);
+                });
             }
-        } else {
-            let ipAccountsCount = parseInt(localStorage.getItem("fishing_ip_acc_count") || "0");
-            if (ipAccountsCount >= 5) {
-                msgEl.innerText = "Account creation limit reached (Max 5 new accounts per device).";
-                return;
-            }
-            accountsData[user] = { password: pass };
-            localStorage.setItem("fishing_portal_accounts", JSON.stringify(accountsData));
-            localStorage.setItem("fishing_ip_acc_count", (ipAccountsCount + 1).toString());
-            loginSuccess(user);
-        }
+        }).catch(err => {
+            console.error(err);
+            alert("Database connection error. Please check configuration.");
+        });
     }
 
     function loginSuccess(user) {
@@ -844,10 +868,11 @@
         document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.remove("hidden");
         document.getElementById("headerLogoutBtn").classList.remove("hidden");
-        loadEvents();
+        subscribeToEventsRealtime();
     }
 
     function handleLogout() {
+        if (unsubscribeEventsListener) unsubscribeEventsListener();
         loggedInUser = "";
         document.getElementById("dashboardSection").classList.add("hidden");
         document.getElementById("setupSection").classList.add("hidden");
@@ -856,21 +881,42 @@
         document.getElementById("headerLogoutBtn").classList.add("hidden");
     }
 
-    function getStorageKey() {
-        return "fishing_events_v7_" + loggedInUser;
+    // REALTIME DATABASE SYNC LISTENER (Syncs across mobile and PC instantly)
+    function subscribeToEventsRealtime() {
+        if (unsubscribeEventsListener) unsubscribeEventsListener();
+        
+        unsubscribeEventsListener = db.collection("events")
+            .where("username", "==", loggedInUser)
+            .onSnapshot(snapshot => {
+                loadedEvents = [];
+                snapshot.forEach(doc => {
+                    loadedEvents.push({ id: doc.id, ...doc.data() });
+                });
+                
+                renderEventsList();
+
+                // If currently editing an event, keep active UI perfectly synced in real time
+                if (currentEvent) {
+                    let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
+                    if (activeUpdated) {
+                        currentEvent = activeUpdated.details;
+                        if (!document.getElementById("hubSection").classList.contains("hidden")) {
+                            renderHubUI();
+                        }
+                    }
+                }
+            });
     }
 
-    function loadEvents() {
+    function renderEventsList() {
         let container = document.getElementById("eventsList");
-        let data = localStorage.getItem(getStorageKey());
-        let events = data ? JSON.parse(data) : [];
         
-        if (events.length === 0) {
+        if (loadedEvents.length === 0) {
             container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No events found. Create your first one!</div>`;
             return;
         }
         let html = "";
-        events.forEach(ev => {
+        loadedEvents.forEach(ev => {
             let publishDate = ev.details.date || "Unknown Date";
             html += `<div class="card flex flex-between" style="padding: 16px;">
                 <div style="flex:1;">
@@ -898,11 +944,7 @@
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
         } else {
             let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
-            let savedDefaults = localStorage.getItem("fishing_defaults_v7_" + loggedInUser);
-            if (savedDefaults) {
-                try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {}
-            }
-
+            
             currentEvent = {
                 id: "ev_" + Date.now(),
                 name: "New Fishing Trip",
@@ -918,19 +960,13 @@
     }
 
     function editEvent(id) {
-        let data = localStorage.getItem(getStorageKey());
-        let events = data ? JSON.parse(data) : [];
-        let found = events.find(e => e.id === id);
+        let found = loadedEvents.find(e => e.id === id);
         if (found) openEventEditor(found.details);
     }
 
     function deleteEvent(id) {
-        if (confirm("Delete this event?")) {
-            let data = localStorage.getItem(getStorageKey());
-            let events = data ? JSON.parse(data) : [];
-            events = events.filter(e => e.id !== id);
-            localStorage.setItem(getStorageKey(), JSON.stringify(events));
-            loadEvents();
+        if (confirm("Delete this event from the cloud?")) {
+            db.collection("events").doc(id).delete();
         }
     }
 
@@ -939,7 +975,6 @@
         document.getElementById("hubSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.remove("hidden");
         window.scrollTo(0, 0);
-        loadEvents();
     }
 
     function updateParticipantCountStatus() {
@@ -1334,32 +1369,31 @@
         container.innerHTML = html;
     }
 
+    // SAVES INSTANTLY TO REALTIME CLOUD FIRESTORE
     function saveCurrentEvent() {
-        let data = localStorage.getItem(getStorageKey());
-        let events = data ? JSON.parse(data) : [];
-        let index = events.findIndex(e => e.id === currentEvent.id);
-        
         if (!currentEvent.date) {
             currentEvent.date = new Date().toLocaleDateString();
         }
 
-        if (index > -1) {
-            events[index] = { id: currentEvent.id, name: currentEvent.name, details: currentEvent };
-        } else {
-            events.push({ id: currentEvent.id, name: currentEvent.name, details: currentEvent });
-        }
-        
-        localStorage.setItem("fishing_defaults_v7_" + loggedInUser, JSON.stringify(currentEvent.species));
-        localStorage.setItem(getStorageKey(), JSON.stringify(events));
-        showDashboard();
+        const eventPayload = {
+            username: loggedInUser,
+            name: currentEvent.name,
+            details: currentEvent,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => {
+            showDashboard();
+        }).catch(err => {
+            console.error("Save error:", err);
+            alert("Failed to save event to cloud.");
+        });
     }
 
     function downloadChart(eventId = null) {
         let ev = currentEvent;
         if (eventId) {
-            let data = localStorage.getItem(getStorageKey());
-            let events = data ? JSON.parse(data) : [];
-            let found = events.find(e => e.id === eventId);
+            let found = loadedEvents.find(e => e.id === eventId);
             if (found) ev = found.details;
         }
         
@@ -1383,10 +1417,8 @@
             return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches: p.catches.length, allCatchesStr };
         });
 
-        // Default sort by points for the PDF
         processed.sort((a, b) => b.totalPts - a.totalPts);
 
-        // Build HTML template for html2pdf
         let htmlContent = `
             <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
                 <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">Tournament Results: ${ev.name}</h2>
@@ -1436,7 +1468,6 @@
         html2pdf().set(opt).from(tempDiv).save();
     }
     
-    // Init language toggle
     changeLanguage(document.getElementById("langSelect").value);
 </script>
 </body>
