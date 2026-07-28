@@ -117,6 +117,7 @@
         }
         
         textarea { resize: vertical; min-height: 120px; }
+        textarea:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Toggles */
         .switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
@@ -302,7 +303,15 @@
                 <span id="participantCountStatus" class="badge">0</span>
             </div>
             <p data-i18n="bulk_desc" style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names. Symbols/brackets are auto-removed.</p>
-            <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
+            
+            <div style="position: relative;" id="bulkParticipantsWrapper">
+                <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
+                <!-- Disabled Overlay Box -->
+                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
+                    <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
+                </div>
+            </div>
+
         </div>
 
         <div class="card">
@@ -318,7 +327,7 @@
         <!-- Sticky Bottom Bar for Step 1 -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex">
-                <button onclick="goToEventHub()" class="primary-dark" data-i18n="proceed_hub" style="padding: 16px;">Proceed to Hub →</button>
+                <button onclick="goToEventHub()" class="primary-dark" data-i18n="proceed_hub" style="padding: 16px;">Start Event</button>
             </div>
         </div>
     </div>
@@ -362,7 +371,7 @@
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex">
                 <button onclick="downloadChart()" class="success" data-i18n="download_chart" style="flex: 0.4;">⬇ PDF</button>
-                <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_cloud" style="flex: 0.6;">Save to Cloud</button>
+                <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_cloud" style="flex: 0.6;">Save Event</button>
             </div>
         </div>
     </div>
@@ -486,7 +495,7 @@
             bulk_desc: "Paste names. Symbols/brackets are auto-removed.",
             fish_species_title: "3. Species & Multipliers",
             add_species: "+ Add Species",
-            proceed_hub: "Proceed to Hub →",
+            proceed_hub: "Start Event",
             hub_title: "Tournament Hub",
             edit_setup: "← Setup",
             manage_part: "Participants",
@@ -494,7 +503,7 @@
             leaderboard: "Leaderboard",
             mode_pts: "Rank by Points",
             mode_cm: "Rank by Centimeters",
-            save_cloud: "Save Event to Cloud",
+            save_cloud: "Save Event",
             modal_add_title: "Add New Participant",
             close: "Cancel",
             add: "Add",
@@ -520,7 +529,8 @@
             edit_name: "Edit Name",
             unranked_badge: "UNRANKED",
             pts: "pts",
-            catches: "catches"
+            catches: "catches",
+            editing_disabled: "Editing this is disabled, please edit participant list on the next page"
         },
         ka: {
             login_title: "შესვლა / რეგისტრაცია",
@@ -540,7 +550,7 @@
             bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.",
             fish_species_title: "3. სახეობები და კოეფიციენტები",
             add_species: "+ სახეობის დამატება",
-            proceed_hub: "ჰაბზე გადასვლა →",
+            proceed_hub: "ტურნირის დაწყება",
             hub_title: "ტურნირის ჰაბი",
             edit_setup: "← პარამეტრები",
             manage_part: "მონაწილეები",
@@ -548,7 +558,7 @@
             leaderboard: "ლიდერბორდი",
             mode_pts: "ქულებით რეიტინგი",
             mode_cm: "სანტიმეტრებით რეიტინგი",
-            save_cloud: "შენახვა ღრუბელში",
+            save_cloud: "ტურნირის შენახვა",
             modal_add_title: "მონაწილის დამატება",
             close: "გაუქმება",
             add: "დამატება",
@@ -574,7 +584,8 @@
             edit_name: "სახელის შეცვლა",
             unranked_badge: "არასარეიტინგო",
             pts: "ქულა",
-            catches: "თევზი"
+            catches: "თევზი",
+            editing_disabled: "რედაქტირება გამორთულია, გთხოვთ შეცვალოთ მონაწილეთა სია შემდეგ გვერდზე"
         },
         uk: {
             login_title: "Вхід / Реєстрація",
@@ -594,7 +605,7 @@
             bulk_desc: "Вставте імена. Дужки та символи видаляються.",
             fish_species_title: "3. Види та коефіцієнти",
             add_species: "+ Додати вид",
-            proceed_hub: "Перейти до хабу →",
+            proceed_hub: "Почати подію",
             hub_title: "Хаб турніру",
             edit_setup: "← Налаштування",
             manage_part: "Учасники",
@@ -602,7 +613,7 @@
             leaderboard: "Таблиця лідерів",
             mode_pts: "Рейтинг за балами",
             mode_cm: "Рейтинг за сантиметрами",
-            save_cloud: "Зберегти в хмару",
+            save_cloud: "Зберегти подію",
             modal_add_title: "Додати учасника",
             close: "Скасувати",
             add: "Додати",
@@ -628,7 +639,8 @@
             edit_name: "Редагувати ім'я",
             unranked_badge: "БЕЗ РЕЙТИНГУ",
             pts: "очок",
-            catches: "уловів"
+            catches: "уловів",
+            editing_disabled: "Редагування вимкнено, редагуйте список на наступній сторінці"
         },
         ru: {
             login_title: "Вход / Регистрация",
@@ -648,7 +660,7 @@
             bulk_desc: "Вставьте имена. Скобки и символы удалятся.",
             fish_species_title: "3. Виды и коэффициенты",
             add_species: "+ Добавить вид",
-            proceed_hub: "Перейти в хаб →",
+            proceed_hub: "Начать событие",
             hub_title: "Хаб турнира",
             edit_setup: "← Настройка",
             manage_part: "Участники",
@@ -656,7 +668,7 @@
             leaderboard: "Таблица лидеров",
             mode_pts: "Рейтинг по очкам",
             mode_cm: "Рейтинг по см",
-            save_cloud: "Сохранить в облако",
+            save_cloud: "Сохранить событие",
             modal_add_title: "Добавить участника",
             close: "Отмена",
             add: "Добавить",
@@ -682,7 +694,8 @@
             edit_name: "Изменить имя",
             unranked_badge: "ВНЕ РЕЙТИНГА",
             pts: "очков",
-            catches: "поимок"
+            catches: "поимок",
+            editing_disabled: "Редактирование отключено, измените список на следующей странице"
         },
         fr: {
             login_title: "Connexion / Inscription",
@@ -702,7 +715,7 @@
             bulk_desc: "Collez les noms. Les symboles sont ignorés.",
             fish_species_title: "3. Espèces & Multiplicateurs",
             add_species: "+ Espèce",
-            proceed_hub: "Accéder au Hub →",
+            proceed_hub: "Démarrer",
             hub_title: "Hub du Tournoi",
             edit_setup: "← Config",
             manage_part: "Participants",
@@ -710,7 +723,7 @@
             leaderboard: "Classement",
             mode_pts: "Par Points",
             mode_cm: "Par Centimètres",
-            save_cloud: "Enregistrer (Cloud)",
+            save_cloud: "Enregistrer",
             modal_add_title: "Ajouter Participant",
             close: "Annuler",
             add: "Ajouter",
@@ -736,7 +749,8 @@
             edit_name: "Modifier le nom",
             unranked_badge: "NON CLASSÉ",
             pts: "pts",
-            catches: "prises"
+            catches: "prises",
+            editing_disabled: "Modification désactivée, veuillez modifier la liste sur la page suivante"
         },
         it: {
             login_title: "Accesso / Registrazione",
@@ -756,7 +770,7 @@
             bulk_desc: "Incolla i nomi. I simboli vengono rimossi.",
             fish_species_title: "3. Specie & Moltiplicatori",
             add_species: "+ Specie",
-            proceed_hub: "Vai all'Hub →",
+            proceed_hub: "Inizia Evento",
             hub_title: "Hub del Torneo",
             edit_setup: "← Config",
             manage_part: "Partecipanti",
@@ -764,7 +778,7 @@
             leaderboard: "Classifica",
             mode_pts: "Per Punti",
             mode_cm: "Per Centimetri",
-            save_cloud: "Salva su Cloud",
+            save_cloud: "Salva Evento",
             modal_add_title: "Aggiungi Partecipante",
             close: "Annulla",
             add: "Aggiungi",
@@ -790,7 +804,8 @@
             edit_name: "Modifica Nome",
             unranked_badge: "NON CLASSIFICATO",
             pts: "pti",
-            catches: "catture"
+            catches: "catture",
+            editing_disabled: "Modifica disabilitata, per favore modifica la lista nella pagina successiva"
         },
         de: {
             login_title: "Anmeldung / Registrierung",
@@ -810,7 +825,7 @@
             bulk_desc: "Namen einfügen. Symbole werden entfernt.",
             fish_species_title: "3. Arten & Multiplikatoren",
             add_species: "+ Art",
-            proceed_hub: "Weiter zum Hub →",
+            proceed_hub: "Event starten",
             hub_title: "Turnier-Hub",
             edit_setup: "← Setup",
             manage_part: "Teilnehmer",
@@ -818,7 +833,7 @@
             leaderboard: "Bestenliste",
             mode_pts: "Nach Punkten",
             mode_cm: "Nach Zentimetern",
-            save_cloud: "In Cloud speichern",
+            save_cloud: "Event speichern",
             modal_add_title: "Teilnehmer hinzufügen",
             close: "Abbrechen",
             add: "Hinzufügen",
@@ -844,7 +859,8 @@
             edit_name: "Name bearbeiten",
             unranked_badge: "NICHT GEWERTET",
             pts: "pkt",
-            catches: "fänge"
+            catches: "fänge",
+            editing_disabled: "Bearbeitung deaktiviert, bitte auf der nächsten Seite bearbeiten"
         }
     };
 
@@ -1040,10 +1056,15 @@
         let html = "";
         filteredEvents.forEach(ev => {
             let publishDate = ev.details.date || "Unknown Date";
+            let rankIcon = ev.details.isRanked !== false ? '🏆' : '⚪';
             let rankBadge = ev.details.isRanked === false ? `<span class="badge" style="background:#ffe4e6; color:#be123c; padding:2px 6px; font-size:10px; margin-left:6px; box-shadow:none;">${t('unranked_badge')}</span>` : '';
             html += `<div class="card flex flex-between" style="padding: 16px;">
                 <div style="flex:1;">
-                    <div class="flex" style="font-weight:700; margin-bottom:6px; font-size:16px;">${ev.name} ${rankBadge}</div>
+                    <div class="flex" style="font-weight:700; margin-bottom:6px; font-size:16px;">
+                        <span style="font-size:18px;">${rankIcon}</span> 
+                        <span>${ev.name}</span>
+                        ${rankBadge}
+                    </div>
                     <div style="font-size:13px; color:var(--text-muted); font-weight:500;">📅 ${publishDate} • ${ev.details.participants.length} Participants</div>
                 </div>
                 <div class="flex" style="gap:8px;">
@@ -1063,11 +1084,11 @@
 
         if (eventObj) {
             currentEvent = JSON.parse(JSON.stringify(eventObj));
+            currentEvent.isStarted = true;
             document.getElementById("eventNameInput").value = currentEvent.name;
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
             document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         } else {
-            // Restore the defaults loading logic
             let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
             let savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser);
             if (savedDefaults) {
@@ -1080,6 +1101,7 @@
                 date: new Date().toLocaleDateString(),
                 year: new Date().getFullYear().toString(),
                 isRanked: true,
+                isStarted: false,
                 species: defaultSpecies,
                 participants: []
             };
@@ -1087,6 +1109,7 @@
             document.getElementById("bulkParticipantsInput").value = "";
             document.getElementById("isRankedToggle").checked = true;
         }
+        
         updateParticipantCountStatus();
         refreshSetupUI();
     }
@@ -1159,6 +1182,17 @@
                 </div>
             </div>`;
         }).join("");
+
+        // Toggle editing overlay on Step 1 if the event is already started
+        if (currentEvent.isStarted) {
+            document.getElementById("bulkParticipantsInput").disabled = true;
+            document.getElementById("bulkParticipantsOverlay").classList.remove("hidden");
+            document.getElementById("bulkParticipantsOverlay").style.display = "flex";
+        } else {
+            document.getElementById("bulkParticipantsInput").disabled = false;
+            document.getElementById("bulkParticipantsOverlay").classList.add("hidden");
+            document.getElementById("bulkParticipantsOverlay").style.display = "none";
+        }
     }
 
     function openRulesModal(sIdx) {
@@ -1286,20 +1320,23 @@
         currentEvent.isRanked = document.getElementById("isRankedToggle").checked;
         if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
         
-        let rawText = document.getElementById("bulkParticipantsInput").value;
-        let items = parseParticipants(rawText);
-        
-        let existingMap = {};
-        currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id });
+        if (!currentEvent.isStarted) {
+            let rawText = document.getElementById("bulkParticipantsInput").value;
+            let items = parseParticipants(rawText);
+            
+            let existingMap = {};
+            currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id });
 
-        currentEvent.participants = items.map(name => {
-            let lowerName = name.toLowerCase();
-            return {
-                id: existingMap[lowerName] ? existingMap[lowerName].id : 'p_' + Math.random().toString(36).substr(2, 9),
-                name: name,
-                catches: existingMap[lowerName] ? existingMap[lowerName].catches : []
-            };
-        });
+            currentEvent.participants = items.map(name => {
+                let lowerName = name.toLowerCase();
+                return {
+                    id: existingMap[lowerName] ? existingMap[lowerName].id : 'p_' + Math.random().toString(36).substr(2, 9),
+                    name: name,
+                    catches: existingMap[lowerName] ? existingMap[lowerName].catches : []
+                };
+            });
+            currentEvent.isStarted = true;
+        }
         
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.remove("hidden");
@@ -1346,7 +1383,7 @@
         if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
             p.name = newName.trim();
             renderHubUI();
-            saveCurrentEvent(false); // background save to reflect on leaderboard immediately without leaving page
+            saveCurrentEvent(false);
         }
     }
 
@@ -1576,7 +1613,7 @@
         container.innerHTML = html;
     }
 
-  // SAVES INSTANTLY TO REALTIME CLOUD FIRESTORE AND SAVES DEFAULTS LOCALLY
+    // SAVES INSTANTLY TO REALTIME CLOUD FIRESTORE AND SAVES DEFAULTS LOCALLY
     function saveCurrentEvent(redirect = true) {
         if (!currentEvent.date) {
             currentEvent.date = new Date().toLocaleDateString();
@@ -1592,7 +1629,6 @@
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // Restore the logic to save species rules for the next time
         localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
 
         db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => {
@@ -1602,7 +1638,7 @@
             alert("Failed to save event to cloud. Check your database rules.");
         });
     }
-    
+
     function downloadChart(eventId = null) {
         let ev = currentEvent;
         if (eventId) {
