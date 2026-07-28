@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lureboard</title>
+    
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         :root {
             --primary: #0ea5e9;
@@ -320,7 +325,7 @@
             rule_from: "From",
             rule_to: "To",
             rule_mult: "Multiplier",
-            download_chart: "⬇ Download Chart",
+            download_chart: "⬇ Download PDF",
             current_catches: "Current Catches",
             no_catches: "No catches logged."
         },
@@ -363,7 +368,7 @@
             rule_from: "-დან",
             rule_to: "-მდე",
             rule_mult: "კოეფიციენტი",
-            download_chart: "⬇ ცხრილის გადმოწერა",
+            download_chart: "⬇ PDF-ის გადმოწერა",
             current_catches: "მიმდინარე თევზები",
             no_catches: "თევზი არ არის."
         },
@@ -406,7 +411,7 @@
             rule_from: "Від",
             rule_to: "До",
             rule_mult: "Множник",
-            download_chart: "⬇ Завантажити таблицю",
+            download_chart: "⬇ Завантажити PDF",
             current_catches: "Поточний улов",
             no_catches: "Немає улову."
         },
@@ -449,7 +454,7 @@
             rule_from: "От",
             rule_to: "До",
             rule_mult: "Множитель",
-            download_chart: "⬇ Скачать таблицу",
+            download_chart: "⬇ Скачать PDF",
             current_catches: "Текущий улов",
             no_catches: "Нет улова."
         },
@@ -492,7 +497,7 @@
             rule_from: "De",
             rule_to: "À",
             rule_mult: "Multiplicateur",
-            download_chart: "⬇ Télécharger Tableau",
+            download_chart: "⬇ Télécharger PDF",
             current_catches: "Prises Actuelles",
             no_catches: "Aucune prise."
         },
@@ -535,7 +540,7 @@
             rule_from: "Da",
             rule_to: "A",
             rule_mult: "Moltiplicatore",
-            download_chart: "⬇ Scarica Tabella",
+            download_chart: "⬇ Scarica PDF",
             current_catches: "Catture Attuali",
             no_catches: "Nessuna cattura."
         },
@@ -578,7 +583,7 @@
             rule_from: "Von",
             rule_to: "Bis",
             rule_mult: "Multiplikator",
-            download_chart: "⬇ Tabelle Herunterladen",
+            download_chart: "⬇ PDF Herunterladen",
             current_catches: "Aktuelle Fänge",
             no_catches: "Keine Fänge."
         }
@@ -600,6 +605,9 @@
         }
         if(document.getElementById("rulesModal").classList.contains("hidden") === false && activeSpeciesIndex !== null) {
             renderRules();
+        }
+        if(document.getElementById("fishModal").classList.contains("hidden") === false && activeFishParticipantIndex !== null) {
+            renderModalCatches();
         }
     }
     
@@ -761,7 +769,6 @@
         document.getElementById("participantCountStatus").innerText = items.length;
     }
 
-    // SPECIES & RULES LOGIC
     function addSpecies() {
         let name = document.getElementById("speciesName").value.trim();
         let abbr = document.getElementById("speciesAbbr").value.trim().toLowerCase();
@@ -991,6 +998,7 @@
         document.getElementById("modalFishSize").value = "";
         document.getElementById("fishModal").classList.remove("hidden");
         renderModalCatches();
+        setTimeout(() => document.getElementById("modalFishSize").focus(), 100);
     }
 
     function closeFishModal() {
@@ -1007,7 +1015,7 @@
         if (isNaN(size) || size <= 0) return;
         currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
         
-        document.getElementById("modalFishSize").value = ""; // Clear for quick add
+        document.getElementById("modalFishSize").value = ""; 
         renderModalCatches();
         renderHubUI();
         document.getElementById("modalFishSize").focus();
@@ -1065,7 +1073,6 @@
         currentEvent.participants.forEach((p, pIndexReal) => {
             if (!p.name.toLowerCase().includes(query)) return;
 
-            // Plain text catches rendering
             let catchesText = p.catches.length > 0 
                 ? p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ') 
                 : `<span style="color:var(--border); font-style:italic;">${t('no_catches')}</span>`;
@@ -1187,31 +1194,56 @@
                 }
                 totalPts += calculateFishPoints(c.abbr, c.size, ev.species);
             });
-            let allCatchesStr = p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join('; ');
+            let allCatchesStr = p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ');
+            if (!allCatchesStr) allCatchesStr = "-";
             return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches: p.catches.length, allCatchesStr };
         });
 
         // Default sort by points
         processed.sort((a, b) => b.totalPts - a.totalPts);
 
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-        csvContent += "Place,Participant Name,Total Points,Total Cm,Amount of Catches,Biggest Fish,All Catches\n";
+        // Initialize jsPDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add Title
+        doc.setFontSize(18);
+        doc.text(`Tournament Results: ${ev.name}`, 14, 22);
+        doc.setFontSize(11);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+        // Prepare Table Data
+        const tableColumn = ["Place", "Name", "Points", "Total Cm", "Catches", "Biggest Fish", "Details"];
+        const tableRows = [];
 
         processed.forEach((p, index) => {
-            let place = index + 1;
-            let biggestFishStr = p.maxFishCm > 0 ? `${p.maxFishCm}cm ${p.maxFishAbbr}` : "None";
-            let row = `${place},"${p.name}",${p.totalPts.toFixed(1)},${p.totalCm.toFixed(1)},${p.amountCatches},"${biggestFishStr}","${p.allCatchesStr}"`;
-            csvContent += row + "\n";
+            const place = (index + 1).toString();
+            const biggest = p.maxFishCm > 0 ? `${p.maxFishCm}cm ${p.maxFishAbbr}` : "-";
+            tableRows.push([
+                place,
+                p.name,
+                p.totalPts.toFixed(1),
+                p.totalCm.toFixed(1),
+                p.amountCatches.toString(),
+                biggest,
+                p.allCatchesStr
+            ]);
         });
 
-        let encodedUri = encodeURI(csvContent);
-        let link = document.createElement("a");
+        // Generate Table
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 35,
+            styles: { fontSize: 9 },
+            headStyles: { fillColor: [2, 132, 199] }, 
+            columnStyles: {
+                6: { cellWidth: 50 } 
+            }
+        });
+
         let safeName = ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "tournament";
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `${safeName}_results.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        doc.save(`${safeName}_results.pdf`);
     }
     
     changeLanguage(document.getElementById("langSelect").value);
