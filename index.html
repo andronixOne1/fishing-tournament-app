@@ -49,11 +49,13 @@
         button.primary-dark { background: var(--primary-dark); }
         button.danger { background: #fee2e2; color: var(--danger-dark); }
         button.secondary { background: #e2e8f0; color: var(--text); }
+        button.success { background: var(--success); color: white; }
         button.icon-btn { padding: 10px 14px; width: auto; font-size: 14px; }
         
         /* Floating Bottom Action Bar */
-        .bottom-action-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 16px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); z-index: 90; display: flex; justify-content: center; }
-        .bottom-action-bar button { max-width: 600px; }
+        .bottom-action-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 16px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        .bottom-action-bar .flex { width: 100%; max-width: 600px; justify-content: space-between; }
+        .bottom-action-bar button { flex: 1; }
 
         /* Table/Leaderboard */
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px; }
@@ -64,15 +66,13 @@
         
         /* Tags & Badges */
         .badge { background: #e0f2fe; color: var(--primary-dark); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-        .fish-tag { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 8px; margin: 4px 4px 4px 0; font-size: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .fish-tag span { cursor: pointer; color: var(--danger); font-size: 18px; line-height: 1; padding: 0 4px; }
 
         /* Mobile Bottom Sheet Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 1; transition: opacity 0.3s; }
         .modal-overlay.hidden { opacity: 0; pointer-events: none; }
-        .modal-card { background: var(--card-bg); padding: 24px; border-radius: 24px 24px 0 0; width: 100%; max-width: 600px; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); transform: translateY(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+        .modal-card { background: var(--card-bg); padding: 24px; border-radius: 24px 24px 0 0; width: 100%; max-width: 600px; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); transform: translateY(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-bottom: max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; max-height: 90vh; }
         .modal-overlay.hidden .modal-card { transform: translateY(100%); }
-        .modal-indicator { width: 40px; height: 4px; background: #cbd5e1; border-radius: 4px; margin: -10px auto 20px auto; }
+        .modal-indicator { width: 40px; height: 4px; background: #cbd5e1; border-radius: 4px; margin: -10px auto 20px auto; flex-shrink: 0; }
 
         /* Grid for Tiers */
         .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
@@ -150,7 +150,7 @@
                 <span id="participantCountStatus" class="badge">0</span>
             </div>
             <p data-i18n="bulk_desc" style="font-size: 13px; color: var(--text-muted); margin: 8px 0 12px 0;">Paste names. Symbols/brackets are auto-removed.</p>
-            <textarea id="bulkParticipantsInput" placeholder="1. John (Pro)\n2. Mike Tyson" oninput="updateParticipantCountStatus()"></textarea>
+            <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
         </div>
 
         <div class="card">
@@ -165,7 +165,9 @@
 
         <!-- Sticky Bottom Bar for Step 1 -->
         <div class="bottom-action-bar">
-            <button onclick="goToEventHub()" class="primary-dark" data-i18n="proceed_hub">Proceed to Hub →</button>
+            <div class="flex">
+                <button onclick="goToEventHub()" class="primary-dark" data-i18n="proceed_hub">Proceed to Hub →</button>
+            </div>
         </div>
     </div>
 
@@ -205,8 +207,11 @@
         </div>
 
         <!-- Sticky Bottom Bar for Step 2 -->
-        <div class="bottom-action-bar">
-            <button onclick="saveCurrentEvent()" class="primary-dark" data-i18n="save_cloud">Save Event to Cloud</button>
+        <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+            <div class="flex">
+                <button onclick="downloadChart()" class="success" data-i18n="download_chart" style="flex: 0.4;">⬇ Chart</button>
+                <button onclick="saveCurrentEvent()" class="primary-dark" data-i18n="save_cloud" style="flex: 0.6;">Save to Cloud</button>
+            </div>
         </div>
     </div>
 </div>
@@ -215,9 +220,9 @@
 <div id="rulesModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'rulesModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
-        <h3 id="rulesModalTitle" style="font-size: 18px;">Edit Rules</h3>
-        <div id="rulesContainer" style="max-height: 50vh; overflow-y: auto; margin-top:16px;"></div>
-        <div class="flex" style="margin-top: 16px; gap:10px;">
+        <h3 id="rulesModalTitle" style="font-size: 18px; flex-shrink: 0;">Edit Rules</h3>
+        <div id="rulesContainer" style="overflow-y: auto; margin-top:16px; padding-right:4px;"></div>
+        <div class="flex" style="margin-top: 16px; gap:10px; flex-shrink: 0;">
             <button class="secondary" onclick="addNewRule()" data-i18n="add_rule">+ Add New Rule</button>
             <button onclick="closeRulesModal()" class="primary-dark" data-i18n="done">Done</button>
         </div>
@@ -228,36 +233,42 @@
 <div id="participantModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'participantModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
-        <h3 data-i18n="modal_add_title" style="font-size: 18px;">Add New Participant</h3>
+        <h3 data-i18n="modal_add_title" style="font-size: 18px; flex-shrink: 0;">Add New Participant</h3>
         <div class="form-group" style="margin-top: 16px;">
             <input type="text" id="modalParticipantName" placeholder="Participant Name">
         </div>
-        <div class="flex tier-grid" style="margin-top: 24px; padding:0; background:none; border:none;">
+        <div class="flex tier-grid" style="margin-top: 24px; padding:0; background:none; border:none; flex-shrink: 0;">
             <button class="secondary" onclick="closeAddParticipantModal()" data-i18n="close">Cancel</button>
             <button onclick="confirmAddParticipantModal()" data-i18n="add">Add</button>
         </div>
     </div>
 </div>
 
-<!-- BOTTOM SHEET MODAL: ADD FISH -->
+<!-- BOTTOM SHEET MODAL: ADD/REMOVE FISH -->
 <div id="fishModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'fishModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
-        <h3 data-i18n="modal_fish_title" style="font-size: 18px;">Add Fish Catch</h3>
+        <h3 data-i18n="add_remove_fish" style="font-size: 18px; flex-shrink: 0; margin-bottom: 0;">Add / Remove Fish</h3>
         
-        <div class="form-group" style="margin-top: 16px;">
-            <label data-i18n="species_sel">Species</label>
-            <select id="modalSpeciesSelect"></select>
+        <div style="overflow-y: auto; padding-right: 4px; padding-top: 16px;">
+            <div class="form-group">
+                <label data-i18n="species_sel">Species</label>
+                <select id="modalSpeciesSelect"></select>
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="size_cm">Size (cm)</label>
+                <input type="text" id="modalFishSize" placeholder="Enter size" inputmode="decimal">
+            </div>
+            
+            <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 16px;" data-i18n="add_fish_btn">+ Add Fish</button>
+
+            <!-- Live Catches List in Modal -->
+            <div id="modalCurrentCatches" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 16px;"></div>
         </div>
-        
-        <div class="form-group">
-            <label data-i18n="size_cm">Size (cm)</label>
-            <input type="text" id="modalFishSize" placeholder="Enter size" inputmode="decimal">
-        </div>
-        
-        <div class="flex tier-grid" style="margin-top: 24px; padding:0; background:none; border:none;">
-            <button class="secondary" onclick="closeFishModal()" data-i18n="close">Cancel</button>
-            <button onclick="confirmAddFishModal()" data-i18n="save">Save Catch</button>
+
+        <div class="flex tier-grid" style="margin-top: 16px; padding:0; background:none; border:none; flex-shrink: 0;">
+            <button class="secondary full-width" onclick="closeFishModal()" data-i18n="done">Done</button>
         </div>
     </div>
 </div>
@@ -298,17 +309,20 @@
             modal_add_title: "Add New Participant",
             close: "Cancel",
             add: "Add",
-            modal_fish_title: "Add Fish Catch",
+            add_remove_fish: "Add / Remove Fish",
             species_sel: "Species",
             size_cm: "Size (cm)",
-            save: "Save Catch",
-            add_fish_btn: "Add Fish",
+            save: "Save",
+            add_fish_btn: "+ Add Fish",
             edit_rules: "Edit Rules",
             add_rule: "+ Add New Rule",
             done: "Done",
             rule_from: "From",
             rule_to: "To",
-            rule_mult: "Multiplier"
+            rule_mult: "Multiplier",
+            download_chart: "⬇ Download Chart",
+            current_catches: "Current Catches",
+            no_catches: "No catches logged."
         },
         ka: {
             login_title: "შესვლა / რეგისტრაცია",
@@ -338,17 +352,20 @@
             modal_add_title: "მონაწილის დამატება",
             close: "გაუქმება",
             add: "დამატება",
-            modal_fish_title: "თევზის დამატება",
+            add_remove_fish: "თევზის დამატება/წაშლა",
             species_sel: "სახეობა",
             size_cm: "ზომა (სმ)",
             save: "შენახვა",
-            add_fish_btn: "თევზის დამატება",
+            add_fish_btn: "+ თევზის დამატება",
             edit_rules: "წესები",
             add_rule: "+ ახალი წესი",
             done: "მზადაა",
             rule_from: "-დან",
             rule_to: "-მდე",
-            rule_mult: "კოეფიციენტი"
+            rule_mult: "კოეფიციენტი",
+            download_chart: "⬇ ცხრილის გადმოწერა",
+            current_catches: "მიმდინარე თევზები",
+            no_catches: "თევზი არ არის."
         },
         uk: {
             login_title: "Вхід / Реєстрація",
@@ -378,17 +395,20 @@
             modal_add_title: "Додати учасника",
             close: "Скасувати",
             add: "Додати",
-            modal_fish_title: "Додати рибу",
+            add_remove_fish: "Додати/Видалити рибу",
             species_sel: "Вид",
             size_cm: "Розмір (см)",
             save: "Зберегти",
-            add_fish_btn: "Додати рибу",
+            add_fish_btn: "+ Додати рибу",
             edit_rules: "Правила",
             add_rule: "+ Нове правило",
             done: "Готово",
             rule_from: "Від",
             rule_to: "До",
-            rule_mult: "Множник"
+            rule_mult: "Множник",
+            download_chart: "⬇ Завантажити таблицю",
+            current_catches: "Поточний улов",
+            no_catches: "Немає улову."
         },
         ru: {
             login_title: "Вход / Регистрация",
@@ -418,17 +438,20 @@
             modal_add_title: "Добавить участника",
             close: "Отмена",
             add: "Добавить",
-            modal_fish_title: "Добавить улов",
+            add_remove_fish: "Добавить/Удалить рыбу",
             species_sel: "Вид",
             size_cm: "Размер (см)",
             save: "Сохранить",
-            add_fish_btn: "Добавить рыбу",
+            add_fish_btn: "+ Добавить рыбу",
             edit_rules: "Правила",
             add_rule: "+ Новое правило",
             done: "Готово",
             rule_from: "От",
             rule_to: "До",
-            rule_mult: "Множитель"
+            rule_mult: "Множитель",
+            download_chart: "⬇ Скачать таблицу",
+            current_catches: "Текущий улов",
+            no_catches: "Нет улова."
         },
         fr: {
             login_title: "Connexion / Inscription",
@@ -458,17 +481,20 @@
             modal_add_title: "Ajouter Participant",
             close: "Annuler",
             add: "Ajouter",
-            modal_fish_title: "Ajouter Prise",
+            add_remove_fish: "Ajouter/Retirer Prise",
             species_sel: "Espèce",
             size_cm: "Taille (cm)",
             save: "Enregistrer",
-            add_fish_btn: "Ajouter",
+            add_fish_btn: "+ Ajouter Prise",
             edit_rules: "Règles",
             add_rule: "+ Nouvelle Règle",
             done: "Terminé",
             rule_from: "De",
             rule_to: "À",
-            rule_mult: "Multiplicateur"
+            rule_mult: "Multiplicateur",
+            download_chart: "⬇ Télécharger Tableau",
+            current_catches: "Prises Actuelles",
+            no_catches: "Aucune prise."
         },
         it: {
             login_title: "Accesso / Registrazione",
@@ -498,17 +524,20 @@
             modal_add_title: "Aggiungi Partecipante",
             close: "Annulla",
             add: "Aggiungi",
-            modal_fish_title: "Aggiungi Pesce",
+            add_remove_fish: "Aggiungi/Rimuovi Pesce",
             species_sel: "Specie",
             size_cm: "Misura (cm)",
             save: "Salva",
-            add_fish_btn: "Aggiungi",
+            add_fish_btn: "+ Aggiungi Pesce",
             edit_rules: "Regole",
             add_rule: "+ Nuova Regola",
             done: "Fatto",
             rule_from: "Da",
             rule_to: "A",
-            rule_mult: "Moltiplicatore"
+            rule_mult: "Moltiplicatore",
+            download_chart: "⬇ Scarica Tabella",
+            current_catches: "Catture Attuali",
+            no_catches: "Nessuna cattura."
         },
         de: {
             login_title: "Anmeldung / Registrierung",
@@ -538,17 +567,20 @@
             modal_add_title: "Teilnehmer hinzufügen",
             close: "Abbrechen",
             add: "Hinzufügen",
-            modal_fish_title: "Fang hinzufügen",
+            add_remove_fish: "Fisch Hinzufügen/Entfernen",
             species_sel: "Art",
             size_cm: "Größe (cm)",
             save: "Speichern",
-            add_fish_btn: "Hinzufügen",
+            add_fish_btn: "+ Fisch Hinzufügen",
             edit_rules: "Regeln",
             add_rule: "+ Neue Regel",
             done: "Fertig",
             rule_from: "Von",
             rule_to: "Bis",
-            rule_mult: "Multiplikator"
+            rule_mult: "Multiplikator",
+            download_chart: "⬇ Tabelle Herunterladen",
+            current_catches: "Aktuelle Fänge",
+            no_catches: "Keine Fänge."
         }
     };
 
@@ -655,11 +687,12 @@
         let html = "";
         events.forEach(ev => {
             html += `<div class="card flex flex-between" style="padding: 12px 16px;">
-                <div>
+                <div style="flex:1;">
                     <div style="font-weight:700; margin-bottom:4px; font-size:16px;">${ev.name}</div>
                     <div style="font-size:13px; color:var(--text-muted);">${ev.details.participants.length} Participants</div>
                 </div>
                 <div class="flex" style="gap:6px;">
+                    <button onclick="downloadChart('${ev.id}')" class="success icon-btn" title="Download Chart">⬇</button>
                     <button onclick="editEvent('${ev.id}')" class="icon-btn">Open</button>
                     <button class="danger icon-btn" onclick="deleteEvent('${ev.id}')">Del</button>
                 </div>
@@ -678,7 +711,6 @@
             document.getElementById("eventNameInput").value = currentEvent.name;
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
         } else {
-            // LOAD DEFAULTS IF THEY EXIST
             let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
             let savedDefaults = localStorage.getItem("fishing_defaults_v6_" + loggedInUser);
             if (savedDefaults) {
@@ -749,7 +781,6 @@
         let container = document.getElementById("speciesConfigContainer");
         container.innerHTML = currentEvent.species.map((s, sIdx) => {
             
-            // Generate Small Summaries for Rules
             let rulesSummary = s.tiers.map(t => {
                 let fromVal = t.from === "" ? 0 : t.from;
                 let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
@@ -818,7 +849,7 @@
         if (field === 'toType') {
             if (val === 'above') {
                 s.tiers[tIdx].to = 'above';
-                s.tiers.splice(tIdx + 1); // remove subsequent rules
+                s.tiers.splice(tIdx + 1); 
             } else {
                 let fromVal = parseFloat(s.tiers[tIdx].from) || 0;
                 s.tiers[tIdx].to = fromVal + 10; 
@@ -833,7 +864,7 @@
             if (tIdx > 0 && s.tiers[tIdx-1].to !== 'above') {
                 minFrom = parseFloat(s.tiers[tIdx-1].to) + 1;
             }
-            if (v < minFrom) v = minFrom; // Enforce minimum Logic
+            if (v < minFrom) v = minFrom; 
             s.tiers[tIdx].from = v;
         } 
         else if (field === 'multiplier') {
@@ -863,11 +894,9 @@
         
         let html = '';
         s.tiers.forEach((tData, tIdx) => {
-            // Auto Constraint calculations
             let prevTo = (tIdx > 0 && s.tiers[tIdx-1].to !== 'above') ? parseFloat(s.tiers[tIdx-1].to) : -1;
             let minFrom = tIdx > 0 ? prevTo + 1 : 0;
             
-            // Build 1.0 to 3.0 Dropdown options
             let multOptions = '';
             for(let i = 10; i <= 30; i += 1) { 
                 let v = (i/10).toFixed(1);
@@ -961,7 +990,7 @@
         selectEl.innerHTML = currentEvent.species.map(s => `<option value="${s.abbr}">${s.name} (${s.abbr.toUpperCase()})</option>`).join("");
         document.getElementById("modalFishSize").value = "";
         document.getElementById("fishModal").classList.remove("hidden");
-        setTimeout(() => document.getElementById("modalFishSize").focus(), 100);
+        renderModalCatches();
     }
 
     function closeFishModal() {
@@ -977,13 +1006,38 @@
         
         if (isNaN(size) || size <= 0) return;
         currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
-        closeFishModal();
+        
+        document.getElementById("modalFishSize").value = ""; // Clear for quick add
+        renderModalCatches();
         renderHubUI();
+        document.getElementById("modalFishSize").focus();
     }
 
     function removeFish(pIndexReal, cIdx) {
         currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
+        if(activeFishParticipantIndex !== null) renderModalCatches();
         renderHubUI();
+    }
+
+    function renderModalCatches() {
+        let container = document.getElementById("modalCurrentCatches");
+        if (activeFishParticipantIndex === null) return;
+        let p = currentEvent.participants[activeFishParticipantIndex];
+        
+        if (p.catches.length === 0) {
+            container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center; padding-top:8px;">${t('no_catches')}</p>`;
+            return;
+        }
+        
+        let html = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">${t('current_catches')}:</label>`;
+        p.catches.forEach((c, cIdx) => {
+            html += `
+            <div class="flex flex-between" style="padding:8px 0; border-bottom:1px solid var(--border); font-size:15px;">
+                <span><b>${c.size}</b>cm <span class="badge" style="background:#f1f5f9; padding:2px 4px;">${c.abbr.toUpperCase()}</span></span>
+                <button class="danger icon-btn" style="padding:4px 8px;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">✕</button>
+            </div>`;
+        });
+        container.innerHTML = html;
     }
 
     function calculateFishPoints(abbr, size, speciesList) {
@@ -1002,7 +1056,7 @@
     function renderHubUI() {
         let query = document.getElementById("searchParticipant").value.toLowerCase();
         let container = document.getElementById("participantsHubContainer");
-        let addBtnText = t("add_fish_btn");
+        let addRemoveText = t("add_remove_fish");
 
         let countEl = document.getElementById("hubParticipantCount");
         if(countEl) countEl.innerText = currentEvent.participants.length;
@@ -1011,20 +1065,20 @@
         currentEvent.participants.forEach((p, pIndexReal) => {
             if (!p.name.toLowerCase().includes(query)) return;
 
+            // Plain text catches rendering
+            let catchesText = p.catches.length > 0 
+                ? p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ') 
+                : `<span style="color:var(--border); font-style:italic;">${t('no_catches')}</span>`;
+
             filteredHtml += `
             <div class="card" style="padding:12px 16px; margin-bottom:12px;">
                 <div class="flex flex-between" style="align-items:center;">
                     <b style="font-size:16px;">${pIndexReal + 1}. ${p.name}</b>
-                    <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:8px 16px; border-radius:20px;">+ ${addBtnText}</button>
+                    <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:8px 16px; border-radius:20px;">${addRemoveText}</button>
                 </div>
-                ${p.catches.length > 0 ? `<div style="margin-top:12px; display:flex; flex-wrap:wrap;">` : ''}
-                ${p.catches.map((c, cIdx) => `
-                    <div class="fish-tag">
-                        <b>${c.size}</b>cm <span class="badge" style="background:#f1f5f9; padding:2px 4px;">${c.abbr.toUpperCase()}</span>
-                        <span onclick="removeFish(${pIndexReal}, ${cIdx})">×</span>
-                    </div>
-                `).join("")}
-                ${p.catches.length > 0 ? `</div>` : ''}
+                <div style="margin-top:12px; font-size:13px; color:var(--text-muted); line-height: 1.4;">
+                    ${catchesText}
+                </div>
             </div>`;
         });
 
@@ -1107,6 +1161,57 @@
         localStorage.setItem("fishing_defaults_v6_" + loggedInUser, JSON.stringify(currentEvent.species));
         localStorage.setItem(getStorageKey(), JSON.stringify(events));
         showDashboard();
+    }
+
+    function downloadChart(eventId = null) {
+        let ev = currentEvent;
+        if (eventId) {
+            let data = localStorage.getItem(getStorageKey());
+            let events = data ? JSON.parse(data) : [];
+            let found = events.find(e => e.id === eventId);
+            if (found) ev = found.details;
+        }
+        
+        if (!ev || ev.participants.length === 0) {
+            alert("No data to download.");
+            return;
+        }
+
+        let processed = ev.participants.map(p => {
+            let totalCm = 0, totalPts = 0, maxFishCm = 0, maxFishAbbr = "";
+            p.catches.forEach(c => {
+                totalCm += c.size;
+                if (c.size > maxFishCm) {
+                    maxFishCm = c.size;
+                    maxFishAbbr = c.abbr.toUpperCase();
+                }
+                totalPts += calculateFishPoints(c.abbr, c.size, ev.species);
+            });
+            let allCatchesStr = p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join('; ');
+            return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches: p.catches.length, allCatchesStr };
+        });
+
+        // Default sort by points
+        processed.sort((a, b) => b.totalPts - a.totalPts);
+
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+        csvContent += "Place,Participant Name,Total Points,Total Cm,Amount of Catches,Biggest Fish,All Catches\n";
+
+        processed.forEach((p, index) => {
+            let place = index + 1;
+            let biggestFishStr = p.maxFishCm > 0 ? `${p.maxFishCm}cm ${p.maxFishAbbr}` : "None";
+            let row = `${place},"${p.name}",${p.totalPts.toFixed(1)},${p.totalCm.toFixed(1)},${p.amountCatches},"${biggestFishStr}","${p.allCatchesStr}"`;
+            csvContent += row + "\n";
+        });
+
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        let safeName = ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "tournament";
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${safeName}_results.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
     
     changeLanguage(document.getElementById("langSelect").value);
