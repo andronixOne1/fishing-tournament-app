@@ -1067,7 +1067,13 @@
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
             document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         } else {
+            // Restore the defaults loading logic
             let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
+            let savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser);
+            if (savedDefaults) {
+                try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {}
+            }
+            
             currentEvent = {
                 id: "ev_" + Date.now(),
                 name: "New Fishing Trip",
@@ -1570,7 +1576,7 @@
         container.innerHTML = html;
     }
 
-    // SAVES INSTANTLY TO REALTIME CLOUD FIRESTORE
+  // SAVES INSTANTLY TO REALTIME CLOUD FIRESTORE AND SAVES DEFAULTS LOCALLY
     function saveCurrentEvent(redirect = true) {
         if (!currentEvent.date) {
             currentEvent.date = new Date().toLocaleDateString();
@@ -1586,6 +1592,9 @@
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
+        // Restore the logic to save species rules for the next time
+        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
+
         db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => {
             if(redirect) showDashboard();
         }).catch(err => {
@@ -1593,7 +1602,7 @@
             alert("Failed to save event to cloud. Check your database rules.");
         });
     }
-
+    
     function downloadChart(eventId = null) {
         let ev = currentEvent;
         if (eventId) {
