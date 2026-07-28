@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- Firebase Realtime Cloud SDKs (Compat version for raw HTML) -->
+    <!-- Firebase Realtime Cloud SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -118,6 +118,14 @@
         
         textarea { resize: vertical; min-height: 120px; }
 
+        /* Toggles */
+        .switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+        input:checked + .slider { background: var(--primary-gradient, var(--primary)); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
         /* Buttons */
         button { 
             background: var(--primary-gradient, var(--primary)); 
@@ -138,77 +146,32 @@
         }
         
         button:active { transform: scale(0.97); }
-        button.secondary { 
-            background: rgba(199, 210, 254, 0.5); 
-            color: #3730a3; 
-            box-shadow: none;
-        }
-        button.danger { 
-            background: rgba(255, 228, 230, 0.6); 
-            color: #be123c; 
-            box-shadow: none;
-        }
-        button.primary-dark {
-            background: var(--text);
-            box-shadow: 0 8px 20px rgba(30, 27, 75, 0.2);
-        }
+        button.secondary { background: rgba(199, 210, 254, 0.5); color: #3730a3; box-shadow: none; }
+        button.danger { background: rgba(255, 228, 230, 0.6); color: #be123c; box-shadow: none; }
+        button.primary-dark { background: var(--text); box-shadow: 0 8px 20px rgba(30, 27, 75, 0.2); }
         button.success { background: var(--success); color: white; }
         button.icon-btn { padding: 10px 14px; width: auto; font-size: 14px; }
 
-        /* Species Tabs (Replaces Dropdown) */
+        /* Species Tabs */
         .species-tab {
-            padding: 10px 18px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.6);
-            border: 2px solid #e0e7ff;
-            color: var(--text-muted);
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            padding: 10px 18px; border-radius: 12px; background: rgba(255, 255, 255, 0.6); border: 2px solid #e0e7ff;
+            color: var(--text-muted); font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s ease;
+            text-transform: uppercase; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-        
-        .species-tab.active {
-            background: var(--primary-gradient);
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
+        .species-tab.active { background: var(--primary-gradient); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
 
         /* Header specifics */
         .header-bar select, .header-bar button { 
-            background: rgba(255,255,255,0.2); 
-            color: #fff; 
-            border-radius: 20px; 
-            padding: 6px 12px; 
-            font-weight: 600; 
-            border: none; 
-            font-size: 13px; 
-            box-shadow: none; 
-            backdrop-filter: blur(4px); 
-            -webkit-backdrop-filter: blur(4px); 
+            background: rgba(255,255,255,0.2); color: #fff; border-radius: 20px; padding: 6px 12px; font-weight: 600; 
+            border: none; font-size: 13px; box-shadow: none; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); 
         }
         .header-bar select option { color: #000; }
         
         /* Floating Bottom Action Bar */
         .bottom-action-bar { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%; 
-            background: var(--card-bg); 
-            padding: 16px; 
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.05); 
-            z-index: 90; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 8px; 
-            align-items: center; 
-            backdrop-filter: var(--glass-blur); 
-            -webkit-backdrop-filter: var(--glass-blur); 
-            border-top: var(--glass-border); 
+            position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 16px; 
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 90; display: flex; flex-direction: column; gap: 8px; 
+            align-items: center; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-top: var(--glass-border); 
         }
         .bottom-action-bar .flex { width: 100%; max-width: 600px; justify-content: space-between; }
         .bottom-action-bar button { flex: 1; margin: 0; }
@@ -227,21 +190,10 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 1; transition: opacity 0.3s; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         .modal-overlay.hidden { opacity: 0; pointer-events: none; }
         .modal-card { 
-            background: rgba(255, 255, 255, 0.9); 
-            padding: 24px; 
-            border-radius: 32px 32px 0 0; 
-            width: 100%; 
-            max-width: 600px; 
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.2); 
-            transform: translateY(0); 
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
-            padding-bottom: max(24px, env(safe-area-inset-bottom)); 
-            display: flex; 
-            flex-direction: column; 
-            max-height: 90vh; 
-            backdrop-filter: blur(24px); 
-            -webkit-backdrop-filter: blur(24px); 
-            border-top: 1px solid rgba(255, 255, 255, 0.8); 
+            background: rgba(255, 255, 255, 0.9); padding: 24px; border-radius: 32px 32px 0 0; width: 100%; max-width: 600px; 
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transform: translateY(0); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+            padding-bottom: max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; max-height: 90vh; 
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid rgba(255, 255, 255, 0.8); 
         }
         .modal-overlay.hidden .modal-card { transform: translateY(100%); }
         .modal-indicator { width: 40px; height: 5px; background: #c7d2fe; border-radius: 4px; margin: -10px auto 24px auto; flex-shrink: 0; }
@@ -301,7 +253,16 @@
 
     <!-- MAIN DASHBOARD -->
     <div id="dashboardSection" class="hidden">
-        <div class="flex flex-between" style="margin-bottom: 20px;">
+        
+        <!-- Year Filter -->
+        <div id="yearFilterContainer" style="margin-bottom: 20px; display: none;">
+            <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border:none;"></select>
+        </div>
+
+        <!-- AOTY Podium Container -->
+        <div id="aotyContainer" style="margin-bottom: 24px;" class="hidden"></div>
+
+        <div class="flex flex-between" style="margin-bottom: 16px;">
             <div>
                 <h2 data-i18n="your_events" style="margin: 0; font-size: 24px;">Your Events</h2>
             </div>
@@ -322,6 +283,17 @@
         <div class="card">
             <h3 data-i18n="tourn_name">1. Tournament Name</h3>
             <input type="text" id="eventNameInput" placeholder="Weekend Championship">
+        </div>
+
+        <div class="card flex flex-between" style="align-items: center; padding: 20px 16px;">
+            <div>
+                <h3 data-i18n="ranked_tourn" style="margin:0;">Ranked Tournament</h3>
+                <p data-i18n="ranked_desc" style="font-size:12px; color:var(--text-muted); margin:4px 0 0 0;">Include in Yearly Leaderboard</p>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="isRankedToggle" checked>
+                <span class="slider"></span>
+            </label>
         </div>
 
         <div class="card">
@@ -390,7 +362,7 @@
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex">
                 <button onclick="downloadChart()" class="success" data-i18n="download_chart" style="flex: 0.4;">⬇ PDF</button>
-                <button onclick="saveCurrentEvent()" class="primary-dark" data-i18n="save_cloud" style="flex: 0.6;">Save to Cloud</button>
+                <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_cloud" style="flex: 0.6;">Save to Cloud</button>
             </div>
         </div>
     </div>
@@ -491,8 +463,9 @@
     let activeFishParticipantIndex = null;
     let activeSpeciesIndex = null;
     let selectedModalSpecies = "";
-    let pendingSmallFish = null; // Stores catch details if warning is triggered
+    let pendingSmallFish = null;
     let currentLang = "en";
+    let selectedYear = new Date().getFullYear().toString(); // Default year
 
     const translations = {
         en: {
@@ -507,6 +480,8 @@
             step1_title: "Step 1: Setup",
             back: "← Back",
             tourn_name: "1. Tournament Name",
+            ranked_tourn: "Ranked Tournament",
+            ranked_desc: "Include in Yearly Leaderboard",
             bulk_part: "2. Participants List",
             bulk_desc: "Paste names. Symbols/brackets are auto-removed.",
             fish_species_title: "3. Species & Multipliers",
@@ -540,7 +515,12 @@
             too_small_title: "Fish Too Small",
             too_small_desc: "The fish is too small based on the rules.",
             ok: "OK",
-            ignore: "Ignore"
+            ignore: "Ignore",
+            angler_of_year: "Angler of the Year",
+            edit_name: "Edit Name",
+            unranked_badge: "UNRANKED",
+            pts: "pts",
+            catches: "catches"
         },
         ka: {
             login_title: "შესვლა / რეგისტრაცია",
@@ -554,6 +534,8 @@
             step1_title: "ნაბიჯი 1: პარამეტრები",
             back: "← უკან",
             tourn_name: "1. ტურნირის სახელი",
+            ranked_tourn: "სარეიტინგო ტურნირი",
+            ranked_desc: "წლიურ რეიტინგში დამატება",
             bulk_part: "2. მონაწილეთა სია",
             bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.",
             fish_species_title: "3. სახეობები და კოეფიციენტები",
@@ -587,7 +569,12 @@
             too_small_title: "თევზი ძალიან პატარაა",
             too_small_desc: "წესების მიხედვით თევზი ძალიან პატარაა.",
             ok: "OK",
-            ignore: "იგნორირება"
+            ignore: "იგნორირება",
+            angler_of_year: "წლის მეთევზე",
+            edit_name: "სახელის შეცვლა",
+            unranked_badge: "არასარეიტინგო",
+            pts: "ქულა",
+            catches: "თევზი"
         },
         uk: {
             login_title: "Вхід / Реєстрація",
@@ -601,6 +588,8 @@
             step1_title: "Крок 1: Налаштування",
             back: "← Назад",
             tourn_name: "1. Назва турніру",
+            ranked_tourn: "Рейтинговий турнір",
+            ranked_desc: "Включити в річний рейтинг",
             bulk_part: "2. Список учасників",
             bulk_desc: "Вставте імена. Дужки та символи видаляються.",
             fish_species_title: "3. Види та коефіцієнти",
@@ -634,7 +623,12 @@
             too_small_title: "Риба занадто мала",
             too_small_desc: "За правилами риба занадто мала.",
             ok: "OK",
-            ignore: "Ігнорувати"
+            ignore: "Ігнорувати",
+            angler_of_year: "Рибалка року",
+            edit_name: "Редагувати ім'я",
+            unranked_badge: "БЕЗ РЕЙТИНГУ",
+            pts: "очок",
+            catches: "уловів"
         },
         ru: {
             login_title: "Вход / Регистрация",
@@ -648,6 +642,8 @@
             step1_title: "Шаг 1: Настройка",
             back: "← Назад",
             tourn_name: "1. Название турнира",
+            ranked_tourn: "Рейтинговый турнир",
+            ranked_desc: "Включить в годовой рейтинг",
             bulk_part: "2. Список участников",
             bulk_desc: "Вставьте имена. Скобки и символы удалятся.",
             fish_species_title: "3. Виды и коэффициенты",
@@ -681,7 +677,12 @@
             too_small_title: "Рыба слишком мала",
             too_small_desc: "По правилам рыба слишком мала.",
             ok: "OK",
-            ignore: "Игнорировать"
+            ignore: "Игнорировать",
+            angler_of_year: "Рыболов года",
+            edit_name: "Изменить имя",
+            unranked_badge: "ВНЕ РЕЙТИНГА",
+            pts: "очков",
+            catches: "поимок"
         },
         fr: {
             login_title: "Connexion / Inscription",
@@ -695,6 +696,8 @@
             step1_title: "Étape 1 : Config",
             back: "← Retour",
             tourn_name: "1. Nom du Tournoi",
+            ranked_tourn: "Tournoi Classé",
+            ranked_desc: "Inclure dans le classement annuel",
             bulk_part: "2. Participants",
             bulk_desc: "Collez les noms. Les symboles sont ignorés.",
             fish_species_title: "3. Espèces & Multiplicateurs",
@@ -728,7 +731,12 @@
             too_small_title: "Poisson trop petit",
             too_small_desc: "Le poisson est trop petit selon les règles.",
             ok: "OK",
-            ignore: "Ignorer"
+            ignore: "Ignorer",
+            angler_of_year: "Pêcheur de l'Année",
+            edit_name: "Modifier le nom",
+            unranked_badge: "NON CLASSÉ",
+            pts: "pts",
+            catches: "prises"
         },
         it: {
             login_title: "Accesso / Registrazione",
@@ -742,6 +750,8 @@
             step1_title: "Passo 1: Config",
             back: "← Indietro",
             tourn_name: "1. Nome Torneo",
+            ranked_tourn: "Torneo Classificato",
+            ranked_desc: "Includi nella classifica annuale",
             bulk_part: "2. Partecipanti",
             bulk_desc: "Incolla i nomi. I simboli vengono rimossi.",
             fish_species_title: "3. Specie & Moltiplicatori",
@@ -775,7 +785,12 @@
             too_small_title: "Pesce troppo piccolo",
             too_small_desc: "Il pesce è troppo piccolo secondo le regole.",
             ok: "OK",
-            ignore: "Ignora"
+            ignore: "Ignora",
+            angler_of_year: "Pescatore dell'Anno",
+            edit_name: "Modifica Nome",
+            unranked_badge: "NON CLASSIFICATO",
+            pts: "pti",
+            catches: "catture"
         },
         de: {
             login_title: "Anmeldung / Registrierung",
@@ -789,6 +804,8 @@
             step1_title: "Schritt 1: Setup",
             back: "← Zurück",
             tourn_name: "1. Turniername",
+            ranked_tourn: "Gewertetes Turnier",
+            ranked_desc: "In Jahresbestenliste aufnehmen",
             bulk_part: "2. Teilnehmer",
             bulk_desc: "Namen einfügen. Symbole werden entfernt.",
             fish_species_title: "3. Arten & Multiplikatoren",
@@ -822,7 +839,12 @@
             too_small_title: "Fisch zu klein",
             too_small_desc: "Der Fisch ist nach den Regeln zu klein.",
             ok: "OK",
-            ignore: "Ignorieren"
+            ignore: "Ignorieren",
+            angler_of_year: "Angler des Jahres",
+            edit_name: "Name bearbeiten",
+            unranked_badge: "NICHT GEWERTET",
+            pts: "pkt",
+            catches: "fänge"
         }
     };
 
@@ -834,18 +856,13 @@
                 el.innerText = translations[lang][key];
             }
         });
-        if(document.getElementById("setupSection").classList.contains("hidden") === false) {
-            refreshSetupUI();
-        }
-        if(document.getElementById("hubSection").classList.contains("hidden") === false) {
-            renderHubUI();
-        }
-        if(document.getElementById("rulesModal").classList.contains("hidden") === false && activeSpeciesIndex !== null) {
-            renderRules();
-        }
-        if(document.getElementById("fishModal").classList.contains("hidden") === false && activeFishParticipantIndex !== null) {
-            renderModalCatches();
-        }
+        if(document.getElementById("setupSection").classList.contains("hidden") === false) refreshSetupUI();
+        if(document.getElementById("hubSection").classList.contains("hidden") === false) renderHubUI();
+        if(document.getElementById("rulesModal").classList.contains("hidden") === false && activeSpeciesIndex !== null) renderRules();
+        if(document.getElementById("fishModal").classList.contains("hidden") === false && activeFishParticipantIndex !== null) renderModalCatches();
+        
+        // Also refresh the dashboard if visible to translate dynamically built strings
+        if(!document.getElementById("dashboardSection").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
     }
     
     function t(key) {
@@ -865,9 +882,7 @@
         if (!rawText.trim()) return [];
         let cleaned = rawText.replace(/\([\s\S]*?\)|\[[\s\S]*?\]|\{[\s\S]*?\}/g, '');
         cleaned = cleaned.replace(/[0-9!@#$%^&*_+=\-\[\]{};':"\\|.<>\/?~`“”„«»]/g, ' ');
-        let items = cleaned.split(/[\n,]+/)
-            .map(n => n.replace(/\s+/g, ' ').trim())
-            .filter(n => n.length > 0);
+        let items = cleaned.split(/[\n,]+/).map(n => n.replace(/\s+/g, ' ').trim()).filter(n => n.length > 0);
         return items;
     }
 
@@ -878,25 +893,15 @@
         let msgEl = document.getElementById("accountLimitMsg");
         msgEl.innerText = "";
 
-        if (!user || !pass) {
-            alert("Please enter both username and password.");
-            return;
-        }
+        if (!user || !pass) { alert("Please enter both username and password."); return; }
 
         const userRef = db.collection("users").doc(user);
-        
         userRef.get().then(doc => {
             if (doc.exists) {
-                if (doc.data().password === pass) {
-                    loginSuccess(user);
-                } else {
-                    alert("Incorrect password for existing account.");
-                }
+                if (doc.data().password === pass) loginSuccess(user);
+                else alert("Incorrect password for existing account.");
             } else {
-                // Register account in Firestore
-                userRef.set({ password: pass, createdAt: new Date() }).then(() => {
-                    loginSuccess(user);
-                });
+                userRef.set({ password: pass, createdAt: new Date() }).then(() => loginSuccess(user));
             }
         }).catch(err => {
             console.error(err);
@@ -930,38 +935,115 @@
             .where("username", "==", loggedInUser)
             .onSnapshot(snapshot => {
                 loadedEvents = [];
-                snapshot.forEach(doc => {
-                    loadedEvents.push({ id: doc.id, ...doc.data() });
-                });
+                snapshot.forEach(doc => { loadedEvents.push({ id: doc.id, ...doc.data() }); });
                 
-                renderEventsList();
+                processDashboard();
 
-                // Keep active UI synced in real time
-                if (currentEvent) {
+                if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) {
                     let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
                     if (activeUpdated) {
                         currentEvent = activeUpdated.details;
-                        if (!document.getElementById("hubSection").classList.contains("hidden")) {
-                            renderHubUI();
-                        }
+                        renderHubUI();
                     }
                 }
             });
     }
 
-    function renderEventsList() {
+    function processDashboard() {
+        // Build the Year Select filter
+        let years = [...new Set(loadedEvents.map(e => e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString())))].filter(y => y && y.length === 4);
+        if(years.length === 0) years = [new Date().getFullYear().toString()];
+        years.sort((a,b) => b - a);
+
+        if(!years.includes(selectedYear)) selectedYear = years[0];
+
+        let yearSelect = document.getElementById("yearSelect");
+        if(yearSelect) {
+            yearSelect.innerHTML = years.map(y => `<option value="${y}" ${y === selectedYear ? 'selected' : ''}>${y}</option>`).join('');
+            document.getElementById("yearFilterContainer").style.display = loadedEvents.length > 0 ? "block" : "none";
+        }
+
+        // Calculate Angler of the Year for selected year
+        let yearlyAgg = {};
+        let filteredEvents = loadedEvents.filter(e => {
+            let eYear = e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString());
+            return eYear === selectedYear;
+        });
+
+        filteredEvents.forEach(ev => {
+            if(ev.details.isRanked !== false) { // Ranked by default
+                ev.details.participants.forEach(p => {
+                    let normName = p.name.toLowerCase().trim(); // Merges users exactly by parsed name
+                    if(!yearlyAgg[normName]) {
+                        yearlyAgg[normName] = { name: p.name, totalPts: 0, catches: 0, maxFishPts: 0 };
+                    }
+                    p.catches.forEach(c => {
+                        let pts = calculateFishPoints(c.abbr, c.size, ev.details.species);
+                        yearlyAgg[normName].totalPts += pts;
+                        yearlyAgg[normName].catches += 1;
+                        if(pts > yearlyAgg[normName].maxFishPts) yearlyAgg[normName].maxFishPts = pts;
+                    });
+                });
+            }
+        });
+
+        let aotyArray = Object.values(yearlyAgg)
+            .filter(a => a.totalPts > 0)
+            .sort((a, b) => {
+                if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+                if(a.catches !== b.catches) return a.catches - b.catches; 
+                return b.maxFishPts - a.maxFishPts; 
+            }).slice(0, 3);
+
+        let aotyContainer = document.getElementById("aotyContainer");
+        if(aotyArray.length > 0) {
+            let medals = ["🥇", "🥈", "🥉"];
+            let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
+                <h3 style="color:white; margin-bottom: 16px; text-align: center; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>`;
+            
+            aotyArray.forEach((angler, idx) => {
+                aotyHtml += `
+                <div class="flex flex-between" style="background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 16px; margin-bottom: 8px; backdrop-filter: blur(8px);">
+                    <div class="flex" style="gap: 12px;">
+                        <span style="font-size: 20px; font-weight: bold;">${medals[idx]}</span>
+                        <b style="font-size: 16px;">${angler.name}</b>
+                    </div>
+                    <div style="text-align:right;">
+                        <b style="font-size: 16px;">${angler.totalPts.toFixed(1)} <span style="font-size:12px; font-weight:normal;">${t('pts')}</span></b><br>
+                        <span style="font-size:12px; opacity:0.8;">${angler.catches} ${t('catches')}</span>
+                    </div>
+                </div>`;
+            });
+            aotyHtml += `</div>`;
+            aotyContainer.innerHTML = aotyHtml;
+            aotyContainer.classList.remove("hidden");
+        } else {
+            aotyContainer.innerHTML = "";
+            aotyContainer.classList.add("hidden");
+        }
+
+        renderEventsList(filteredEvents);
+    }
+
+    function changeYear(y) {
+        selectedYear = y;
+        processDashboard();
+    }
+
+    function renderEventsList(filteredEvents) {
         let container = document.getElementById("eventsList");
         
-        if (loadedEvents.length === 0) {
-            container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No events found. Create your first one!</div>`;
+        if (filteredEvents.length === 0) {
+            container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No events found in ${selectedYear}.</div>`;
             return;
         }
         let html = "";
-        loadedEvents.forEach(ev => {
+        filteredEvents.forEach(ev => {
             let publishDate = ev.details.date || "Unknown Date";
+            let rankBadge = ev.details.isRanked === false ? `<span class="badge" style="background:#ffe4e6; color:#be123c; padding:2px 6px; font-size:10px; margin-left:6px; box-shadow:none;">${t('unranked_badge')}</span>` : '';
             html += `<div class="card flex flex-between" style="padding: 16px;">
                 <div style="flex:1;">
-                    <div style="font-weight:700; margin-bottom:6px; font-size:16px;">${ev.name}</div>
+                    <div class="flex" style="font-weight:700; margin-bottom:6px; font-size:16px;">${ev.name} ${rankBadge}</div>
                     <div style="font-size:13px; color:var(--text-muted); font-weight:500;">📅 ${publishDate} • ${ev.details.participants.length} Participants</div>
                 </div>
                 <div class="flex" style="gap:8px;">
@@ -983,18 +1065,21 @@
             currentEvent = JSON.parse(JSON.stringify(eventObj));
             document.getElementById("eventNameInput").value = currentEvent.name;
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
+            document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         } else {
             let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
-            
             currentEvent = {
                 id: "ev_" + Date.now(),
                 name: "New Fishing Trip",
                 date: new Date().toLocaleDateString(),
+                year: new Date().getFullYear().toString(),
+                isRanked: true,
                 species: defaultSpecies,
                 participants: []
             };
             document.getElementById("eventNameInput").value = "";
             document.getElementById("bulkParticipantsInput").value = "";
+            document.getElementById("isRankedToggle").checked = true;
         }
         updateParticipantCountStatus();
         refreshSetupUI();
@@ -1042,7 +1127,6 @@
     function refreshSetupUI() {
         let container = document.getElementById("speciesConfigContainer");
         container.innerHTML = currentEvent.species.map((s, sIdx) => {
-            
             let rulesSummary = s.tiers.map(t => {
                 let fromVal = t.from === "" ? 0 : t.from;
                 let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
@@ -1107,7 +1191,6 @@
 
     function updateRuleField(tIdx, field, val) {
         let s = currentEvent.species[activeSpeciesIndex];
-        
         if (field === 'toType') {
             if (val === 'above') {
                 s.tiers[tIdx].to = 'above';
@@ -1117,9 +1200,7 @@
                 s.tiers[tIdx].to = fromVal + 10; 
             }
         } 
-        else if (field === 'to') {
-            s.tiers[tIdx].to = parseFloat(val) || 0;
-        } 
+        else if (field === 'to') { s.tiers[tIdx].to = parseFloat(val) || 0; } 
         else if (field === 'from') {
             let v = parseFloat(val) || 0;
             let minFrom = 0;
@@ -1129,9 +1210,7 @@
             if (v < minFrom) v = minFrom; 
             s.tiers[tIdx].from = v;
         } 
-        else if (field === 'multiplier') {
-            s.tiers[tIdx].multiplier = parseFloat(val);
-        }
+        else if (field === 'multiplier') { s.tiers[tIdx].multiplier = parseFloat(val); }
         
         recalcRulesCascading();
         renderRules();
@@ -1193,23 +1272,28 @@
                 </div>
             </div>`;
         });
-        
         document.getElementById('rulesContainer').innerHTML = html;
     }
 
     function goToEventHub() {
         currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
+        currentEvent.isRanked = document.getElementById("isRankedToggle").checked;
+        if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
         
         let rawText = document.getElementById("bulkParticipantsInput").value;
         let items = parseParticipants(rawText);
         
         let existingMap = {};
-        currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = p.catches);
+        currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id });
 
-        currentEvent.participants = items.map(name => ({
-            name: name,
-            catches: existingMap[name.toLowerCase()] || []
-        }));
+        currentEvent.participants = items.map(name => {
+            let lowerName = name.toLowerCase();
+            return {
+                id: existingMap[lowerName] ? existingMap[lowerName].id : 'p_' + Math.random().toString(36).substr(2, 9),
+                name: name,
+                catches: existingMap[lowerName] ? existingMap[lowerName].catches : []
+            };
+        });
         
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.remove("hidden");
@@ -1239,11 +1323,25 @@
         if (parsedNames.length === 0) return;
         
         parsedNames.forEach(name => {
-            currentEvent.participants.push({ name: name, catches: [] });
+            currentEvent.participants.push({ 
+                id: 'p_' + Math.random().toString(36).substr(2, 9),
+                name: name, 
+                catches: [] 
+            });
         });
         
         closeAddParticipantModal();
         renderHubUI();
+    }
+
+    function editParticipantName(index) {
+        let p = currentEvent.participants[index];
+        let newName = prompt(t('edit_name') + ":", p.name);
+        if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
+            p.name = newName.trim();
+            renderHubUI();
+            saveCurrentEvent(false); // background save to reflect on leaderboard immediately without leaving page
+        }
     }
 
     function selectModalSpecies(abbr, element) {
@@ -1298,7 +1396,7 @@
         
         if (isNaN(size) || size <= 0) return;
 
-        // Validation: Is the fish too small?
+        // Validation: Is the fish too small based on the first rule?
         let sp = currentEvent.species.find(s => s.abbr === abbr);
         if (sp && sp.tiers && sp.tiers.length > 0) {
             let firstFrom = parseFloat(sp.tiers[0].from);
@@ -1314,7 +1412,6 @@
 
     function executeAddFish(abbr, size) {
         currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
-        
         document.getElementById("modalFishSize").value = ""; 
         renderModalCatches();
         renderHubUI();
@@ -1395,7 +1492,10 @@
             filteredHtml += `
             <div class="card" style="padding:16px; margin-bottom:16px;">
                 <div class="flex flex-between" style="align-items:center;">
-                    <b style="font-size:16px;">${pIndexReal + 1}. ${p.name}</b>
+                    <div class="flex" style="gap: 8px;">
+                        <b style="font-size:16px;">${pIndexReal + 1}. ${p.name}</b>
+                        <button onclick="editParticipantName(${pIndexReal})" class="icon-btn" style="padding:4px; background:transparent; color:var(--text-muted); box-shadow:none;">✏️</button>
+                    </div>
                     <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:10px 16px;">${addRemoveText}</button>
                 </div>
                 <div style="margin-top:16px; font-size:14px; color:var(--text-muted); line-height: 1.5;">
@@ -1471,9 +1571,12 @@
     }
 
     // SAVES INSTANTLY TO REALTIME CLOUD FIRESTORE
-    function saveCurrentEvent() {
+    function saveCurrentEvent(redirect = true) {
         if (!currentEvent.date) {
             currentEvent.date = new Date().toLocaleDateString();
+        }
+        if (!currentEvent.year) {
+            currentEvent.year = new Date().getFullYear().toString();
         }
 
         const eventPayload = {
@@ -1484,7 +1587,7 @@
         };
 
         db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => {
-            showDashboard();
+            if(redirect) showDashboard();
         }).catch(err => {
             console.error("Save error:", err);
             alert("Failed to save event to cloud. Check your database rules.");
