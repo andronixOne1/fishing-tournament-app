@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- Firebase Realtime Cloud SDKs -->
+    <!-- Firebase Realtime Cloud SDKs (Compat version for raw HTML) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -442,15 +442,16 @@
 <script>
     // =========================================================================
     // 1. FIREBASE REALTIME CLOUD DATABASE CONFIGURATION
-    // Replace the keys below with your exact credentials from Step 1!
+    // Adapted to Firebase Compat syntax for seamless native HTML execution
     // =========================================================================
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyD0uXVP6iALWh2ADcn3jjb6zMBCAzOAUtk",
+        authDomain: "lureboard-13c15.firebaseapp.com",
+        databaseURL: "https://lureboard-13c15-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "lureboard-13c15",
+        storageBucket: "lureboard-13c15.firebasestorage.app",
+        messagingSenderId: "807956356939",
+        appId: "1:807956356939:web:af22328840dc388eb312ce"
     };
 
     // Initialize Firebase Cloud Database
@@ -858,7 +859,7 @@
             }
         }).catch(err => {
             console.error(err);
-            alert("Database connection error. Please check configuration.");
+            alert("Database connection error. Please check configuration and database rules.");
         });
     }
 
@@ -881,7 +882,7 @@
         document.getElementById("headerLogoutBtn").classList.add("hidden");
     }
 
-    // REALTIME DATABASE SYNC LISTENER (Syncs across mobile and PC instantly)
+    // REALTIME DATABASE SYNC LISTENER
     function subscribeToEventsRealtime() {
         if (unsubscribeEventsListener) unsubscribeEventsListener();
         
@@ -895,7 +896,7 @@
                 
                 renderEventsList();
 
-                // If currently editing an event, keep active UI perfectly synced in real time
+                // Keep active UI synced in real time
                 if (currentEvent) {
                     let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
                     if (activeUpdated) {
@@ -1386,7 +1387,7 @@
             showDashboard();
         }).catch(err => {
             console.error("Save error:", err);
-            alert("Failed to save event to cloud.");
+            alert("Failed to save event to cloud. Check your database rules.");
         });
     }
 
@@ -1417,8 +1418,10 @@
             return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches: p.catches.length, allCatchesStr };
         });
 
+        // Default sort by points for the PDF
         processed.sort((a, b) => b.totalPts - a.totalPts);
 
+        // Build HTML template for html2pdf
         let htmlContent = `
             <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
                 <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">Tournament Results: ${ev.name}</h2>
@@ -1468,6 +1471,7 @@
         html2pdf().set(opt).from(tempDiv).save();
     }
     
+    // Init language toggle
     changeLanguage(document.getElementById("langSelect").value);
 </script>
 </body>
