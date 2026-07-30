@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lureboard Hub</title>
+    
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Firebase Realtime Cloud SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* MODERN INDIGO THEME */
+        :root {
+            --primary: #6366f1; --primary-dark: #4f46e5; --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --bg: #eef2ff; --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.65); --text: #1e1b4b; --text-muted: #6366f1;
+            --border: rgba(99, 102, 241, 0.15); --danger: #f43f5e; --danger-dark: #be123c; --success: #10b981;
+            --card-radius: 24px; --input-radius: 16px; --btn-radius: 24px; --card-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
+            --header-bg: #4f46e5; --header-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --header-text: #ffffff; --glass-blur: blur(16px); --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg-gradient, var(--bg)); background-attachment: fixed; color: var(--text); font-size: 16px; padding-bottom: 90px; min-height: 100vh; }
+        h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+        h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+        p { margin-bottom: 12px; line-height: 1.4; }
+
+        /* Layout */
+        .header-bar { background: var(--header-gradient, var(--header-bg)); color: var(--header-text); padding: 12px 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+        .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+        .card { background: var(--card-bg); border-radius: var(--card-radius); padding: 16px; margin-bottom: 16px; box-shadow: var(--card-shadow); border: var(--glass-border); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
+        .flex { display: flex; gap: 10px; align-items: center; }
+        .flex-wrap { flex-wrap: wrap; }
+        .flex-between { justify-content: space-between; }
+        .hidden { display: none !important; }
+
+        /* Forms & Inputs */
+        .form-group { margin-bottom: 16px; width: 100%; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; color: var(--text-muted); }
+        input, select, textarea { width: 100%; padding: 14px; border: 2px solid #e0e7ff; border-radius: var(--input-radius); font-size: 16px; font-family: inherit; background: rgba(255, 255, 255, 0.9); transition: 0.3s; appearance: none; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+        textarea { resize: vertical; min-height: 100px; }
+        input[type="file"] { padding: 10px; font-size: 14px; }
+        
+        /* Toggles */
+        .switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+        input:checked + .slider { background: var(--primary-gradient, var(--primary)); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* Buttons */
+        button { background: var(--primary-gradient, var(--primary)); color: white; border: none; padding: 14px 20px; border-radius: var(--btn-radius); font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s, box-shadow 0.2s; width: 100%; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25); }
+        button:active { transform: scale(0.97); }
+        button.secondary { background: rgba(199, 210, 254, 0.5); color: #3730a3; box-shadow: none; }
+        button.danger { background: rgba(255, 228, 230, 0.6); color: #be123c; box-shadow: none; }
+        button.primary-dark { background: var(--text); box-shadow: 0 8px 20px rgba(30, 27, 75, 0.2); }
+        button.success { background: var(--success); color: white; }
+        button.icon-btn { padding: 10px 14px; width: auto; font-size: 14px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Dashboard Tabs */
+        .dash-tabs { display: flex; gap: 8px; margin-bottom: 20px; background: rgba(255,255,255,0.4); padding: 6px; border-radius: 20px; }
+        .dash-tab { flex: 1; padding: 12px; text-align: center; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 16px; transition: 0.3s; }
+        .dash-tab.active { background: white; color: var(--primary-dark); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        /* Specifics */
+        .species-tab { padding: 10px 18px; border-radius: 12px; background: rgba(255, 255, 255, 0.6); border: 2px solid #e0e7ff; color: var(--text-muted); font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; }
+        .species-tab.active { background: var(--primary-gradient); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+        .header-bar select, .header-bar button { background: rgba(255,255,255,0.2); color: #fff; border-radius: 20px; padding: 6px 12px; font-weight: 600; border: none; font-size: 13px; box-shadow: none; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .header-bar select option { color: #000; }
+        .bottom-action-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 16px; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: center; backdrop-filter: var(--glass-blur); border-top: var(--glass-border); }
+        .bottom-action-bar .flex { width: 100%; max-width: 600px; justify-content: space-between; }
+        .bottom-action-bar button { flex: 1; margin: 0; }
+        .table-container { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th, td { padding: 12px 10px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border); }
+        th { font-weight: 700; color: #4f46e5; text-transform: uppercase; font-size: 12px; }
+        tr:last-child td { border-bottom: none; }
+        .badge { background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: bold; display: inline-flex; align-items: center; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 1; transition: 0.3s; backdrop-filter: blur(4px); }
+        .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+        .modal-card { background: rgba(255, 255, 255, 0.95); padding: 24px; border-radius: 32px 32px 0 0; width: 100%; max-width: 600px; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transform: translateY(0); transition: 0.4s; padding-bottom: max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; max-height: 90vh; backdrop-filter: blur(24px); }
+        .modal-overlay.hidden .modal-card { transform: translateY(100%); }
+        .modal-indicator { width: 40px; height: 5px; background: #c7d2fe; border-radius: 4px; margin: -10px auto 24px auto; flex-shrink: 0; }
+        .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(224, 231, 255, 0.5); padding: 12px; border-radius: var(--card-radius); margin-bottom: 12px; border: none; }
+        .tier-grid input, .tier-grid select { padding: 12px; font-size: 14px; }
+        .tier-grid .full-width { grid-column: span 2; }
+        
+        .thumb-preview { width: 100%; height: 150px; object-fit: cover; border-radius: 12px; margin-top: 10px; display: none; }
+        .event-hub-thumb { width: 100%; height: 140px; object-fit: cover; border-radius: 16px; margin-bottom: 12px; background: #e2e8f0; }
+    </style>
+</head>
+<body>
+
+    <!-- TOP HEADER -->
+    <div class="header-bar">
+        <div class="flex" style="gap: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
+                <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
+                <circle cx="12" cy="3" r="1.5"/>
+            </svg>
+            <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard Hub</div>
+        </div>
+        
+        <div class="flex" style="gap: 8px;">
+            <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
+            <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
+                <option value="en">🇬🇧 EN</option>
+                <option value="ka">🇬🇪 KA</option>
+                <option value="ru">🇷🇺 RU</option>
+            </select>
+        </div>
+    </div>
+
+<div class="container">
+    <!-- LOGIN SCREEN -->
+    <div id="loginSection">
+        <div class="card" style="margin-top: 20px; padding: 32px 24px;">
+            <h2 style="text-align: center; margin-bottom: 8px;">Login / Register</h2>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 32px; font-size: 14px;">Enter any username and password.</p>
+            <div class="form-group"><label>Username</label><input type="text" id="usernameInput" placeholder="Username"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="passwordInput" placeholder="Password"></div>
+            <button onclick="handleLoginRegister()" style="margin-top: 16px;">Login / Register</button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboardSection" class="hidden">
+        
+        <div class="dash-tabs">
+            <div id="tabBtnPublic" class="dash-tab active" onclick="switchDashboardTab('public')">Public Hub</div>
+            <div id="tabBtnMy" class="dash-tab" onclick="switchDashboardTab('my')">My Events</div>
+        </div>
+
+        <!-- MY EVENTS TAB -->
+        <div id="myEventsView" class="hidden">
+            <div id="yearFilterContainer" style="margin-bottom: 20px; display: none;">
+                <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none;"></select>
+            </div>
+            <div id="aotyContainer" style="margin-bottom: 24px;" class="hidden"></div>
+            
+            <button onclick="openEventEditor()" style="margin-bottom: 24px; padding: 18px;">+ Create New Event</button>
+            <div id="eventsList"></div>
+        </div>
+
+        <!-- PUBLIC HUB TAB -->
+        <div id="publicHubView">
+            <div id="publicEventsList"></div>
+        </div>
+    </div>
+
+    <!-- STEP 1: EVENT SETUP -->
+    <div id="setupSection" class="hidden">
+        <div class="flex flex-between" style="margin-bottom: 20px;">
+            <h2 style="margin: 0; font-size: 24px;">Setup: General</h2>
+            <button class="secondary icon-btn" onclick="showDashboard()">← Back</button>
+        </div>
+
+        <!-- Basic Info -->
+        <div class="card">
+            <div class="form-group">
+                <label>Tournament Name</label>
+                <input type="text" id="eventNameInput" placeholder="Weekend Championship">
+            </div>
+            <div class="form-group">
+                <label>Thumbnail / Header Image</label>
+                <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
+                <img id="thumbnailPreview" class="thumb-preview">
+            </div>
+            <div class="form-group">
+                <label>Description & Rules</label>
+                <textarea id="eventDescInput" placeholder="Enter tournament rules and description here..."></textarea>
+            </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="card">
+            <div class="flex flex-between" style="padding: 10px 0;">
+                <div><h3 style="margin:0;">Public Hub</h3><p style="font-size:12px; color:var(--text-muted); margin:0;">Make visible to everyone</p></div>
+                <label class="switch"><input type="checkbox" id="isPublicToggle"><span class="slider"></span></label>
+            </div>
+            <div class="flex flex-between" style="padding: 10px 0; border-top: 1px solid var(--border);">
+                <div><h3 style="margin:0;">Ranked Tournament</h3><p style="font-size:12px; color:var(--text-muted); margin:0;">Include in Yearly Leaderboard</p></div>
+                <label class="switch"><input type="checkbox" id="isRankedToggle" checked><span class="slider"></span></label>
+            </div>
+        </div>
+
+        <!-- Format Rules -->
+        <div class="card">
+            <h3 style="margin-bottom:16px;">Tournament Format</h3>
+            
+            <div class="form-group">
+                <label>Measurement Unit</label>
+                <div class="flex" style="gap:8px;">
+                    <button id="unitBtnMetric" class="secondary" onclick="setUnit('metric')" style="flex:1;">Metric (cm/kg)</button>
+                    <button id="unitBtnImperial" class="secondary" onclick="setUnit('imperial')" style="flex:1;">Imperial (in/lbs)</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Scoring Method</label>
+                <div class="flex" style="gap:8px;">
+                    <button id="measureBtnSize" class="secondary" onclick="setMeasure('size')" style="flex:1;">Size / Points</button>
+                    <button id="measureBtnWeight" class="secondary" onclick="setMeasure('weight')" style="flex:1;">Weight</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Catch Limits</label>
+                <div class="flex" style="gap:8px;">
+                    <button id="limitBtnAll" class="secondary" onclick="setLimit('all')" style="flex:1;">All Fish</button>
+                    <button id="limitBtnTop5" class="secondary" onclick="setLimit('top5')" style="flex:1;">Top 5 Counted</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Verification Format</label>
+                <div class="flex" style="gap:8px;">
+                    <button class="primary-dark" style="flex:1; cursor:default;">Regular Judge</button>
+                    <button class="secondary" disabled style="flex:1;">CPR (Soon)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Participants -->
+        <div class="card">
+            <div class="flex flex-between">
+                <h3 style="margin:0;">Participants List</h3>
+                <span id="participantCountStatus" class="badge">0</span>
+            </div>
+            <div style="position: relative;" id="bulkParticipantsWrapper">
+                <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()" style="margin-top:10px;"></textarea>
+                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
+                    <span>Editing this is disabled, please edit participant list on the next page</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Species -->
+        <div class="card">
+            <h3>Species & Multipliers</h3>
+            <div class="tier-grid" style="background: transparent; border: none; padding: 0;">
+                <input type="text" id="speciesName" placeholder="Species (Perch)">
+                <input type="text" id="speciesAbbr" placeholder="Abbr (pr)">
+                <button onclick="addSpecies()" class="secondary full-width" style="box-shadow: none;">+ Add Species</button>
+            </div>
+            <div id="speciesConfigContainer" style="margin-top: 24px;"></div>
+        </div>
+
+        <!-- Sticky Bottom Bar -->
+        <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+            <div class="flex">
+                <button onclick="goToEventHub()" class="primary-dark" style="padding: 16px;">Start Event →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 2: TOURNAMENT HUB -->
+    <div id="hubSection" class="hidden">
+        <div class="flex flex-between" style="margin-bottom: 20px;">
+            <h2 id="hubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 24px;">Hub</h2>
+            <button class="secondary icon-btn" onclick="backToSetup()">← Setup</button>
+        </div>
+
+        <div class="card">
+            <div class="flex flex-between" style="margin-bottom: 16px;">
+                <div class="flex">
+                    <h3 style="margin:0;">Participants</h3>
+                    <span id="hubParticipantCount" class="badge">0</span>
+                </div>
+                <button id="hubAddNewParticipantBtn" onclick="openAddParticipantModal()" class="icon-btn">+ Add</button>
+            </div>
+            <input type="text" id="searchParticipant" placeholder="Search name..." oninput="renderHubUI()" style="margin-bottom: 16px;">
+            <div id="participantsHubContainer"></div>
+        </div>
+
+        <div class="card">
+            <h3>Leaderboard</h3>
+            <div id="leaderboardTopSummary" style="margin-bottom: 16px; background: rgba(253, 224, 71, 0.2); border: 1px solid #fde047; padding: 16px; border-radius: var(--card-radius);"></div>
+            <div class="form-group">
+                <select id="rankingMode" onchange="renderLeaderboard()">
+                    <option value="points">Rank by Points</option>
+                    <option value="measure">Rank by Size/Weight</option>
+                </select>
+            </div>
+            <div class="table-container">
+                <div id="leaderboardContainer"></div>
+            </div>
+        </div>
+
+        <!-- Sticky Bottom Bar -->
+        <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+            <div class="flex" style="gap: 8px;">
+                <button onclick="downloadChart()" class="secondary" style="flex: 0.2; box-shadow:none; padding:12px;">⬇ PDF</button>
+                <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 0.4; padding:12px;">Finish Event</button>
+                <button onclick="saveCurrentEvent(true)" class="primary-dark" style="flex: 0.4; padding:12px;">Save Event</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- RULES MODAL -->
+<div id="rulesModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'rulesModal')">
+    <div class="modal-card">
+        <div class="modal-indicator"></div>
+        <h3 id="rulesModalTitle" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Edit Rules</h3>
+        <div id="rulesContainer" style="overflow-y: auto; margin-top:20px; padding-right:4px;"></div>
+        <div class="flex" style="margin-top: 20px; gap:12px; flex-shrink: 0;">
+            <button class="secondary" onclick="addNewRule()" style="box-shadow: none;">+ Add New Rule</button>
+            <button onclick="closeRulesModal()" class="primary-dark">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- ADD PARTICIPANT MODAL -->
+<div id="participantModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'participantModal')">
+    <div class="modal-card">
+        <div class="modal-indicator"></div>
+        <h3 style="font-size: 20px; flex-shrink: 0;">Add New Participant</h3>
+        <div class="form-group" style="margin-top: 20px;">
+            <input type="text" id="modalParticipantName" placeholder="Participant Name">
+        </div>
+        <div class="flex tier-grid" style="margin-top: 24px; padding:0; background:none; border:none; flex-shrink: 0;">
+            <button class="secondary" onclick="closeAddParticipantModal()" style="box-shadow: none;">Cancel</button>
+            <button onclick="confirmAddParticipantModal()">Add</button>
+        </div>
+    </div>
+</div>
+
+<!-- FISH MODAL -->
+<div id="fishModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'fishModal')">
+    <div class="modal-card">
+        <div class="modal-indicator"></div>
+        <h3 style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Add / Remove Catch</h3>
+        
+        <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
+            <div class="form-group">
+                <label>Species</label>
+                <div id="modalSpeciesTabs" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
+            </div>
+            <div class="form-group">
+                <label id="modalFishSizeLabel">Measurement</label>
+                <input type="number" id="modalFishSize" placeholder="Enter value" inputmode="decimal">
+            </div>
+            <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 16px;">+ Add Catch</button>
+            <div id="modalCurrentCatches" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
+        </div>
+
+        <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
+            <button class="secondary full-width" onclick="closeFishModal()" style="box-shadow: none;">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- PENALTY MODAL -->
+<div id="penaltyModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'penaltyModal')">
+    <div class="modal-card">
+        <div class="modal-indicator"></div>
+        <h3 style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Penalties</h3>
+        
+        <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
+            <div class="form-group">
+                <label>Points to Deduct</label>
+                <input type="number" id="modalPenaltyPoints" placeholder="e.g. 50" inputmode="numeric">
+            </div>
+            <div class="form-group">
+                <label>Reason / Description</label>
+                <input type="text" id="modalPenaltyReason" placeholder="Late arrival, dead fish, etc.">
+            </div>
+            <button onclick="confirmAddPenalty()" class="danger" style="margin-bottom: 20px; padding: 16px;">+ Add Penalty</button>
+            <div id="modalCurrentPenalties" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
+        </div>
+
+        <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
+            <button class="secondary full-width" onclick="closePenaltyModal()" style="box-shadow: none;">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- SMALL FISH WARNING MODAL -->
+<div id="smallFishWarningModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'smallFishWarningModal')" style="align-items: center; z-index: 1050;">
+    <div class="card" style="width: 90%; max-width: 340px; text-align: center; padding: 28px 24px; margin-bottom: 0; display: block; border-radius: 24px;">
+        <h3 style="color: var(--danger); margin-bottom: 12px; font-size: 20px;">Fish Too Small</h3>
+        <p style="color: var(--text-muted); margin-bottom: 24px;">The fish is too small based on the rules.</p>
+        <div class="flex" style="gap: 12px;">
+            <button class="secondary" onclick="cancelSmallFish()" style="box-shadow: none;">OK</button>
+            <button class="danger" onclick="ignoreSmallFish()" style="box-shadow: none;">Ignore</button>
+        </div>
+    </div>
+</div>
+
+<!-- PUBLIC EVENT VIEW MODAL -->
+<div id="publicEventModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'publicEventModal')" style="align-items: flex-end;">
+    <div class="modal-card" style="height: 90vh; padding:0; background:var(--bg);">
+        <div style="background:var(--card-bg); padding:16px; text-align:center; position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); border-radius: 32px 32px 0 0;">
+            <div class="modal-indicator"></div>
+            <h3 id="pubTitle" style="margin:0; font-size: 20px;">Event Title</h3>
+            <p id="pubHost" style="margin:4px 0 0 0; font-size:13px; color:var(--text-muted);">Hosted by ...</p>
+        </div>
+        <div style="padding: 16px; overflow-y: auto;">
+            <img id="pubThumb" class="event-hub-thumb hidden">
+            <div id="pubDesc" style="font-size:14px; color:var(--text-muted); margin-bottom:16px; white-space:pre-wrap;"></div>
+            
+            <div class="card" style="padding:12px;">
+                <h3 style="margin-bottom:8px;">Rules</h3>
+                <div id="pubRules" style="font-size:13px;"></div>
+            </div>
+
+            <div class="card" style="padding:0;">
+                <div style="padding:12px 16px; border-bottom:1px solid var(--border);">
+                    <h3 style="margin:0;">Leaderboard</h3>
+                </div>
+                <div class="table-container" style="margin:0;">
+                    <div id="pubLeaderboard"></div>
+                </div>
+            </div>
+            
+            <div class="card" style="padding:12px;">
+                <h3 style="margin-bottom:8px;">Participants Detailed</h3>
+                <div id="pubParticipantsDetail" style="font-size:13px;"></div>
+            </div>
+        </div>
+        <div style="padding:16px; background:var(--card-bg); border-top:1px solid var(--border);">
+            <button class="secondary" onclick="closePublicEventModal()" style="box-shadow:none;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =========================================================================
+    // FIREBASE REALTIME CLOUD DATABASE CONFIGURATION
+    // =========================================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyD0uXVP6iALWh2ADcn3jjb6zMBCAzOAUtk",
+        authDomain: "lureboard-13c15.firebaseapp.com",
+        databaseURL: "https://lureboard-13c15-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "lureboard-13c15",
+        storageBucket: "lureboard-13c15.firebasestorage.app",
+        messagingSenderId: "807956356939",
+        appId: "1:807956356939:web:af22328840dc388eb312ce"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let unsubscribeEventsListener = null;
+
+    let currentEvent = null;
+    let loggedInUser = "";
+    let loadedEvents = [];     // Events belonging to logged in user
+    let allPublicEvents = [];  // All public events across DB
+    
+    let activeFishParticipantIndex = null;
+    let activePenaltyParticipantIndex = null;
+    let activeSpeciesIndex = null;
+    let selectedModalSpecies = "";
+    let pendingSmallFish = null;
+    
+    let currentLang = "en";
+    let selectedYear = new Date().getFullYear().toString();
+
+    // Setup Configs tracking
+    let confUnit = 'metric';
+    let confMeasure = 'size';
+    let confLimit = 'all';
+
+    function changeLanguage(lang) {
+        currentLang = lang;
+        // Basic translation implementation maintained
+    }
+    
+    function t(key) {
+        return key; // Passthrough for fallback
+    }
+
+    function handleOverlayClick(e, modalId) {
+        if (e.target.id === modalId) {
+            if (modalId === 'participantModal') closeAddParticipantModal();
+            if (modalId === 'fishModal') closeFishModal();
+            if (modalId === 'penaltyModal') closePenaltyModal();
+            if (modalId === 'rulesModal') closeRulesModal();
+            if (modalId === 'smallFishWarningModal') cancelSmallFish();
+            if (modalId === 'publicEventModal') closePublicEventModal();
+        }
+    }
+
+    function parseParticipants(rawText) {
+        if (!rawText.trim()) return [];
+        let cleaned = rawText.replace(/\([\s\S]*?\)|\[[\s\S]*?\]|\{[\s\S]*?\}/g, '');
+        cleaned = cleaned.replace(/[0-9!@#$%^&*_+=\-\[\]{};':"\\|.<>\/?~`“”„«»]/g, ' ');
+        return cleaned.split(/[\n,]+/).map(n => n.replace(/\s+/g, ' ').trim()).filter(n => n.length > 0);
+    }
+
+    function handleLoginRegister() {
+        let user = document.getElementById("usernameInput").value.trim().toLowerCase();
+        let pass = document.getElementById("passwordInput").value.trim();
+        if (!user || !pass) { alert("Please enter both username and password."); return; }
+
+        const userRef = db.collection("users").doc(user);
+        userRef.get().then(doc => {
+            if (doc.exists) {
+                if (doc.data().password === pass) loginSuccess(user);
+                else alert("Incorrect password for existing account.");
+            } else {
+                userRef.set({ password: pass, createdAt: new Date() }).then(() => loginSuccess(user));
+            }
+        }).catch(err => {
+            console.error(err);
+            alert("Database connection error. Please check configuration.");
+        });
+    }
+
+    function loginSuccess(user) {
+        loggedInUser = user;
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        document.getElementById("headerLogoutBtn").classList.remove("hidden");
+        subscribeToEventsRealtime();
+    }
+
+    function handleLogout() {
+        if (unsubscribeEventsListener) unsubscribeEventsListener();
+        loggedInUser = "";
+        document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.add("hidden");
+        document.getElementById("loginSection").classList.remove("hidden");
+        document.getElementById("headerLogoutBtn").classList.add("hidden");
+    }
+
+    function subscribeToEventsRealtime() {
+        if (unsubscribeEventsListener) unsubscribeEventsListener();
+        
+        // Fetch all events for Public Hub AND user events. 
+        unsubscribeEventsListener = db.collection("events").onSnapshot(snapshot => {
+            loadedEvents = [];
+            allPublicEvents = [];
+            
+            snapshot.forEach(doc => { 
+                let data = { id: doc.id, ...doc.data() };
+                if (data.username === loggedInUser) loadedEvents.push(data);
+                if (data.details && data.details.isPublic) allPublicEvents.push(data);
+            });
+            
+            processDashboard();
+            renderPublicHub();
+
+            if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) {
+                let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
+                if (activeUpdated) {
+                    currentEvent = activeUpdated.details;
+                    renderHubUI();
+                }
+            }
+        });
+    }
+
+    function switchDashboardTab(tab) {
+        document.getElementById("tabBtnPublic").classList.remove("active");
+        document.getElementById("tabBtnMy").classList.remove("active");
+        document.getElementById("publicHubView").classList.add("hidden");
+        document.getElementById("myEventsView").classList.add("hidden");
+
+        if(tab === 'public') {
+            document.getElementById("tabBtnPublic").classList.add("active");
+            document.getElementById("publicHubView").classList.remove("hidden");
+        } else {
+            document.getElementById("tabBtnMy").classList.add("active");
+            document.getElementById("myEventsView").classList.remove("hidden");
+        }
+    }
+
+    function renderPublicHub() {
+        let container = document.getElementById("publicEventsList");
+        if (allPublicEvents.length === 0) {
+            container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No public tournaments right now.</div>`;
+            return;
+        }
+
+        // Sort latest first (assuming higher ID or timestamp)
+        allPublicEvents.sort((a, b) => b.id.localeCompare(a.id));
+
+        let html = "";
+        allPublicEvents.forEach(ev => {
+            let pCount = ev.details.participants.length;
+            let cCount = ev.details.participants.reduce((sum, p) => sum + p.catches.length, 0);
+            let thumb = ev.details.thumbnail ? `<img src="${ev.details.thumbnail}" class="event-hub-thumb">` : '';
+            let statusColor = ev.details.status === 'finished' ? 'background:#e2e8f0; color:#475569;' : 'background:#d1fae5; color:#059669;';
+            let statusText = ev.details.status === 'finished' ? 'Finished' : 'Ongoing';
+
+            html += `
+            <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
+                ${thumb}
+                <div class="flex flex-between" style="align-items:flex-start;">
+                    <div>
+                        <h3 style="margin-bottom:4px;">${ev.name}</h3>
+                        <div style="font-size:12px; color:var(--text-muted);">Host: <b>${ev.username}</b></div>
+                    </div>
+                    <span class="badge" style="${statusColor} box-shadow:none;">${statusText}</span>
+                </div>
+                <div style="margin-top:12px; font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
+                    <span>👥 ${pCount} Participants</span>
+                    <span>🎣 ${cCount} Catches</span>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function processDashboard() {
+        let years = [...new Set(loadedEvents.map(e => e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString())))].filter(y => y && y.length === 4);
+        if(years.length === 0) years = [new Date().getFullYear().toString()];
+        years.sort((a,b) => b - a);
+
+        if(!years.includes(selectedYear)) selectedYear = years[0];
+
+        let yearSelect = document.getElementById("yearSelect");
+        if(yearSelect) {
+            yearSelect.innerHTML = years.map(y => `<option value="${y}" ${y === selectedYear ? 'selected' : ''}>${y}</option>`).join('');
+            document.getElementById("yearFilterContainer").style.display = loadedEvents.length > 0 ? "block" : "none";
+        }
+
+        let yearlyAgg = {};
+        let filteredEvents = loadedEvents.filter(e => {
+            let eYear = e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString());
+            return eYear === selectedYear;
+        });
+
+        filteredEvents.forEach(ev => {
+            if(ev.details.isRanked !== false) {
+                ev.details.participants.forEach(p => {
+                    let normName = p.name.toLowerCase().trim();
+                    if(!yearlyAgg[normName]) yearlyAgg[normName] = { name: p.name, totalPts: 0, catches: 0, maxFishPts: 0 };
+                    
+                    let countedCatches = p.catches;
+                    if(ev.details.limitType === 'top5') {
+                        countedCatches = [...p.catches].sort((a, b) => b.size - a.size).slice(0, 5);
+                    }
+
+                    countedCatches.forEach(c => {
+                        let pts = calculateFishPoints(c.abbr, c.size, ev.details.species, ev.details.measureType);
+                        yearlyAgg[normName].totalPts += pts;
+                        yearlyAgg[normName].catches += 1;
+                        if(pts > yearlyAgg[normName].maxFishPts) yearlyAgg[normName].maxFishPts = pts;
+                    });
+                    
+                    // Subtract penalties
+                    let pens = p.penalties || [];
+                    pens.forEach(pen => { yearlyAgg[normName].totalPts -= parseFloat(pen.points); });
+                });
+            }
+        });
+
+        let aotyArray = Object.values(yearlyAgg)
+            .filter(a => a.totalPts > 0)
+            .sort((a, b) => {
+                if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+                if(a.catches !== b.catches) return a.catches - b.catches; 
+                return b.maxFishPts - a.maxFishPts; 
+            }).slice(0, 3);
+
+        let aotyContainer = document.getElementById("aotyContainer");
+        if(aotyArray.length > 0) {
+            let medals = ["🥇", "🥈", "🥉"];
+            let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
+                <h3 style="color:white; margin-bottom: 16px; text-align: center; font-size:18px;">🏆 Angler of the Year (${selectedYear})</h3>`;
+            
+            aotyArray.forEach((angler, idx) => {
+                aotyHtml += `
+                <div class="flex flex-between" style="background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 16px; margin-bottom: 8px; backdrop-filter: blur(8px);">
+                    <div class="flex" style="gap: 12px;">
+                        <span style="font-size: 20px; font-weight: bold;">${medals[idx]}</span>
+                        <b style="font-size: 16px;">${angler.name}</b>
+                    </div>
+                    <div style="text-align:right;">
+                        <b style="font-size: 16px;">${angler.totalPts.toFixed(1)} <span style="font-size:12px; font-weight:normal;">pts</span></b><br>
+                        <span style="font-size:12px; opacity:0.8;">${angler.catches} catches</span>
+                    </div>
+                </div>`;
+            });
+            aotyHtml += `</div>`;
+            aotyContainer.innerHTML = aotyHtml;
+            aotyContainer.classList.remove("hidden");
+        } else {
+            aotyContainer.innerHTML = "";
+            aotyContainer.classList.add("hidden");
+        }
+
+        renderEventsList(filteredEvents);
+    }
+
+    function changeYear(y) {
+        selectedYear = y;
+        processDashboard();
+    }
+
+    function renderEventsList(filteredEvents) {
+        let container = document.getElementById("eventsList");
+        if (filteredEvents.length === 0) {
+            container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No events found in ${selectedYear}.</div>`;
+            return;
+        }
+        let html = "";
+        filteredEvents.forEach(ev => {
+            let publishDate = ev.details.date || "Unknown Date";
+            let rankIcon = ev.details.isRanked !== false ? '🏆' : '⚪';
+            let rankBadge = ev.details.isRanked === false ? `<span class="badge" style="background:#ffe4e6; color:#be123c; padding:2px 6px; font-size:10px; margin-left:6px; box-shadow:none;">UNRANKED</span>` : '';
+            html += `<div class="card flex flex-between" style="padding: 16px;">
+                <div style="flex:1;">
+                    <div class="flex" style="font-weight:700; margin-bottom:6px; font-size:16px;">
+                        <span style="font-size:18px;">${rankIcon}</span> 
+                        <span>${ev.name}</span>
+                        ${rankBadge}
+                    </div>
+                    <div style="font-size:13px; color:var(--text-muted); font-weight:500;">📅 ${publishDate} • ${ev.details.participants.length} Participants</div>
+                </div>
+                <div class="flex" style="gap:8px;">
+                    <button onclick="downloadChart('${ev.id}')" class="secondary icon-btn" title="Download PDF" style="padding:10px 14px; box-shadow:none;">⬇ PDF</button>
+                    <button onclick="editEvent('${ev.id}')" class="primary-dark icon-btn" style="padding:10px 14px; box-shadow:none;">Open</button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    /* ---------------- SETUP PAGE LOGIC ---------------- */
+
+    function setUnit(u) {
+        confUnit = u;
+        document.getElementById('unitBtnMetric').className = u === 'metric' ? 'primary-dark' : 'secondary';
+        document.getElementById('unitBtnImperial').className = u === 'imperial' ? 'primary-dark' : 'secondary';
+    }
+    function setMeasure(m) {
+        confMeasure = m;
+        document.getElementById('measureBtnSize').className = m === 'size' ? 'primary-dark' : 'secondary';
+        document.getElementById('measureBtnWeight').className = m === 'weight' ? 'primary-dark' : 'secondary';
+    }
+    function setLimit(l) {
+        confLimit = l;
+        document.getElementById('limitBtnAll').className = l === 'all' ? 'primary-dark' : 'secondary';
+        document.getElementById('limitBtnTop5').className = l === 'top5' ? 'primary-dark' : 'secondary';
+    }
+
+    function handleThumbnailUpload(e) {
+        let file = e.target.files[0];
+        if(!file) return;
+        let reader = new FileReader();
+        reader.onload = function(event) {
+            document.getElementById('thumbnailPreview').src = event.target.result;
+            document.getElementById('thumbnailPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function openEventEditor(eventObj = null) {
+        document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("setupSection").classList.remove("hidden");
+        window.scrollTo(0, 0);
+
+        if (eventObj) {
+            currentEvent = JSON.parse(JSON.stringify(eventObj));
+            
+            document.getElementById("eventNameInput").value = currentEvent.name || "";
+            document.getElementById("eventDescInput").value = currentEvent.description || "";
+            document.getElementById("isPublicToggle").checked = currentEvent.isPublic === true;
+            document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
+            
+            if(currentEvent.thumbnail) {
+                document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
+                document.getElementById('thumbnailPreview').style.display = 'block';
+            } else {
+                document.getElementById('thumbnailPreview').style.display = 'none';
+                document.getElementById('thumbnailPreview').src = '';
+            }
+
+            setUnit(currentEvent.unit || 'metric');
+            setMeasure(currentEvent.measureType || 'size');
+            setLimit(currentEvent.limitType || 'all');
+
+            document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
+        } else {
+            let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
+            let savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser);
+            if (savedDefaults) { try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {} }
+            
+            currentEvent = {
+                id: "ev_" + Date.now(),
+                name: "New Fishing Trip",
+                date: new Date().toLocaleDateString(),
+                year: new Date().getFullYear().toString(),
+                status: "ongoing",
+                isRanked: true,
+                isPublic: false,
+                isStarted: false,
+                unit: 'metric',
+                measureType: 'size',
+                limitType: 'all',
+                description: "",
+                thumbnail: "",
+                species: defaultSpecies,
+                participants: []
+            };
+            
+            document.getElementById("eventNameInput").value = "";
+            document.getElementById("eventDescInput").value = "";
+            document.getElementById("isPublicToggle").checked = false;
+            document.getElementById("isRankedToggle").checked = true;
+            document.getElementById("eventThumbnailInput").value = "";
+            document.getElementById('thumbnailPreview').style.display = 'none';
+            document.getElementById("bulkParticipantsInput").value = "";
+            
+            setUnit('metric');
+            setMeasure('size');
+            setLimit('all');
+        }
+        
+        updateParticipantCountStatus();
+        refreshSetupUI();
+    }
+
+    function updateParticipantCountStatus() {
+        let rawText = document.getElementById("bulkParticipantsInput").value;
+        document.getElementById("participantCountStatus").innerText = parseParticipants(rawText).length;
+    }
+
+    function addSpecies() {
+        let name = document.getElementById("speciesName").value.trim();
+        let abbr = document.getElementById("speciesAbbr").value.trim().toLowerCase();
+        if (!name || !abbr) return;
+        currentEvent.species.push({ name, abbr, tiers: [{ from: 0, to: "above", multiplier: 1.0 }] });
+        document.getElementById("speciesName").value = "";
+        document.getElementById("speciesAbbr").value = "";
+        refreshSetupUI();
+    }
+
+    function removeSpecies(sIdx) { currentEvent.species.splice(sIdx, 1); refreshSetupUI(); }
+
+    function refreshSetupUI() {
+        let container = document.getElementById("speciesConfigContainer");
+        container.innerHTML = currentEvent.species.map((s, sIdx) => {
+            let rulesSummary = s.tiers.map(t => {
+                let fromVal = t.from === "" ? 0 : t.from;
+                let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
+                let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
+                return `${fromVal}-${toVal} ${mult}x`;
+            }).join(' | ');
+
+            return `
+            <div class="card" style="padding:16px; border:1px solid var(--border); margin-bottom:12px; background:var(--card-bg);">
+                <div class="flex flex-between">
+                    <div>
+                        <div class="flex">
+                            <b style="font-size:16px; color:var(--text);">${s.name}</b>
+                            <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${s.abbr.toUpperCase()}</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">${rulesSummary}</div>
+                    </div>
+                    <div class="flex">
+                        <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})" style="box-shadow:none;">Rules</button>
+                        <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeSpecies(${sIdx})">✕</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join("");
+
+        if (currentEvent.isStarted) {
+            document.getElementById("bulkParticipantsInput").disabled = true;
+            document.getElementById("bulkParticipantsOverlay").classList.remove("hidden");
+            document.getElementById("bulkParticipantsOverlay").style.display = "flex";
+        } else {
+            document.getElementById("bulkParticipantsInput").disabled = false;
+            document.getElementById("bulkParticipantsOverlay").classList.add("hidden");
+            document.getElementById("bulkParticipantsOverlay").style.display = "none";
+        }
+    }
+
+    // RULES MODAL
+    function openRulesModal(sIdx) { activeSpeciesIndex = sIdx; document.getElementById("rulesModal").classList.remove("hidden"); renderRules(); }
+    function closeRulesModal() { document.getElementById("rulesModal").classList.add("hidden"); activeSpeciesIndex = null; refreshSetupUI(); }
+    
+    function addNewRule() {
+        let s = currentEvent.species[activeSpeciesIndex];
+        let lastTier = s.tiers[s.tiers.length - 1];
+        if (lastTier && lastTier.to === 'above') { alert("Cannot add a rule after an 'Above' limit."); return; }
+        s.tiers.push({ from: lastTier ? (parseFloat(lastTier.to) + 1 || 0) : 0, to: 'above', multiplier: 1.0 });
+        renderRules();
+    }
+    
+    function removeRule(tIdx) {
+        let s = currentEvent.species[activeSpeciesIndex];
+        s.tiers.splice(tIdx, 1);
+        if(s.tiers.length === 0) s.tiers.push({ from: 0, to: 'above', multiplier: 1.0 });
+        recalcRulesCascading(); renderRules();
+    }
+
+    function updateRuleField(tIdx, field, val) {
+        let s = currentEvent.species[activeSpeciesIndex];
+        if (field === 'toType') {
+            if (val === 'above') { s.tiers[tIdx].to = 'above'; s.tiers.splice(tIdx + 1); } 
+            else { s.tiers[tIdx].to = (parseFloat(s.tiers[tIdx].from) || 0) + 10; }
+        } 
+        else if (field === 'to') { s.tiers[tIdx].to = parseFloat(val) || 0; } 
+        else if (field === 'from') {
+            let v = parseFloat(val) || 0;
+            let minFrom = (tIdx > 0 && s.tiers[tIdx-1].to !== 'above') ? parseFloat(s.tiers[tIdx-1].to) + 1 : 0;
+            s.tiers[tIdx].from = Math.max(v, minFrom);
+        } 
+        else if (field === 'multiplier') { s.tiers[tIdx].multiplier = parseFloat(val); }
+        recalcRulesCascading(); renderRules();
+    }
+
+    function recalcRulesCascading() {
+        let s = currentEvent.species[activeSpeciesIndex];
+        for (let i = 1; i < s.tiers.length; i++) {
+            if (s.tiers[i-1].to !== 'above') {
+                s.tiers[i].from = Math.max(parseFloat(s.tiers[i].from), parseFloat(s.tiers[i-1].to) + 1);
+            }
+        }
+    }
+
+    function renderRules() {
+        let s = currentEvent.species[activeSpeciesIndex];
+        document.getElementById('rulesContainer').innerHTML = s.tiers.map((tData, tIdx) => {
+            let minFrom = tIdx > 0 ? (s.tiers[tIdx-1].to !== 'above' ? parseFloat(s.tiers[tIdx-1].to) + 1 : 0) : 0;
+            let multOptions = '';
+            for(let i = 10; i <= 30; i += 1) { 
+                let v = (i/10).toFixed(1);
+                multOptions += `<option value="${v}" ${parseFloat(tData.multiplier) === parseFloat(v) ? 'selected' : ''}>${v}x</option>`;
+            }
+            return `
+            <div class="tier-grid" style="position:relative;">
+                <button class="danger icon-btn" style="position:absolute; top:-8px; right:-8px; padding:4px 8px; font-size:11px; border-radius:50%; box-shadow:none;" onclick="removeRule(${tIdx})">✕</button>
+                <div><label>From</label><input type="number" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)"></div>
+                <div><label>To</label>
+                    <div style="display:flex; gap:4px;">
+                        <select onchange="updateRuleField(${tIdx}, 'toType', this.value)" style="flex:1;">
+                            <option value="number" ${tData.to !== 'above' ? 'selected' : ''}>Number</option>
+                            <option value="above" ${tData.to === 'above' ? 'selected' : ''}>Above</option>
+                        </select>
+                        ${tData.to !== 'above' ? `<input type="number" value="${tData.to}" onchange="updateRuleField(${tIdx}, 'to', this.value)" style="flex:1;">` : ''}
+                    </div>
+                </div>
+                <div class="full-width"><label>Multiplier</label><select onchange="updateRuleField(${tIdx}, 'multiplier', this.value)">${multOptions}</select></div>
+            </div>`;
+        }).join('');
+    }
+
+    // TO HUB
+    function goToEventHub() {
+        currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
+        currentEvent.description = document.getElementById("eventDescInput").value.trim();
+        currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
+        currentEvent.isRanked = document.getElementById("isRankedToggle").checked;
+        
+        let thumbSrc = document.getElementById('thumbnailPreview').src;
+        if(thumbSrc && thumbSrc.startsWith('data:')) currentEvent.thumbnail = thumbSrc;
+
+        currentEvent.unit = confUnit;
+        currentEvent.measureType = confMeasure;
+        currentEvent.limitType = confLimit;
+        
+        if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+        if(!currentEvent.status) currentEvent.status = "ongoing";
+        
+        if (!currentEvent.isStarted) {
+            let items = parseParticipants(document.getElementById("bulkParticipantsInput").value);
+            let existingMap = {};
+            currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [] });
+
+            currentEvent.participants = items.map(name => {
+                let lowerName = name.toLowerCase();
+                return {
+                    id: existingMap[lowerName] ? existingMap[lowerName].id : 'p_' + Math.random().toString(36).substr(2, 9),
+                    name: name,
+                    catches: existingMap[lowerName] ? existingMap[lowerName].catches : [],
+                    penalties: existingMap[lowerName] ? existingMap[lowerName].penalties : []
+                };
+            });
+            currentEvent.isStarted = true;
+        }
+        
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.remove("hidden");
+        window.scrollTo(0, 0);
+        renderHubUI();
+    }
+
+    function backToSetup() {
+        document.getElementById("hubSection").classList.add("hidden");
+        document.getElementById("setupSection").classList.remove("hidden");
+        window.scrollTo(0, 0);
+    }
+
+    /* ---------------- EVENT HUB LOGIC ---------------- */
+    
+    function promptFinishEvent() {
+        if(currentEvent.status === 'finished') return;
+        if (confirm("If you finish the event now you will not be able to change anything anymore and the event will be officially finished (okay, cancel)")) {
+            currentEvent.status = "finished";
+            saveCurrentEvent(true);
+        }
+    }
+
+    function openAddParticipantModal() {
+        if(currentEvent.status === 'finished') return;
+        document.getElementById("modalParticipantName").value = "";
+        document.getElementById("participantModal").classList.remove("hidden");
+        setTimeout(() => document.getElementById("modalParticipantName").focus(), 100);
+    }
+    function closeAddParticipantModal() { document.getElementById("participantModal").classList.add("hidden"); }
+    function confirmAddParticipantModal() {
+        let items = parseParticipants(document.getElementById("modalParticipantName").value);
+        items.forEach(name => currentEvent.participants.push({ id: 'p_'+Math.random().toString(36).substr(2,9), name: name, catches: [], penalties: [] }));
+        closeAddParticipantModal(); renderHubUI();
+    }
+
+    function editParticipantName(index) {
+        if(currentEvent.status === 'finished') return;
+        let p = currentEvent.participants[index];
+        let newName = prompt("Edit Name:", p.name);
+        if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
+            p.name = newName.trim();
+            renderHubUI(); saveCurrentEvent(false);
+        }
+    }
+
+    // -- FISH --
+    function selectModalSpecies(abbr, element) {
+        selectedModalSpecies = abbr;
+        document.querySelectorAll("#modalSpeciesTabs .species-tab").forEach(tab => tab.classList.remove("active"));
+        if (element) element.classList.add("active");
+    }
+
+    function openFishModal(pIndexReal) {
+        if(currentEvent.status === 'finished') return;
+        activeFishParticipantIndex = pIndexReal;
+        
+        let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
+        document.getElementById("modalFishSizeLabel").innerText = `Measurement (${unitText})`;
+
+        document.getElementById("modalSpeciesTabs").innerHTML = currentEvent.species.map((s, idx) => `
+            <div class="species-tab ${idx === 0 ? 'active' : ''}" onclick="selectModalSpecies('${s.abbr}', this)">${s.abbr}</div>
+        `).join("");
+        
+        selectedModalSpecies = currentEvent.species.length > 0 ? currentEvent.species[0].abbr : "";
+        document.getElementById("modalFishSize").value = "";
+        document.getElementById("fishModal").classList.remove("hidden");
+        renderModalCatches();
+        setTimeout(() => document.getElementById("modalFishSize").focus(), 100);
+    }
+    function closeFishModal() { document.getElementById("fishModal").classList.add("hidden"); activeFishParticipantIndex = null; selectedModalSpecies = ""; }
+
+    function confirmAddFishModal() {
+        if (activeFishParticipantIndex === null || !selectedModalSpecies) return;
+        let size = parseFloat(document.getElementById("modalFishSize").value.replace(',', '.'));
+        if (isNaN(size) || size <= 0) return;
+
+        let sp = currentEvent.species.find(s => s.abbr === selectedModalSpecies);
+        if (sp && sp.tiers && sp.tiers.length > 0) {
+            let firstFrom = parseFloat(sp.tiers[0].from);
+            if (!isNaN(firstFrom) && size < firstFrom) {
+                pendingSmallFish = { abbr: selectedModalSpecies, size };
+                document.getElementById("smallFishWarningModal").classList.remove("hidden");
+                return;
+            }
+        }
+        executeAddFish(selectedModalSpecies, size);
+    }
+
+    function executeAddFish(abbr, size) {
+        currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
+        document.getElementById("modalFishSize").value = ""; 
+        renderModalCatches(); renderHubUI(); document.getElementById("modalFishSize").focus();
+    }
+    function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
+    function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
+    
+    function removeFish(pIndexReal, cIdx) {
+        currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
+        if(activeFishParticipantIndex !== null) renderModalCatches();
+        renderHubUI();
+    }
+
+    function renderModalCatches() {
+        let container = document.getElementById("modalCurrentCatches");
+        if (activeFishParticipantIndex === null) return;
+        let p = currentEvent.participants[activeFishParticipantIndex];
+        if (p.catches.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">No catches logged.</p>`; return; }
+        
+        let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
+        container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">Current Catches:</label>` + 
+            p.catches.map((c, cIdx) => `
+            <div class="flex flex-between" style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <span><b>${c.size}</b>${unitText} <span class="badge" style="background:#f1f5f9; box-shadow:none;">${c.abbr.toUpperCase()}</span></span>
+                <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">✕</button>
+            </div>`).join('');
+    }
+
+    // -- PENALTIES --
+    function openPenaltyModal(pIndexReal) {
+        if(currentEvent.status === 'finished') return;
+        activePenaltyParticipantIndex = pIndexReal;
+        document.getElementById("modalPenaltyPoints").value = "";
+        document.getElementById("modalPenaltyReason").value = "";
+        document.getElementById("penaltyModal").classList.remove("hidden");
+        renderModalPenalties();
+    }
+    function closePenaltyModal() { document.getElementById("penaltyModal").classList.add("hidden"); activePenaltyParticipantIndex = null; }
+    
+    function confirmAddPenalty() {
+        if(activePenaltyParticipantIndex === null) return;
+        let pts = parseFloat(document.getElementById("modalPenaltyPoints").value);
+        let reason = document.getElementById("modalPenaltyReason").value.trim();
+        if(isNaN(pts) || pts <= 0 || !reason) { alert("Enter valid points and reason."); return; }
+        
+        let p = currentEvent.participants[activePenaltyParticipantIndex];
+        if(!p.penalties) p.penalties = [];
+        p.penalties.push({ points: pts, reason: reason });
+        
+        document.getElementById("modalPenaltyPoints").value = "";
+        document.getElementById("modalPenaltyReason").value = "";
+        renderModalPenalties(); renderHubUI();
+    }
+    
+    function removePenalty(pIndexReal, penIdx) {
+        currentEvent.participants[pIndexReal].penalties.splice(penIdx, 1);
+        if(activePenaltyParticipantIndex !== null) renderModalPenalties();
+        renderHubUI();
+    }
+
+    function renderModalPenalties() {
+        let container = document.getElementById("modalCurrentPenalties");
+        if (activePenaltyParticipantIndex === null) return;
+        let p = currentEvent.participants[activePenaltyParticipantIndex];
+        if (!p.penalties || p.penalties.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">No penalties.</p>`; return; }
+        
+        container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">Active Penalties:</label>` + 
+            p.penalties.map((pen, idx) => `
+            <div class="flex flex-between" style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div><b style="color:var(--danger);">-${pen.points} pts</b> <span style="font-size:13px; color:var(--text-muted); margin-left:6px;">${pen.reason}</span></div>
+                <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none; background:transparent; color:var(--text-muted);" onclick="removePenalty(${activePenaltyParticipantIndex}, ${idx})">✕</button>
+            </div>`).join('');
+    }
+
+    function showPenaltyReason(pIdx) {
+        let p = currentEvent.participants[pIdx];
+        if(p.penalties && p.penalties.length > 0) {
+            let reasons = p.penalties.map(pen => `-${pen.points}pts: ${pen.reason}`).join('\n');
+            alert(`Penalties for ${p.name}:\n\n${reasons}`);
+        }
+    }
+
+
+    // -- SCORING & LEADERBOARD --
+    function calculateFishPoints(abbr, size, speciesList, measureType) {
+        if(measureType === 'weight') return size; // Direct weight 1:1 points
+        let sp = speciesList.find(s => s.abbr === abbr);
+        if (!sp) return size;
+        let matchingTier = sp.tiers.find(t => {
+            let f = t.from === "" ? 0 : parseFloat(t.from);
+            if (t.to === 'above') return size >= f;
+            return size >= f && size <= (t.to === "" ? Infinity : parseFloat(t.to));
+        });
+        let m = (matchingTier && matchingTier.multiplier !== "") ? parseFloat(matchingTier.multiplier) : 1.0;
+        return size * (isNaN(m) ? 1.0 : m);
+    }
+
+    function renderHubUI() {
+        let isFinished = currentEvent.status === 'finished';
+        document.getElementById("btnFinishEvent").disabled = isFinished;
+        document.getElementById("hubAddNewParticipantBtn").style.display = isFinished ? "none" : "block";
+
+        let query = document.getElementById("searchParticipant").value.toLowerCase();
+        let container = document.getElementById("participantsHubContainer");
+        document.getElementById("hubParticipantCount").innerText = currentEvent.participants.length;
+
+        let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
+
+        let filteredHtml = "";
+        currentEvent.participants.forEach((p, pIndexReal) => {
+            if (!p.name.toLowerCase().includes(query)) return;
+
+            let catchesText = p.catches.length > 0 
+                ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') 
+                : `<span style="color:var(--text-muted); opacity: 0.7; font-style:italic;">No catches</span>`;
+
+            let penBadge = (p.penalties && p.penalties.length > 0) ? `<button onclick="showPenaltyReason(${pIndexReal})" class="danger icon-btn" style="padding:2px 6px; border-radius:50%; box-shadow:none; font-size:10px;" title="Has Penalties">❗</button>` : '';
+
+            let actionButtons = isFinished ? `<span style="font-size:12px; color:var(--text-muted);">Locked</span>` : `
+                <button onclick="openPenaltyModal(${pIndexReal})" class="secondary icon-btn" style="padding:10px; box-shadow:none;" title="Add Penalty">⚖️</button>
+                <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:10px 16px;">Add/Rem</button>
+            `;
+
+            let editBtn = isFinished ? '' : `<button onclick="editParticipantName(${pIndexReal})" class="icon-btn" style="padding:4px; background:transparent; color:var(--text-muted); box-shadow:none;">✏️</button>`;
+
+            filteredHtml += `
+            <div class="card" style="padding:16px; margin-bottom:16px;">
+                <div class="flex flex-between" style="align-items:center;">
+                    <div class="flex" style="gap: 8px;">
+                        <b style="font-size:16px;">${pIndexReal + 1}. ${p.name}</b> ${penBadge} ${editBtn}
+                    </div>
+                    <div class="flex">${actionButtons}</div>
+                </div>
+                <div style="margin-top:16px; font-size:14px; color:var(--text-muted); line-height: 1.5;">${catchesText}</div>
+            </div>`;
+        });
+
+        container.innerHTML = filteredHtml || `<div style="text-align:center; padding:20px; color:var(--text-muted);">No matching participants found.</div>`;
+        renderLeaderboard();
+    }
+
+    function renderLeaderboard(isPublicView = false, overrideEvent = null) {
+        let ev = overrideEvent || currentEvent;
+        if(!ev) return;
+
+        let mode = isPublicView ? 'points' : document.getElementById("rankingMode").value;
+        let container = document.getElementById(isPublicView ? "pubLeaderboard" : "leaderboardContainer");
+        let topSummaryContainer = document.getElementById(isPublicView ? "pubTopSummary" : "leaderboardTopSummary"); // (Ignored pubTopSummary for brevity but can add)
+        
+        let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+
+        let processed = ev.participants.map(p => {
+            let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
+            let countedCatches = p.catches;
+            
+            if(ev.limitType === 'top5') {
+                countedCatches = [...p.catches].sort((a,b) => b.size - a.size).slice(0,5);
+            }
+
+            countedCatches.forEach(c => {
+                totalMeasure += c.size;
+                if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+                totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+            });
+            
+            let penPts = 0;
+            if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
+            totalPts -= penPts;
+
+            return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
+        });
+
+        let sortedByMain = [...processed].sort((a, b) => mode === 'points' ? b.totalPts - a.totalPts : b.totalMeasure - a.totalMeasure);
+        let sortedByBiggest = [...processed].sort((a, b) => b.maxFishMeasure - a.maxFishMeasure);
+
+        if (!isPublicView && topSummaryContainer) {
+            if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishMeasure > 0) {
+                topSummaryContainer.innerHTML = `
+                    <div class="flex flex-between">
+                        <div>
+                            <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase;">🏆 Biggest Fish</div>
+                            <div style="font-weight:700; font-size:18px; color:var(--text); margin-top:4px;">${sortedByBiggest[0].name}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishMeasure}</span> ${unitText}
+                            <div class="badge" style="background:#fef08a; color:#b45309; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
+                        </div>
+                    </div>`;
+                topSummaryContainer.classList.remove('hidden');
+            } else { topSummaryContainer.classList.add('hidden'); }
+        }
+
+        let html = `<table><tr><th style="width:40px;">#</th><th>Name</th><th>Pts</th><th>${unitText.toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
+        sortedByMain.forEach((p, idx) => {
+            let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
+            let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
+            let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
+            html += `<tr>
+                <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
+                <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
+                <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
+                <td>${p.totalMeasure.toFixed(1)}</td>
+                <td>${p.amountCatches}</td>
+                <td>${maxDisplay}</td>
+            </tr>`;
+        });
+        html += `</table>`;
+        container.innerHTML = html;
+    }
+
+    function saveCurrentEvent(redirect = true) {
+        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
+        const payload = { username: loggedInUser, name: currentEvent.name, details: currentEvent, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        db.collection("events").doc(currentEvent.id).set(payload).then(() => { if(redirect) showDashboard(); })
+        .catch(err => { console.error("Save error:", err); alert("Failed to save event to cloud."); });
+    }
+
+    // -- PUBLIC EVENT MODAL --
+    function openPublicEvent(eventId) {
+        let evData = allPublicEvents.find(e => e.id === eventId);
+        if(!evData) return;
+        let ev = evData.details;
+
+        document.getElementById("pubTitle").innerText = evData.name;
+        document.getElementById("pubHost").innerText = `Hosted by ${evData.username} | ${ev.date}`;
+        
+        if(ev.thumbnail) {
+            document.getElementById("pubThumb").src = ev.thumbnail;
+            document.getElementById("pubThumb").classList.remove("hidden");
+        } else {
+            document.getElementById("pubThumb").classList.add("hidden");
+        }
+
+        document.getElementById("pubDesc").innerText = ev.description || "No description provided.";
+        
+        // Rules
+        let limitTxt = ev.limitType === 'top5' ? "Top 5 Counted" : "All Fish Counted";
+        let measureTxt = ev.measureType === 'weight' ? "Weighted" : "Size/Points";
+        let rulesHtml = `<div style="margin-bottom:12px;"><b>Format:</b> ${measureTxt} | ${limitTxt}</div>`;
+        
+        rulesHtml += ev.species.map(s => {
+            let trs = s.tiers.map(t => `${t.from}-${t.to} (${parseFloat(t.multiplier||1).toFixed(1)}x)`).join(', ');
+            return `<div><b>${s.name} (${s.abbr.toUpperCase()}):</b> ${trs}</div>`;
+        }).join('');
+        document.getElementById("pubRules").innerHTML = rulesHtml;
+
+        // Leaderboard
+        renderLeaderboard(true, ev);
+
+        // Participants Detailed
+        let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+        document.getElementById("pubParticipantsDetail").innerHTML = ev.participants.map((p, i) => {
+            let catches = p.catches.length > 0 ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') : 'None';
+            let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger);">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
+            return `<div style="padding:8px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
+        }).join('');
+
+        document.getElementById("publicEventModal").classList.remove("hidden");
+    }
+    function closePublicEventModal() { document.getElementById("publicEventModal").classList.add("hidden"); }
+
+
+    // -- PDF --
+    function downloadChart(eventId = null) {
+        let ev = currentEvent;
+        if (eventId) { let found = loadedEvents.find(e => e.id === eventId); if (found) ev = found.details; }
+        if (!ev || ev.participants.length === 0) { alert("No data to download."); return; }
+
+        let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+
+        let processed = ev.participants.map(p => {
+            let totalM = 0, totalPts = 0, maxFishM = 0, maxFishAbbr = "";
+            let countedCatches = ev.limitType === 'top5' ? [...p.catches].sort((a,b)=>b.size-a.size).slice(0,5) : p.catches;
+            
+            countedCatches.forEach(c => {
+                totalM += c.size;
+                if (c.size > maxFishM) { maxFishM = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+                totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+            });
+            
+            let penPts = 0; let penStr = "";
+            if(p.penalties && p.penalties.length > 0) {
+                p.penalties.forEach(pn => penPts += parseFloat(pn.points));
+                penStr = ` (Penalty: -${penPts})`;
+            }
+            totalPts -= penPts;
+
+            let allCatchesStr = p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') || "-";
+            return { name: p.name, totalM, totalPts, maxFishM, maxFishAbbr, amountCatches: countedCatches.length, allCatchesStr, penStr };
+        });
+
+        processed.sort((a, b) => b.totalPts - a.totalPts);
+
+        let htmlContent = `
+            <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
+                <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">Tournament Results: ${ev.name}</h2>
+                <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">Generated on: ${new Date().toLocaleDateString()} | Format: ${ev.limitType==='top5'?'Top 5 Counted':'All Fish'}</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                    <thead><tr style="background-color: #4f46e5; color: #ffffff;">
+                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Place</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Name</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Points</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Total ${unitText.toUpperCase()}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Catches</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Biggest</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; width: 35%;">Details</th>
+                    </tr></thead><tbody>
+                        ${processed.map((p, i) => `
+                            <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
+                                <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${i + 1}</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalPts.toFixed(1)}${p.penStr ? `<br><span style="color:#e11d48; font-size:11px;">${p.penStr}</span>` : ''}</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.totalM.toFixed(1)}</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.amountCatches}</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.maxFishM > 0 ? `${p.maxFishM}${unitText} ${p.maxFishAbbr}` : '-'}</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px; line-height: 1.4;">${p.allCatchesStr}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+        let opt = {
+            margin: 0.3, filename: `${ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`,
+            image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+        };
+        let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent;
+        html2pdf().set(opt).from(tempDiv).save();
+    }
+    
+    changeLanguage(document.getElementById("langSelect").value);
+</script>
+</body>
+</html>
