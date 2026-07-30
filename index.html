@@ -17,28 +17,13 @@
     <style>
         /* MODERN INDIGO THEME */
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            --bg: #eef2ff;
-            --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-            --card-bg: rgba(255, 255, 255, 0.65);
-            --text: #1e1b4b;
-            --text-muted: #6366f1;
-            --border: rgba(99, 102, 241, 0.15);
-            --danger: #f43f5e;
-            --danger-dark: #be123c;
-            --success: #10b981;
-
-            --card-radius: 24px;
-            --input-radius: 16px;
-            --btn-radius: 24px;
-            --card-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
-            --header-bg: #4f46e5;
-            --header-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --header-text: #ffffff;
-            --glass-blur: blur(16px);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+            --primary: #6366f1; --primary-dark: #4f46e5; --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --bg: #eef2ff; --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.65); --text: #1e1b4b; --text-muted: #6366f1;
+            --border: rgba(99, 102, 241, 0.15); --danger: #f43f5e; --danger-dark: #be123c; --success: #10b981;
+            --card-radius: 24px; --input-radius: 16px; --btn-radius: 24px; --card-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
+            --header-bg: #4f46e5; --header-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --header-text: #ffffff; --glass-blur: blur(16px); --glass-border: 1px solid rgba(255, 255, 255, 0.6);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
@@ -220,7 +205,7 @@
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
                 <!-- Disabled Overlay Box -->
-                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
+                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
                     <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
                 </div>
             </div>
@@ -361,7 +346,7 @@
 
 <script>
     // =========================================================================
-    // 1. FIREBASE REALTIME CLOUD DATABASE CONFIGURATION
+    // FIREBASE REALTIME CLOUD DATABASE CONFIGURATION
     // =========================================================================
     const firebaseConfig = {
         apiKey: "AIzaSyD0uXVP6iALWh2ADcn3jjb6zMBCAzOAUtk",
@@ -635,27 +620,30 @@
     }
 
     function processDashboard() {
-        let years = [...new Set(loadedEvents.map(e => e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString())))].filter(y => y && y.length === 4);
+        let years = [...new Set(loadedEvents.map(e => {
+            let y = e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString());
+            return String(y);
+        }))].filter(y => y && y.length === 4);
+
         if(years.length === 0) years = [new Date().getFullYear().toString()];
         years.sort((a,b) => b - a);
 
-        if(!years.includes(selectedYear)) selectedYear = years[0];
+        if(!years.includes(String(selectedYear))) selectedYear = years[0];
 
         let yearSelect = document.getElementById("yearSelect");
         if(yearSelect) {
-            yearSelect.innerHTML = years.map(y => `<option value="${y}" ${y === selectedYear ? 'selected' : ''}>${y}</option>`).join('');
+            yearSelect.innerHTML = years.map(y => `<option value="${y}" ${String(y) === String(selectedYear) ? 'selected' : ''}>${y}</option>`).join('');
             document.getElementById("yearFilterContainer").style.display = loadedEvents.length > 0 ? "block" : "none";
         }
 
-        // Include events explicitly marked finished, AND legacy events with missing status
-        let rankedFinishedEvents = loadedEvents.filter(e => {
-            let eYear = e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString());
-            let status = e.details.status || 'finished'; // Default legacy to finished
-            return eYear === selectedYear && e.details.isRanked !== false && status === 'finished';
+        // Get all ranked events for the selected year (max 7)
+        let rankedEvents = loadedEvents.filter(e => {
+            let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+            return eYear === String(selectedYear) && e.details.isRanked !== false;
         }).slice(0, 7);
 
         let yearlyAgg = {};
-        rankedFinishedEvents.forEach(ev => {
+        rankedEvents.forEach(ev => {
             let placements = getEventPlacements(ev.details);
             Object.keys(placements).forEach(normName => {
                 if(!yearlyAgg[normName]) {
@@ -666,20 +654,21 @@
             });
         });
 
+        // Compute 5 BEST (lowest) placement scores for each angler
         let aotyArray = Object.values(yearlyAgg).map(angler => {
             let sortedScores = [...angler.scores].sort((a, b) => a - b);
             let best5 = sortedScores.slice(0, 5); 
             let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
             return {
                 name: angler.name,
-                validEventsCount: best5.length,
+                validEventsCount: angler.scores.length,
                 totalRankPts: totalRankPts
             };
         }).filter(a => a.validEventsCount > 0);
 
         aotyArray.sort((a, b) => {
-            if(a.totalRankPts !== b.totalRankPts) return a.totalRankPts - b.totalRankPts; 
-            return b.validEventsCount - a.validEventsCount; 
+            if(a.totalRankPts !== b.totalRankPts) return a.totalRankPts - b.totalRankPts; // Lowest placement score wins
+            return b.validEventsCount - a.validEventsCount; // Tiebreaker: played more tournaments
         });
 
         let aotyContainer = document.getElementById("aotyContainer");
@@ -713,10 +702,12 @@
         }
 
         renderEventsList(loadedEvents.filter(e => {
-            let eYear = e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString());
-            return eYear === selectedYear;
+            let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+            return eYear === String(selectedYear);
         }));
     }
+
+    function changeYear(y) { selectedYear = y; processDashboard(); }
 
     function renderEventsList(filteredEvents) {
         let container = document.getElementById("eventsList");
@@ -765,16 +756,14 @@
         if (eventObj) {
             currentEvent = JSON.parse(JSON.stringify(eventObj));
             if(currentEvent.isStarted === undefined) currentEvent.isStarted = true;
-            if(!currentEvent.status) currentEvent.status = "finished"; // default legacy to finished
+            if(!currentEvent.status) currentEvent.status = "finished";
             document.getElementById("eventNameInput").value = currentEvent.name;
             document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
             document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         } else {
             let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
             let savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser);
-            if (savedDefaults) {
-                try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {}
-            }
+            if (savedDefaults) { try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {} }
             
             currentEvent = {
                 id: "ev_" + Date.now(),
@@ -816,8 +805,7 @@
 
     function updateParticipantCountStatus() {
         let rawText = document.getElementById("bulkParticipantsInput").value;
-        let items = parseParticipants(rawText);
-        document.getElementById("participantCountStatus").innerText = items.length;
+        document.getElementById("participantCountStatus").innerText = parseParticipants(rawText).length;
     }
 
     function addSpecies() {
@@ -862,7 +850,6 @@
             </div>`;
         }).join("");
 
-        // Toggle editing overlay on Step 1 if the event is already started
         if (currentEvent.isStarted) {
             document.getElementById("bulkParticipantsInput").disabled = true;
             document.getElementById("bulkParticipantsOverlay").classList.remove("hidden");
@@ -919,13 +906,8 @@
 
     function renderRules() {
         let s = currentEvent.species[activeSpeciesIndex];
-        document.getElementById('rulesModalTitle').innerText = t('edit_rules') + ': ' + s.name;
-        
-        let html = '';
-        s.tiers.forEach((tData, tIdx) => {
-            let prevTo = (tIdx > 0 && s.tiers[tIdx-1].to !== 'above') ? parseFloat(s.tiers[tIdx-1].to) : -1;
-            let minFrom = tIdx > 0 ? prevTo + 1 : 0;
-            
+        document.getElementById('rulesContainer').innerHTML = s.tiers.map((tData, tIdx) => {
+            let minFrom = tIdx > 0 ? (s.tiers[tIdx-1].to !== 'above' ? parseFloat(s.tiers[tIdx-1].to) + 1 : 0) : 0;
             let multOptions = '';
             for(let i = 10; i <= 30; i += 1) { 
                 let v = (i/10).toFixed(1);
@@ -957,9 +939,8 @@
 
         if(wantsRanked) {
             let existingRankedCount = loadedEvents.filter(e => {
-                let eYear = e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString());
-                let status = e.details.status || 'finished';
-                return eYear === currentEvent.year && e.details.isRanked !== false && e.id !== currentEvent.id;
+                let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+                return eYear === String(currentEvent.year) && e.details.isRanked !== false && e.id !== currentEvent.id;
             }).length;
 
             if(existingRankedCount >= 7) {
@@ -1251,13 +1232,13 @@
                 <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                     <thead><tr style="background-color: #4f46e5; color: #ffffff;">
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('place')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('name')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('points')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('total_cm')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">Amt</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('biggest_fish')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff; width: 40%;">${t('details')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('points')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('total_cm')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Amt</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('biggest_fish')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 40%;">${t('details')}</th>
                     </tr></thead>
                     <tbody>${processed.map((p, i) => `
                         <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
@@ -1278,19 +1259,18 @@
     }
 
     function downloadSeasonChart() {
-        let rankedFinishedEvents = loadedEvents.filter(e => {
-            let eYear = e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString());
-            let status = e.details.status || 'finished';
-            return eYear === selectedYear && e.details.isRanked !== false && status === 'finished';
+        let rankedEvents = loadedEvents.filter(e => {
+            let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+            return eYear === String(selectedYear) && e.details.isRanked !== false;
         }).slice(0, 7);
 
-        if (rankedFinishedEvents.length === 0) {
-            alert("No finished ranked tournaments found for this season.");
+        if (rankedEvents.length === 0) {
+            alert("No ranked tournaments found for this season.");
             return;
         }
 
         let yearlyAgg = {};
-        rankedFinishedEvents.forEach(ev => {
+        rankedEvents.forEach(ev => {
             let placements = getEventPlacements(ev.details);
             Object.keys(placements).forEach(normName => {
                 if(!yearlyAgg[normName]) {
@@ -1305,7 +1285,7 @@
             let sortedScores = [...angler.scores].sort((a, b) => a - b);
             let best5 = sortedScores.slice(0, 5);
             let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
-            return { name: angler.name, validEventsCount: best5.length, totalRankPts: totalRankPts, allScoresStr: sortedScores.join(', ') };
+            return { name: angler.name, validEventsCount: angler.scores.length, totalRankPts: totalRankPts, allScoresStr: sortedScores.join(', ') };
         }).filter(a => a.validEventsCount > 0);
 
         aotyArray.sort((a, b) => {
@@ -1319,11 +1299,11 @@
                 <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                     <thead><tr style="background-color: #4f46e5; color: #ffffff;">
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('place')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('name')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('rank_pts_best5')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('tournaments_played')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff;">${t('all_placements')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('rank_pts_best5')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('tournaments_played')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('all_placements')}</th>
                     </tr></thead>
                     <tbody>${aotyArray.map((p, index) => `
                         <tr style="${index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
