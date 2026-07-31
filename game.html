@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Flipping Simulator</title>
+    <title>Car Flipping Simulator - High Stakes</title>
     <style>
         :root {
-            --bg: #121212;
-            --panel: #1e1e1e;
-            --text: #ffffff;
-            --accent: #ff4757;
-            --success: #2ed573;
-            --warning: #ffa502;
+            --bg: #0b0c10;
+            --panel: #1f2833;
+            --text: #c5c6c7;
+            --accent: #66fcf1;
+            --accent-dark: #45a29e;
+            --lose: #ff4757;
+            --win: #2ed573;
+            --gold: #ffd700;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -31,30 +33,35 @@
             align-items: center;
             background: var(--panel);
             padding: 15px 25px;
-            border-radius: 10px;
+            border-radius: 12px;
             box-sizing: border-box;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            margin-bottom: 25px;
+            border-bottom: 3px solid var(--accent-dark);
         }
-        .balance { font-size: 1.5rem; font-weight: bold; }
+        .balance { font-size: 1.5rem; font-weight: bold; color: white; }
+        .balance span { color: var(--accent); }
         button {
             background: var(--accent);
-            color: white;
+            color: #000;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            transition: 0.2s opacity;
+            font-size: 1rem;
+            transition: 0.2s all;
+            text-transform: uppercase;
         }
-        button:hover { opacity: 0.8; }
-        button:disabled { background: #555; cursor: not-allowed; }
+        button:hover { transform: scale(1.05); background: #fff; }
+        button:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; }
         
         .container {
             width: 100%;
             max-width: 800px;
             text-align: center;
         }
+        h2 { color: white; }
+        
         .car-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -64,58 +71,105 @@
         .car-card {
             background: var(--panel);
             padding: 20px;
-            border-radius: 10px;
-            border: 2px solid transparent;
+            border-radius: 12px;
+            border: 2px solid #333;
             cursor: pointer;
             transition: 0.2s all;
+            position: relative;
+            overflow: hidden;
         }
-        .car-card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        .car-card h3 { margin: 0 0 10px 0; }
+        .car-card:hover { border-color: var(--accent); transform: translateY(-5px); box-shadow: 0 10px 20px rgba(102, 252, 241, 0.2); }
+        .car-card h3 { margin: 10px 0; color: white; }
         
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin-bottom: 10px;
+        .tier-badge {
+            position: absolute;
+            top: 0; right: 0;
+            padding: 5px 15px;
+            font-size: 0.75rem;
             font-weight: bold;
+            border-bottom-left-radius: 12px;
+            text-transform: uppercase;
         }
-        .badge.cheap { background: #747d8c; }
-        .badge.normal { background: #3742fa; }
-        .badge.luxury { background: #ffa502; color: #000; }
-        
+        .tier-cheap { background: #747d8c; color: white; }
+        .tier-normal { background: #3742fa; color: white; }
+        .tier-luxury { background: var(--gold); color: black; }
+
+        .pot-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin: 10px 0;
+            border: 1px solid currentColor;
+        }
+        .pot-0 { color: #a4b0be; } /* Normal */
+        .pot-1 { color: #3498db; } /* Big */
+        .pot-2 { color: #9b59b6; } /* Huge */
+        .pot-3 { color: #ff4757; text-shadow: 0 0 8px rgba(255,71,87,0.5); font-weight: 900;} /* Insane */
+
         .action-area {
             background: var(--panel);
             padding: 30px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-top: 20px;
             display: none;
+            border: 1px solid #444;
         }
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+        .action-buttons { display: flex; justify-content: center; gap: 15px; margin-top: 25px; }
+        .btn-sell { background: var(--win); color: white; }
+        .btn-fix { background: var(--gold); color: black; }
+        .btn-cancel { background: transparent; border: 1px solid #555; color: #ccc; }
+        .btn-cancel:hover { background: #333; }
+
+        /* Suspense & Results Area */
+        #result-area {
+            display: none;
+            margin-top: 40px;
+            padding: 40px 20px;
+            background: radial-gradient(circle, var(--panel) 0%, var(--bg) 100%);
+            border-radius: 16px;
+            border: 1px solid #333;
         }
-        .btn-sell { background: var(--success); }
-        .btn-fix { background: var(--warning); color: #000; }
+        .status-text {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .multiplier-display {
+            font-size: 5rem;
+            font-weight: 900;
+            color: white;
+            margin: 10px 0;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+        .multiplier-display.crashed { color: var(--lose); text-shadow: 0 0 20px rgba(255,71,87,0.4); }
+        .multiplier-display.won { color: var(--win); text-shadow: 0 0 30px rgba(46,213,115,0.6); transform: scale(1.1); transition: 0.3s transform cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         
-        #message-box {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
-            font-weight: bold;
-            display: none;
+        .coins-won {
+            font-size: 1.2rem;
+            color: #aaa;
+            margin-bottom: 30px;
+            height: 24px;
         }
-        .msg-win { background: rgba(46, 213, 115, 0.2); color: var(--success); border: 1px solid var(--success); }
-        .msg-lose { background: rgba(255, 71, 87, 0.2); color: var(--accent); border: 1px solid var(--accent); }
+        .coins-won span { color: var(--gold); font-weight: bold; }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        .pulsing { animation: pulse 1s infinite; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="balance">Coins: <span id="balanceDisplay">10000</span></div>
-        <button onclick="topUp()">+ Top Up 5000</button>
+        <div class="balance">Balance: $<span id="balanceDisplay">10,000</span></div>
+        <button onclick="topUp()">Deposit $5,000</button>
     </header>
 
     <div class="container">
@@ -126,55 +180,53 @@
         </div>
 
         <div class="action-area" id="actionArea">
-            <h2 id="selectedCarName">Car Name</h2>
-            <p id="selectedCarDetails"></p>
+            <h2 id="selectedCarName" style="margin-top:0;">Car Name</h2>
+            <div id="selectedCarDetails" style="font-size: 1.1rem; line-height: 1.6;"></div>
             <div class="action-buttons">
                 <button class="btn-fix" id="btnFix" onclick="fixCar()">Fix Car</button>
-                <button class="btn-sell" id="btnSell" onclick="sellCar()">Sell "As Is"</button>
-                <button onclick="startRound()" style="background: #555;">Cancel</button>
+                <button class="btn-sell" id="btnSell" onclick="startSellPhase()">Sell As Is</button>
+                <button class="btn-cancel" onclick="startRound()">Cancel</button>
             </div>
         </div>
 
-        <div id="message-box"></div>
-        <button id="btnNextRound" onclick="startRound()" style="display:none; margin: 20px auto;">Play Next Round</button>
+        <div id="result-area">
+            <div class="status-text pulsing" id="statusText">Finding a buyer...</div>
+            <div class="multiplier-display" id="multiplierDisplay">1.00x</div>
+            <div class="coins-won" id="coinsWonDisplay"></div>
+            <button id="btnNextRound" onclick="startRound()" style="display:none; margin: 0 auto;">Play Next Round</button>
+        </div>
     </div>
 
     <script>
-        // Fleet Data
+        // Data Structure
         const fleet = [
             { name: "Rusted Civic", tier: "cheap", basePrice: 200 },
-            { name: "Beat-up Corolla", tier: "cheap", basePrice: 300 },
             { name: "Old Golf", tier: "cheap", basePrice: 400 },
-            { name: "Dented Fiesta", tier: "cheap", basePrice: 250 },
-            { name: "Rusty Lada", tier: "cheap", basePrice: 150 },
             { name: "Scrap Twingo", tier: "cheap", basePrice: 100 },
             { name: "Used Camry", tier: "normal", basePrice: 2500 },
             { name: "Decent Accord", tier: "normal", basePrice: 3000 },
             { name: "Clean Passat", tier: "normal", basePrice: 3500 },
-            { name: "Modern Mazda 3", tier: "normal", basePrice: 4000 },
-            { name: "Ford Focus", tier: "normal", basePrice: 2000 },
-            { name: "Subaru Impreza", tier: "normal", basePrice: 4500 },
             { name: "G-Wagon", tier: "luxury", basePrice: 30000 },
             { name: "Ferrari 458", tier: "luxury", basePrice: 45000 },
-            { name: "Lambo Huracan", tier: "luxury", basePrice: 50000 },
-            { name: "Porsche 911", tier: "luxury", basePrice: 25000 },
-            { name: "Rolls Royce", tier: "luxury", basePrice: 60000 },
-            { name: "McLaren 720S", tier: "luxury", basePrice: 55000 }
+            { name: "Lambo Huracan", tier: "luxury", basePrice: 50000 }
         ];
 
         const conditions = ["Wrecked", "Normal wear", "Mint"];
-        const demandStats = {
-            1: { name: "Low", winChance: 0.30, multiplier: 3.20 },
-            2: { name: "Medium", winChance: 0.60, multiplier: 1.60 },
-            3: { name: "High", winChance: 0.85, multiplier: 1.13 }
-        };
+        
+        // Multiplier Pools designed for ~96% RTP
+        const potentialTiers = [
+            { id: 0, name: "Normal Win", class: "pot-0", winChance: 0.60, pool: [{m: 1.1, c: 60}, {m: 2, c: 35}, {m: 5, c: 5}] },
+            { id: 1, name: "Big Win", class: "pot-1", winChance: 0.40, pool: [{m: 1.2, c: 80}, {m: 3, c: 12}, {m: 10, c: 6}, {m: 25, c: 2}] },
+            { id: 2, name: "Huge Win", class: "pot-2", winChance: 0.25, pool: [{m: 1.2, c: 84}, {m: 5, c: 10}, {m: 25, c: 5}, {m: 100, c: 1}] },
+            { id: 3, name: "INSANE WIN", class: "pot-3", winChance: 0.10, pool: [{m: 1.2, c: 88}, {m: 10, c: 9}, {m: 100, c: 2.5}, {m: 1000, c: 0.5}] }
+        ];
 
         let balance = 10000;
         let currentOffers = [];
         let activeCar = null;
 
         function updateBalance() {
-            document.getElementById("balanceDisplay").innerText = Math.floor(balance);
+            document.getElementById("balanceDisplay").innerText = balance.toLocaleString();
         }
 
         function topUp() {
@@ -186,11 +238,15 @@
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
+        function formatCurrency(num) {
+            return "$" + num.toLocaleString();
+        }
+
         function startRound() {
             document.getElementById("actionArea").style.display = "none";
-            document.getElementById("message-box").style.display = "none";
-            document.getElementById("btnNextRound").style.display = "none";
+            document.getElementById("result-area").style.display = "none";
             document.getElementById("carGrid").style.display = "grid";
+            document.getElementById("phaseTitle").style.display = "block";
             document.getElementById("phaseTitle").innerText = "Select a Car to Flip";
             
             currentOffers = [];
@@ -199,29 +255,33 @@
             for (let i = 0; i < 3; i++) {
                 let carTemplate = fleet[randomInt(0, fleet.length - 1)];
                 let condition = conditions[randomInt(0, 2)];
-                let demandLevel = randomInt(1, 3);
                 
-                // Adjust price slightly based on condition
-                let priceMod = condition === "Wrecked" ? 0.7 : (condition === "Mint" ? 1.3 : 1.0);
+                // Base potential is tied to condition: Wrecked = 0, Normal = 1, Mint = 2. 
+                // We add slight randomness so a minted car might occasionally spawn with "Insane" potential.
+                let baseTier = condition === "Wrecked" ? 0 : (condition === "Normal wear" ? 1 : 2);
+                let finalTier = Math.min(3, Math.max(0, baseTier + randomInt(-1, 1)));
+
+                let priceMod = condition === "Wrecked" ? 0.6 : (condition === "Mint" ? 1.4 : 1.0);
                 let finalPrice = Math.floor(carTemplate.basePrice * priceMod);
 
                 let car = {
                     ...carTemplate,
                     price: finalPrice,
                     condition: condition,
-                    demandLevel: demandLevel,
+                    tierLevel: finalTier,
                     invested: finalPrice
                 };
                 currentOffers.push(car);
 
+                let pTier = potentialTiers[car.tierLevel];
+
                 gridHTML += `
                     <div class="car-card" onclick="selectCar(${i})">
-                        <span class="badge ${car.tier}">${car.tier.toUpperCase()}</span>
+                        <div class="tier-badge tier-${car.tier}">Class: ${car.tier}</div>
                         <h3>${car.name}</h3>
-                        <p><strong>Condition:</strong> ${car.condition}</p>
-                        <p><strong>Demand:</strong> ${demandStats[car.demandLevel].name}</p>
-                        <p><strong>Price:</strong> ${car.price} Coins</p>
-                        <p><strong>Potential Win:</strong> ${Math.floor(car.price * demandStats[car.demandLevel].multiplier)} Coins</p>
+                        <p style="color:#aaa; margin:5px 0;">Condition: <span style="color:white;">${car.condition}</span></p>
+                        <p style="color:#aaa; margin:5px 0;">Price: <span style="color:white;">${formatCurrency(car.price)}</span></p>
+                        <div class="pot-badge ${pTier.class}">Potential: ${pTier.name}</div>
                     </div>
                 `;
             }
@@ -231,7 +291,7 @@
         function selectCar(index) {
             activeCar = currentOffers[index];
             if (balance < activeCar.price) {
-                alert("Not enough coins! Please top up.");
+                alert("Insufficient balance. Please deposit funds.");
                 return;
             }
 
@@ -240,98 +300,171 @@
 
             document.getElementById("carGrid").style.display = "none";
             document.getElementById("actionArea").style.display = "block";
-            document.getElementById("phaseTitle").innerText = "Action Phase";
+            document.getElementById("phaseTitle").style.display = "none";
             
             updateActionArea();
         }
 
         function updateActionArea() {
             document.getElementById("selectedCarName").innerText = activeCar.name;
-            let dStats = demandStats[activeCar.demandLevel];
+            let pTier = potentialTiers[activeCar.tierLevel];
             
             let fixCost = 0;
+            let tierJump = 0;
             let canFix = false;
 
             if (activeCar.condition === "Wrecked") {
-                fixCost = Math.floor(activeCar.price * 0.50);
+                fixCost = activeCar.price; // 100% cost
+                tierJump = 2;
                 canFix = true;
             } else if (activeCar.condition === "Normal wear") {
-                fixCost = Math.floor(activeCar.price * 0.25);
+                fixCost = Math.floor(activeCar.price * 0.50); // 50% cost
+                tierJump = 1;
                 canFix = true;
             }
 
-            document.getElementById("selectedCarDetails").innerHTML = `
-                <p><strong>Total Invested:</strong> ${activeCar.invested} Coins</p>
-                <p><strong>Condition:</strong> ${activeCar.condition}</p>
-                <p><strong>Current Demand:</strong> ${dStats.name} (Risk of Impound: ${Math.round((1 - dStats.winChance) * 100)}%)</p>
-                <p><strong>Payout Multiplier:</strong> ${dStats.multiplier}x</p>
-                <p><strong>Win Amount:</strong> ${Math.floor(activeCar.invested * dStats.multiplier)} Coins</p>
+            let nextTierLevel = Math.min(3, activeCar.tierLevel + tierJump);
+            let nextTier = potentialTiers[nextTierLevel];
+
+            let html = `
+                <p>Initial Investment: <strong>${formatCurrency(activeCar.invested)}</strong></p>
+                <p>Condition: <strong>${activeCar.condition}</strong></p>
+                <div class="pot-badge ${pTier.class}" style="font-size:1.2rem;">Current Potential: ${pTier.name}</div>
             `;
 
-            let btnFix = document.getElementById("btnFix");
-            let btnSell = document.getElementById("btnSell");
-
-            if (canFix && activeCar.demandLevel < 3) {
-                btnFix.style.display = "inline-block";
-                btnFix.innerText = `Fix Car (-${fixCost} Coins)`;
-                btnFix.disabled = balance < fixCost;
-                btnSell.innerText = `Sell "As Is"`;
+            if (canFix && activeCar.tierLevel < 3) {
+                html += `
+                    <div style="background: rgba(255,215,0,0.1); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px dashed var(--gold);">
+                        <p style="margin:0 0 10px 0; color: var(--gold);"><strong>Repair Shop Offer:</strong></p>
+                        <p style="margin:0; font-size: 0.95rem;">Invest ${formatCurrency(fixCost)} to upgrade potential to <span class="${nextTier.class}"><strong>${nextTier.name}</strong></span>!</p>
+                    </div>
+                `;
+                document.getElementById("btnFix").style.display = "inline-block";
+                document.getElementById("btnFix").innerText = `Fix Car (-${formatCurrency(fixCost)})`;
+                document.getElementById("btnFix").disabled = balance < fixCost;
+                document.getElementById("btnSell").innerText = `Sell As Is`;
             } else {
-                btnFix.style.display = "none";
-                btnSell.innerText = `Sell Car`;
+                document.getElementById("btnFix").style.display = "none";
+                document.getElementById("btnSell").innerText = `Sell Car`;
             }
+
+            document.getElementById("selectedCarDetails").innerHTML = html;
         }
 
         function fixCar() {
             let fixCost = 0;
-            let demandIncrease = 0;
+            let tierJump = 0;
 
             if (activeCar.condition === "Wrecked") {
-                fixCost = Math.floor(activeCar.price * 0.50);
-                demandIncrease = 2;
+                fixCost = activeCar.price;
+                tierJump = 2;
             } else if (activeCar.condition === "Normal wear") {
-                fixCost = Math.floor(activeCar.price * 0.25);
-                demandIncrease = 1;
+                fixCost = Math.floor(activeCar.price * 0.50);
+                tierJump = 1;
             }
 
-            if (balance < fixCost) {
-                alert("Not enough coins to fix!");
-                return;
-            }
+            if (balance < fixCost) return;
 
             balance -= fixCost;
             activeCar.invested += fixCost;
-            activeCar.condition = "Mint"; // Car is now fixed
-            activeCar.demandLevel = Math.min(3, activeCar.demandLevel + demandIncrease);
+            activeCar.condition = "Mint"; 
+            activeCar.tierLevel = Math.min(3, activeCar.tierLevel + tierJump);
             
             updateBalance();
             updateActionArea();
         }
 
-        function sellCar() {
-            document.getElementById("actionArea").style.display = "none";
-            document.getElementById("phaseTitle").innerText = "Result";
-            
-            let dStats = demandStats[activeCar.demandLevel];
-            let roll = Math.random(); // Generates 0.0 to 1.0
-            
-            let msgBox = document.getElementById("message-box");
-            msgBox.style.display = "block";
+        // Logic to determine the final multiplier based on exact RTP weights
+        function rollMultiplier(tier) {
+            let roll = Math.random();
+            if (roll > tier.winChance) return 0; // Impounded / Lost
 
-            if (roll <= dStats.winChance) {
-                // Win
-                let winnings = Math.floor(activeCar.invested * dStats.multiplier);
-                balance += winnings;
-                msgBox.className = "msg-win";
-                msgBox.innerHTML = `🎉 Congratulations! You successfully flipped the ${activeCar.name}.<br>It sold for <strong>${winnings} Coins!</strong>`;
-            } else {
-                // Lose (Impounded)
-                msgBox.className = "msg-lose";
-                msgBox.innerHTML = `🚓 Busted! The ${activeCar.name} was impounded due to sketchy paperwork.<br>You lost your investment of <strong>${activeCar.invested} Coins.</strong>`;
+            // Passed the win check, now select multiplier from pool
+            let multRoll = Math.random() * 100;
+            let cumulative = 0;
+            for (let i = 0; i < tier.pool.length; i++) {
+                cumulative += tier.pool[i].c;
+                if (multRoll <= cumulative) {
+                    return tier.pool[i].m;
+                }
             }
+            return tier.pool[tier.pool.length - 1].m; // Fallback to max
+        }
 
-            updateBalance();
-            document.getElementById("btnNextRound").style.display = "block";
+        function startSellPhase() {
+            document.getElementById("actionArea").style.display = "none";
+            document.getElementById("result-area").style.display = "block";
+            
+            let statusEl = document.getElementById("statusText");
+            let multEl = document.getElementById("multiplierDisplay");
+            let coinsEl = document.getElementById("coinsWonDisplay");
+            let nextBtn = document.getElementById("btnNextRound");
+
+            // Reset UI
+            statusEl.innerText = "Finding a buyer...";
+            statusEl.className = "status-text pulsing";
+            multEl.innerText = "1.00x";
+            multEl.className = "multiplier-display";
+            coinsEl.innerHTML = "";
+            nextBtn.style.display = "none";
+
+            let pTier = potentialTiers[activeCar.tierLevel];
+            let finalMult = rollMultiplier(pTier);
+
+            // Artificial delay to build suspense before ticking
+            setTimeout(() => {
+                if (finalMult === 0) {
+                    // Instant crash/impound
+                    statusEl.innerText = "Busted! Car Impounded.";
+                    statusEl.classList.remove("pulsing");
+                    multEl.innerText = "0.00x";
+                    multEl.classList.add("crashed");
+                    coinsEl.innerHTML = `Total Loss: <span>-${formatCurrency(activeCar.invested)}</span>`;
+                    nextBtn.style.display = "block";
+                } else {
+                    // Win! Start ticking animation
+                    statusEl.innerText = "Buyer found! Negotiating...";
+                    animateMultiplier(finalMult, activeCar.invested);
+                }
+            }, 1000);
+        }
+
+        function animateMultiplier(targetMult, invested) {
+            let multEl = document.getElementById("multiplierDisplay");
+            let statusEl = document.getElementById("statusText");
+            let coinsEl = document.getElementById("coinsWonDisplay");
+            let nextBtn = document.getElementById("btnNextRound");
+            
+            let currentMult = 1.00;
+            // The larger the target, the faster the steps so it always takes ~2.5 seconds
+            let step = (targetMult - 1.00) / (60 * 2.5); 
+            if (step < 0.01) step = 0.01;
+
+            function tick() {
+                currentMult += step;
+                if (currentMult >= targetMult) {
+                    currentMult = targetMult;
+                    
+                    // Final State
+                    multEl.innerText = currentMult.toFixed(2) + "x";
+                    multEl.classList.add("won");
+                    statusEl.innerText = "SOLD!";
+                    statusEl.style.color = "var(--win)";
+                    statusEl.classList.remove("pulsing");
+                    
+                    let winnings = Math.floor(invested * currentMult);
+                    balance += winnings;
+                    updateBalance();
+                    
+                    coinsEl.innerHTML = `You won <span>${formatCurrency(winnings)}</span>!`;
+                    nextBtn.style.display = "block";
+                    return;
+                }
+                
+                multEl.innerText = currentMult.toFixed(2) + "x";
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
         }
 
         // Initialize game on load
