@@ -114,6 +114,7 @@
         </div>
         
         <div class="flex" style="gap: 8px;">
+            <button id="headerClientHubBtn" class="secondary icon-btn" onclick="openLogin()" data-i18n="client_hub" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Client Hub</button>
             <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
             <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
                 <option value="en">🇬🇧 EN</option>
@@ -129,23 +130,22 @@
 
 <div class="container">
     <!-- LOGIN SCREEN -->
-    <div id="loginSection">
+    <div id="loginSection" class="hidden">
         <div class="card" style="margin-top: 20px; padding: 32px 24px;">
             <h2 data-i18n="login_title" style="text-align: center; margin-bottom: 8px;">Login / Register</h2>
             <p data-i18n="login_desc" style="text-align: center; color: var(--text-muted); margin-bottom: 32px; font-size: 14px;">Enter any username and password.</p>
             <div class="form-group"><label data-i18n="username">Username</label><input type="text" id="usernameInput" placeholder="Username"></div>
             <div class="form-group"><label data-i18n="password">Password</label><input type="password" id="passwordInput" placeholder="Password"></div>
             <button onclick="handleLoginRegister()" data-i18n="login_btn" style="margin-top: 16px;">Login / Register</button>
-            <p id="accountLimitMsg" style="font-size: 13px; color: var(--danger); text-align: center; margin-top: 16px;"></p>
         </div>
     </div>
 
     <!-- MAIN DASHBOARD -->
-    <div id="dashboardSection" class="hidden">
+    <div id="dashboardSection">
         
-        <div class="dash-tabs">
-            <div id="tabBtnPublic" class="dash-tab active" onclick="switchDashboardTab('public')">Public Hub</div>
-            <div id="tabBtnMy" class="dash-tab" onclick="switchDashboardTab('my')">My Events</div>
+        <div id="dashTabs" class="dash-tabs hidden">
+            <div id="tabBtnPublic" class="dash-tab active" data-i18n="public_hub" onclick="switchDashboardTab('public')">Public Hub</div>
+            <div id="tabBtnMy" class="dash-tab" data-i18n="my_events" onclick="switchDashboardTab('my')">My Events</div>
         </div>
 
         <!-- MY EVENTS TAB -->
@@ -180,12 +180,12 @@
                 <input type="text" id="eventNameInput" placeholder="Weekend Championship">
             </div>
             <div class="form-group">
-                <label>Thumbnail / Header Image</label>
+                <label data-i18n="thumbnail_img">Thumbnail / Header Image</label>
                 <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
                 <img id="thumbnailPreview" class="thumb-preview">
             </div>
             <div class="form-group">
-                <label>Description & Rules</label>
+                <label data-i18n="desc_rules">Description & Rules</label>
                 <textarea id="eventDescInput" placeholder="Enter tournament rules and description here..."></textarea>
             </div>
         </div>
@@ -193,7 +193,7 @@
         <!-- Toggles -->
         <div class="card">
             <div class="flex flex-between" style="padding: 10px 0;">
-                <div><h3 style="margin:0;">Public Hub</h3><p style="font-size:12px; color:var(--text-muted); margin:0;">Make visible to everyone</p></div>
+                <div><h3 data-i18n="public_hub" style="margin:0;">Public Hub</h3><p data-i18n="public_desc" style="font-size:12px; color:var(--text-muted); margin:0;">Make visible to everyone</p></div>
                 <label class="switch"><input type="checkbox" id="isPublicToggle"><span class="slider"></span></label>
             </div>
             <div class="flex flex-between" style="padding: 10px 0; border-top: 1px solid var(--border);">
@@ -204,33 +204,26 @@
 
         <!-- Format Rules -->
         <div class="card">
-            <h3 style="margin-bottom:16px;">Tournament Format</h3>
+            <h3 data-i18n="tourn_format" style="margin-bottom:16px;">Tournament Format</h3>
             <div class="form-group">
-                <label>Measurement Unit</label>
+                <label data-i18n="meas_unit">Measurement Unit</label>
                 <div class="flex" style="gap:8px;">
-                    <button id="unitBtnMetric" class="secondary" onclick="setUnit('metric')" style="flex:1;">Metric (cm/kg)</button>
-                    <button id="unitBtnImperial" class="secondary" onclick="setUnit('imperial')" style="flex:1;">Imperial (in/lbs)</button>
+                    <button id="unitBtnMetric" class="primary-dark" onclick="setUnit('metric')" style="flex:1;">Metric</button>
+                    <button id="unitBtnImperial" class="secondary" onclick="setUnit('imperial')" style="flex:1;">Imperial</button>
                 </div>
             </div>
             <div class="form-group">
-                <label>Scoring Method</label>
+                <label data-i18n="score_meth">Scoring Method</label>
                 <div class="flex" style="gap:8px;">
-                    <button id="measureBtnSize" class="secondary" onclick="setMeasure('size')" style="flex:1;">Size / Points</button>
+                    <button id="measureBtnSize" class="primary-dark" onclick="setMeasure('size')" style="flex:1;">Size/Pts</button>
                     <button id="measureBtnWeight" class="secondary" onclick="setMeasure('weight')" style="flex:1;">Weight</button>
                 </div>
             </div>
             <div class="form-group">
-                <label>Catch Limits</label>
+                <label data-i18n="catch_lim">Catch Limits</label>
                 <div class="flex" style="gap:8px;">
-                    <button id="limitBtnAll" class="secondary" onclick="setLimit('all')" style="flex:1;">All Fish</button>
-                    <button id="limitBtnTop5" class="secondary" onclick="setLimit('top5')" style="flex:1;">Top 5 Counted</button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Verification Format</label>
-                <div class="flex" style="gap:8px;">
-                    <button class="primary-dark" style="flex:1; cursor:default;">Regular Judge</button>
-                    <button class="secondary" disabled style="flex:1;">CPR (Soon)</button>
+                    <button id="limitBtnAll" class="primary-dark" onclick="setLimit('all')" style="flex:1;" data-i18n="lim_all">All Fish</button>
+                    <button id="limitBtnTop5" class="secondary" onclick="setLimit('top5')" style="flex:1;" data-i18n="lim_top5">Top 5</button>
                 </div>
             </div>
         </div>
@@ -294,7 +287,7 @@
             <div class="form-group">
                 <select id="rankingMode" onchange="renderLeaderboard()">
                     <option value="points" data-i18n="mode_pts">Rank by Points</option>
-                    <option value="measure">Rank by Size/Weight</option>
+                    <option value="measure" data-i18n="mode_cm">Rank by Size/Weight</option>
                 </select>
             </div>
             <div class="table-container">
@@ -305,7 +298,7 @@
         <!-- Sticky Bottom Bar -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex" style="gap: 12px; width: 100%; align-items: center;">
-                <a href="javascript:void(0)" onclick="downloadChart()" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
+                <a href="javascript:void(0)" onclick="downloadChart()" data-i18n="download_chart" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
                 <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" data-i18n="finish_event" style="flex: 1; padding:12px;">Finish Event</button>
                 <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_event" style="flex: 1; padding:12px;">Save Event</button>
             </div>
@@ -372,18 +365,18 @@
 <div id="penaltyModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'penaltyModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
-        <h3 style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Penalties</h3>
+        <h3 data-i18n="penalties" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Penalties</h3>
         
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
-                <label>Points to Deduct</label>
+                <label data-i18n="pts_deduct">Points to Deduct</label>
                 <input type="number" id="modalPenaltyPoints" placeholder="e.g. 50" inputmode="numeric">
             </div>
             <div class="form-group">
-                <label>Reason / Description</label>
-                <input type="text" id="modalPenaltyReason" placeholder="Late arrival, dead fish, etc.">
+                <label data-i18n="reason_desc">Reason / Description</label>
+                <input type="text" id="modalPenaltyReason" placeholder="...">
             </div>
-            <button onclick="confirmAddPenalty()" class="danger" style="margin-bottom: 20px; padding: 16px;">+ Add Penalty</button>
+            <button onclick="confirmAddPenalty()" class="danger" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_penalty">+ Add Penalty</button>
             <div id="modalCurrentPenalties" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
 
@@ -432,7 +425,7 @@
             </div>
             
             <div class="card" style="padding:12px;">
-                <h3 style="margin-bottom:8px;">Participants Detailed</h3>
+                <h3 style="margin-bottom:8px;" data-i18n="part_detailed">Participants Detailed</h3>
                 <div id="pubParticipantsDetail" style="font-size:13px;"></div>
             </div>
         </div>
@@ -481,29 +474,32 @@
     const translations = {
         en: {
             login_title: "Login / Register", login_desc: "Enter any username and password.", username: "Username", password: "Password", login_btn: "Login / Register",
-            your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back",
-            tourn_name: "1. Tournament Name", ranked_tourn: "Ranked Tournament", ranked_desc: "Include in Yearly Leaderboard (Max 7/year)", bulk_part: "2. Participants List",
-            bulk_desc: "Paste names. Symbols/brackets are auto-removed.", fish_species_title: "3. Species & Multipliers", add_species: "+ Add Species", start_event: "Start Event", next_btn: "Next",
+            your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back", client_hub: "Client Hub", public_hub: "Public Hub", my_events: "My Events",
+            tourn_name: "1. Tournament Name", ranked_tourn: "Ranked Tournament", ranked_desc: "Include in Yearly Leaderboard (Max 7/year)", bulk_part: "Participants List",
+            bulk_desc: "Paste names. Symbols/brackets are auto-removed.", fish_species_title: "Species & Multipliers", add_species: "+ Add Species", start_event: "Start Event", next_btn: "Next",
             hub_title: "Tournament Hub", edit_setup: "← Setup", manage_part: "Participants", add_new: "+ Add", leaderboard: "Leaderboard", mode_pts: "Rank by Points",
-            mode_cm: "Rank by Centimeters", save_event: "Save Event", finish_event: "Finish Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
-            add_remove_fish: "Add / Remove Fish", species_sel: "Species", size_cm: "Measurement", save: "Save", add_fish_btn: "+ Add Catch", edit_rules: "Edit Rules",
+            mode_cm: "Rank by Size/Weight", save_event: "Save Event", finish_event: "Finish Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
+            add_remove_fish: "Add / Remove Catch", species_sel: "Species", size_cm: "Measurement", save: "Save", add_fish_btn: "+ Add Catch", edit_rules: "Edit Rules",
             add_rule: "+ Add New Rule", done: "Done", rule_from: "From", rule_to: "To", rule_mult: "Multiplier", download_chart: "PDF", download_season_pdf: "Season PDF",
             season_results: "Season Results", current_catches: "Current Catches", no_catches: "No catches logged.", too_small_title: "Fish Too Small", 
             too_small_desc: "The fish is too small based on the rules.", ok: "OK", ignore: "Ignore", angler_of_year: "Angler of the Year", edit_name: "Edit Name", 
             unranked_badge: "UNRANKED", rank_pts: "Rank Pts", tournaments: "tournaments", editing_disabled: "Editing this is disabled, please edit participant list on the next page",
             finish_warning: "If you finish the event now you will not be able to change anything anymore and the event will be officially finished.",
             status_finished: "Finished", status_ongoing: "Ongoing",
-            place: "Place", name: "Name", points: "Points", total_cm: "Total", biggest_fish: "Biggest Fish", details: "Details", generated_on: "Generated on", 
-            tournament_results: "Tournament Results", rank_pts_best5: "Rank Pts (Best 5)", tournaments_played: "Tournaments Played", all_placements: "All Placements"
+            place: "Place", name: "Name", points: "Points", total_cm: "Total", biggest_fish: "Biggest", details: "Details", generated_on: "Generated on", 
+            tournament_results: "Tournament Results", rank_pts_best5: "Rank Pts (Best 5)", tournaments_played: "Tournaments Played", all_placements: "All Placements",
+            thumbnail_img: "Thumbnail / Header Image", desc_rules: "Description & Rules", public_desc: "Make visible to everyone", tourn_format: "Tournament Format",
+            meas_unit: "Measurement Unit", score_meth: "Scoring Method", catch_lim: "Catch Limits", lim_all: "All Fish", lim_top5: "Top 5 Counted",
+            penalties: "Penalties", pts_deduct: "Points to Deduct", reason_desc: "Reason / Description", add_penalty: "+ Add Penalty", part_detailed: "Participants Detailed"
         },
         ka: {
             login_title: "შესვლა / რეგისტრაცია", login_desc: "შეიყვანეთ ნებისმიერი სახელი და პაროლი.", username: "მომხმარებელი", password: "პაროლი", login_btn: "შესვლა / რეგისტრაცია",
-            your_events: "თქვენი ღონისძიებები", logout: "გასვლა", create_event: "+ ახალი ღონისძიების შექმნა", step1_title: "ნაბიჯი 1: პარამეტრები", back: "← უკან",
-            tourn_name: "1. ტურნირის სახელი", ranked_tourn: "სარეიტინგო ტურნირი", ranked_desc: "წლიურ რეიტინგში დამატება (მაქს 7/წელს)", bulk_part: "2. მონაწილეთა სია",
-            bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.", fish_species_title: "3. სახეობები და კოეფიციენტები", add_species: "+ სახეობის დამატება", start_event: "ტურნირის დაწყება", next_btn: "შემდეგი",
+            your_events: "თქვენი ღონისძიებები", logout: "გასვლა", create_event: "+ ახალი ღონისძიების შექმნა", step1_title: "ნაბიჯი 1: პარამეტრები", back: "← უკან", client_hub: "კლიენტის ჰაბი", public_hub: "საჯარო ჰაბი", my_events: "ჩემი ტურნირები",
+            tourn_name: "1. ტურნირის სახელი", ranked_tourn: "სარეიტინგო ტურნირი", ranked_desc: "წლიურ რეიტინგში დამატება (მაქს 7/წელს)", bulk_part: "მონაწილეთა სია",
+            bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.", fish_species_title: "სახეობები და კოეფიციენტები", add_species: "+ სახეობის დამატება", start_event: "ტურნირის დაწყება", next_btn: "შემდეგი",
             hub_title: "ტურნირის ჰაბი", edit_setup: "← პარამეტრები", manage_part: "მონაწილეები", add_new: "+ დამატება", leaderboard: "ლიდერბორდი", mode_pts: "ქულებით რეიტინგი",
-            mode_cm: "სანტიმეტრებით რეიტინგი", save_event: "ტურნირის შენახვა", finish_event: "ტურნირის დასრულება", modal_add_title: "მონაწილის დამატება", close: "გაუქმება", add: "დამატება",
-            add_remove_fish: "თევზის დამატება/წაშლა", species_sel: "სახეობა", size_cm: "ზომა", save: "შენახვა", add_fish_btn: "+ თევზის დამატება", edit_rules: "წესები",
+            mode_cm: "ზომით/წონით რეიტინგი", save_event: "ტურნირის შენახვა", finish_event: "ტურნირის დასრულება", modal_add_title: "მონაწილის დამატება", close: "გაუქმება", add: "დამატება",
+            add_remove_fish: "თევზის დამატება/წაშლა", species_sel: "სახეობა", size_cm: "ზომა", save: "შენახვა", add_fish_btn: "+ დამატება", edit_rules: "წესები",
             add_rule: "+ ახალი წესი", done: "მზადაა", rule_from: "-დან", rule_to: "-მდე", rule_mult: "კოეფიციენტი", download_chart: "PDF", download_season_pdf: "სეზონის PDF",
             season_results: "სეზონის შედეგები", current_catches: "მიმდინარე თევზები", no_catches: "თევზი არ არის.", too_small_title: "თევზი ძალიან პატარაა", 
             too_small_desc: "წესების მიხედვით თევზი ძალიან პატარაა.", ok: "OK", ignore: "იგნორირება", angler_of_year: "წლის მეთევზე", edit_name: "სახელის შეცვლა", 
@@ -511,15 +507,18 @@
             finish_warning: "თუ ახლა დაასრულებთ ტურნირს, ვეღარაფერს შეცვლით და ტურნირი ოფიციალურად დასრულდება.",
             status_finished: "დასრულებულია", status_ongoing: "მიმდინარე",
             place: "ადგილი", name: "სახელი", points: "ქულა", total_cm: "ჯამი", biggest_fish: "ყველაზე დიდი", details: "დეტალები", generated_on: "გენერირებულია",
-            tournament_results: "ტურნირის შედეგები", rank_pts_best5: "სარეიტინგო ქულა (საუკ. 5)", tournaments_played: "ჩატარებული ტურნირები", all_placements: "ყველა პოზიცია"
+            tournament_results: "ტურნირის შედეგები", rank_pts_best5: "სარეიტინგო ქულა (საუკ. 5)", tournaments_played: "ჩატარებული ტურნირები", all_placements: "ყველა პოზიცია",
+            thumbnail_img: "მთავარი ფოტო", desc_rules: "აღწერა და წესები", public_desc: "საჯაროდ გამოჩენა", tourn_format: "ტურნირის ფორმატი",
+            meas_unit: "საზომი ერთეული", score_meth: "ქულების დათვლა", catch_lim: "თევზების ლიმიტი", lim_all: "ყველა", lim_top5: "საუკეთესო 5",
+            penalties: "ჯარიმები", pts_deduct: "დასაკლები ქულა", reason_desc: "მიზეზი / აღწერა", add_penalty: "+ ჯარიმის დამატება", part_detailed: "მონაწილეები დეტალურად"
         },
         uk: {
             login_title: "Вхід / Реєстрація", login_desc: "Введіть будь-яке ім'я та пароль.", username: "Користувач", password: "Пароль", login_btn: "Вхід / Реєстрація",
-            your_events: "Ваші події", logout: "Вийти", create_event: "+ Створити нову подію", step1_title: "Крок 1: Налаштування", back: "← Назад",
-            tourn_name: "1. Назва турніру", ranked_tourn: "Рейтинговий турнір", ranked_desc: "Включити в річний рейтинг (макс 7/рік)", bulk_part: "2. Список учасників",
-            bulk_desc: "Вставте імена. Дужки та символи видаляються.", fish_species_title: "3. Види та коефіцієнти", add_species: "+ Додати вид", start_event: "Почати подію", next_btn: "Далі",
+            your_events: "Ваші події", logout: "Вийти", create_event: "+ Створити нову подію", step1_title: "Крок 1: Налаштування", back: "← Назад", client_hub: "Клієнтський хаб", public_hub: "Публічний хаб", my_events: "Мої події",
+            tourn_name: "1. Назва турніру", ranked_tourn: "Рейтинговий турнір", ranked_desc: "Включити в річний рейтинг (макс 7/рік)", bulk_part: "Список учасників",
+            bulk_desc: "Вставте імена. Дужки та символи видаляються.", fish_species_title: "Види та коефіцієнти", add_species: "+ Додати вид", start_event: "Почати подію", next_btn: "Далі",
             hub_title: "Хаб турніру", edit_setup: "← Налаштування", manage_part: "Учасники", add_new: "+ Додати", leaderboard: "Таблиця лідерів", mode_pts: "Рейтинг за балами",
-            mode_cm: "Рейтинг за сантиметрами", save_event: "Зберегти подію", finish_event: "Завершити подію", modal_add_title: "Додати учасника", close: "Скасувати", add: "Додати",
+            mode_cm: "Рейтинг за розміром/вагою", save_event: "Зберегти подію", finish_event: "Завершити подію", modal_add_title: "Додати учасника", close: "Скасувати", add: "Додати",
             add_remove_fish: "Додати/Видалити рибу", species_sel: "Вид", size_cm: "Розмір", save: "Зберегти", add_fish_btn: "+ Додати рибу", edit_rules: "Правила",
             add_rule: "+ Нове правило", done: "Готово", rule_from: "Від", rule_to: "До", rule_mult: "Множник", download_chart: "PDF", download_season_pdf: "PDF сезону",
             season_results: "Результати сезону", current_catches: "Поточний улов", no_catches: "Немає улову.", too_small_title: "Риба занадто мала", 
@@ -527,16 +526,19 @@
             unranked_badge: "БЕЗ РЕЙТИНГУ", rank_pts: "Ранг. очок", tournaments: "турнірів", editing_disabled: "Редагування вимкнено, редагуйте список на наступній сторінці",
             finish_warning: "Якщо ви завершите подію зараз, ви більше не зможете нічого змінити.",
             status_finished: "Завершено", status_ongoing: "Триває",
-            place: "Місце", name: "Ім'я", points: "Очки", total_cm: "Всього", biggest_fish: "Найбільша риба", details: "Деталі", generated_on: "Згенеровано",
-            tournament_results: "Результати турніру", rank_pts_best5: "Ранг. очок (Кращі 5)", tournaments_played: "Зіграно турнірів", all_placements: "Всі місця"
+            place: "Місце", name: "Ім'я", points: "Очки", total_cm: "Всього", biggest_fish: "Найбільша", details: "Деталі", generated_on: "Згенеровано",
+            tournament_results: "Результати турніру", rank_pts_best5: "Ранг. очок (Кращі 5)", tournaments_played: "Зіграно турнірів", all_placements: "Всі місця",
+            thumbnail_img: "Головне фото", desc_rules: "Опис та правила", public_desc: "Зробити публічним", tourn_format: "Формат турніру",
+            meas_unit: "Одиниця виміру", score_meth: "Метод підрахунку", catch_lim: "Ліміт риби", lim_all: "Всі", lim_top5: "Кращі 5",
+            penalties: "Штрафи", pts_deduct: "Очки для зняття", reason_desc: "Причина / Опис", add_penalty: "+ Додати штраф", part_detailed: "Деталі учасників"
         },
         ru: {
             login_title: "Вход / Регистрация", login_desc: "Введите любые имя и пароль.", username: "Имя пользователя", password: "Пароль", login_btn: "Вход / Регистрация",
-            your_events: "Ваши события", logout: "Выйти", create_event: "+ Создать событие", step1_title: "Шаг 1: Настройка", back: "← Назад",
-            tourn_name: "1. Название турнира", ranked_tourn: "Рейтинговый турнир", ranked_desc: "Включить в годовой рейтинг (макс 7/год)", bulk_part: "2. Список участников",
-            bulk_desc: "Вставьте имена. Скобки и символы удалятся.", fish_species_title: "3. Виды и коэффициенты", add_species: "+ Добавить вид", start_event: "Начать событие", next_btn: "Далее",
+            your_events: "Ваши события", logout: "Выйти", create_event: "+ Создать событие", step1_title: "Шаг 1: Настройка", back: "← Назад", client_hub: "Клиентский хаб", public_hub: "Публичный хаб", my_events: "Мои события",
+            tourn_name: "1. Название турнира", ranked_tourn: "Рейтинговый турнир", ranked_desc: "Включить в годовой рейтинг (макс 7/год)", bulk_part: "Список участников",
+            bulk_desc: "Вставьте имена. Скобки и символы удалятся.", fish_species_title: "Виды и коэффициенты", add_species: "+ Добавить вид", start_event: "Начать событие", next_btn: "Далее",
             hub_title: "Хаб турнира", edit_setup: "← Настройка", manage_part: "Участники", add_new: "+ Добавить", leaderboard: "Таблица лидеров", mode_pts: "Рейтинг по очкам",
-            mode_cm: "Рейтинг по см", save_event: "Сохранить событие", finish_event: "Завершить событие", modal_add_title: "Добавить участника", close: "Отмена", add: "Добавить",
+            mode_cm: "Рейтинг по размеру/весу", save_event: "Сохранить событие", finish_event: "Завершить событие", modal_add_title: "Добавить участника", close: "Отмена", add: "Добавить",
             add_remove_fish: "Добавить/Удалить рыбу", species_sel: "Вид", size_cm: "Размер", save: "Сохранить", add_fish_btn: "+ Добавить рыбу", edit_rules: "Правила",
             add_rule: "+ Новое правило", done: "Готово", rule_from: "От", rule_to: "До", rule_mult: "Множитель", download_chart: "PDF", download_season_pdf: "PDF сезона",
             season_results: "Результаты сезона", current_catches: "Текущий улов", no_catches: "Нет улова.", too_small_title: "Рыба слишком мала", 
@@ -545,15 +547,18 @@
             finish_warning: "Если вы завершите турнир сейчас, вы больше не сможете ничего изменить.",
             status_finished: "Завершен", status_ongoing: "Идет",
             place: "Место", name: "Имя", points: "Очки", total_cm: "Всего", biggest_fish: "Самая большая", details: "Детали", generated_on: "Сгенерировано",
-            tournament_results: "Результаты турнира", rank_pts_best5: "Ранг. очков (Топ 5)", tournaments_played: "Сыграно турниров", all_placements: "Все места"
+            tournament_results: "Результаты турнира", rank_pts_best5: "Ранг. очков (Топ 5)", tournaments_played: "Сыграно турниров", all_placements: "Все места",
+            thumbnail_img: "Главное фото", desc_rules: "Описание и правила", public_desc: "Сделать публичным", tourn_format: "Формат турнира",
+            meas_unit: "Единица измерения", score_meth: "Метод подсчета", catch_lim: "Лимит рыбы", lim_all: "Вся", lim_top5: "Лучшие 5",
+            penalties: "Штрафы", pts_deduct: "Очки для снятия", reason_desc: "Причина / Описание", add_penalty: "+ Добавить штраф", part_detailed: "Детали участников"
         },
         fr: {
             login_title: "Connexion / Inscription", login_desc: "Entrez un nom d'utilisateur et un mot de passe.", username: "Utilisateur", password: "Mot de passe", login_btn: "Connexion / Inscription",
-            your_events: "Vos Événements", logout: "Déconnexion", create_event: "+ Créer Événement", step1_title: "Étape 1 : Config", back: "← Retour",
-            tourn_name: "1. Nom du Tournoi", ranked_tourn: "Tournoi Classé", ranked_desc: "Inclure dans le classement annuel (Max 7/an)", bulk_part: "2. Participants",
-            bulk_desc: "Collez les noms. Les symboles sont ignorés.", fish_species_title: "3. Espèces & Multiplicateurs", add_species: "+ Espèce", start_event: "Démarrer", next_btn: "Suivant",
+            your_events: "Vos Événements", logout: "Déconnexion", create_event: "+ Créer Événement", step1_title: "Étape 1 : Config", back: "← Retour", client_hub: "Hub Client", public_hub: "Hub Public", my_events: "Mes Événements",
+            tourn_name: "1. Nom du Tournoi", ranked_tourn: "Tournoi Classé", ranked_desc: "Inclure dans le classement annuel (Max 7/an)", bulk_part: "Participants",
+            bulk_desc: "Collez les noms. Les symboles sont ignorés.", fish_species_title: "Espèces & Multiplicateurs", add_species: "+ Espèce", start_event: "Démarrer", next_btn: "Suivant",
             hub_title: "Hub du Tournoi", edit_setup: "← Config", manage_part: "Participants", add_new: "+ Ajouter", leaderboard: "Classement", mode_pts: "Par Points",
-            mode_cm: "Par Centimètres", save_event: "Enregistrer", finish_event: "Terminer", modal_add_title: "Ajouter Participant", close: "Annuler", add: "Ajouter",
+            mode_cm: "Par Taille/Poids", save_event: "Enregistrer", finish_event: "Terminer", modal_add_title: "Ajouter Participant", close: "Annuler", add: "Ajouter",
             add_remove_fish: "Ajouter/Retirer Prise", species_sel: "Espèce", size_cm: "Mesure", save: "Enregistrer", add_fish_btn: "+ Ajouter Prise", edit_rules: "Règles",
             add_rule: "+ Nouvelle Règle", done: "Terminé", rule_from: "De", rule_to: "À", rule_mult: "Multiplicateur", download_chart: "PDF", download_season_pdf: "PDF de la Saison",
             season_results: "Résultats de la Saison", current_catches: "Prises Actuelles", no_catches: "Aucune prise.", too_small_title: "Poisson trop petit", 
@@ -562,15 +567,18 @@
             finish_warning: "Si vous terminez l'événement maintenant, vous ne pourrez plus rien modifier.",
             status_finished: "Terminé", status_ongoing: "En cours",
             place: "Place", name: "Nom", points: "Points", total_cm: "Total", biggest_fish: "Plus gros", details: "Détails", generated_on: "Généré le",
-            tournament_results: "Résultats du Tournoi", rank_pts_best5: "Pts Class. (Top 5)", tournaments_played: "Tournois joués", all_placements: "Tous les classements"
+            tournament_results: "Résultats du Tournoi", rank_pts_best5: "Pts Class. (Top 5)", tournaments_played: "Tournois joués", all_placements: "Tous les classements",
+            thumbnail_img: "Image / Miniature", desc_rules: "Description et Règles", public_desc: "Rendre visible par tous", tourn_format: "Format du Tournoi",
+            meas_unit: "Unité de Mesure", score_meth: "Méthode de Calcul", catch_lim: "Limite de Prises", lim_all: "Toutes", lim_top5: "Top 5",
+            penalties: "Pénalités", pts_deduct: "Points à déduire", reason_desc: "Raison / Description", add_penalty: "+ Ajouter Pénalité", part_detailed: "Participants Détaillés"
         },
         it: {
             login_title: "Accesso / Registrazione", login_desc: "Inserisci utente e password.", username: "Utente", password: "Password", login_btn: "Accedi / Registrati",
-            your_events: "I tuoi Eventi", logout: "Esci", create_event: "+ Crea Evento", step1_title: "Passo 1: Config", back: "← Indietro",
-            tourn_name: "1. Nome Torneo", ranked_tourn: "Torneo Classificato", ranked_desc: "Includi nella classifica annuale (Max 7/anno)", bulk_part: "2. Partecipanti",
-            bulk_desc: "Incolla i nomi. I simboli vengono rimossi.", fish_species_title: "3. Specie & Moltiplicatori", add_species: "+ Specie", start_event: "Inizia Evento", next_btn: "Avanti",
+            your_events: "I tuoi Eventi", logout: "Esci", create_event: "+ Crea Evento", step1_title: "Passo 1: Config", back: "← Indietro", client_hub: "Hub Cliente", public_hub: "Hub Pubblico", my_events: "I Miei Eventi",
+            tourn_name: "1. Nome Torneo", ranked_tourn: "Torneo Classificato", ranked_desc: "Includi nella classifica annuale (Max 7/anno)", bulk_part: "Partecipanti",
+            bulk_desc: "Incolla i nomi. I simboli vengono rimossi.", fish_species_title: "Specie & Moltiplicatori", add_species: "+ Specie", start_event: "Inizia Evento", next_btn: "Avanti",
             hub_title: "Hub del Torneo", edit_setup: "← Config", manage_part: "Partecipanti", add_new: "+ Aggiungi", leaderboard: "Classifica", mode_pts: "Per Punti",
-            mode_cm: "Per Centimetri", save_event: "Salva Evento", finish_event: "Termina Evento", modal_add_title: "Aggiungi Partecipante", close: "Annulla", add: "Aggiungi",
+            mode_cm: "Per Misura/Peso", save_event: "Salva Evento", finish_event: "Termina Evento", modal_add_title: "Aggiungi Partecipante", close: "Annulla", add: "Aggiungi",
             add_remove_fish: "Aggiungi/Rimuovi Pesce", species_sel: "Specie", size_cm: "Misura", save: "Salva", add_fish_btn: "+ Aggiungi Pesce", edit_rules: "Regole",
             add_rule: "+ Nuova Regola", done: "Fatto", rule_from: "Da", rule_to: "A", rule_mult: "Moltiplicatore", download_chart: "PDF", download_season_pdf: "PDF Stagione",
             season_results: "Risultati Stagione", current_catches: "Catture Attuali", no_catches: "Nessuna cattura.", too_small_title: "Pesce troppo piccolo", 
@@ -579,15 +587,18 @@
             finish_warning: "Se termini l'evento ora, non potrai più modificare nulla.",
             status_finished: "Finito", status_ongoing: "In corso",
             place: "Posto", name: "Nome", points: "Punti", total_cm: "Totale", biggest_fish: "Pesce più grande", details: "Dettagli", generated_on: "Generato il",
-            tournament_results: "Risultati del Torneo", rank_pts_best5: "Pti Class. (Migliori 5)", tournaments_played: "Tornei giocati", all_placements: "Tutti i piazzamenti"
+            tournament_results: "Risultati del Torneo", rank_pts_best5: "Pti Class. (Migliori 5)", tournaments_played: "Tornei giocati", all_placements: "Tutti i piazzamenti",
+            thumbnail_img: "Immagine Copertina", desc_rules: "Descrizione e Regole", public_desc: "Rendi visibile a tutti", tourn_format: "Formato del Torneo",
+            meas_unit: "Unità di Misura", score_meth: "Metodo di Punteggio", catch_lim: "Limite Catture", lim_all: "Tutti", lim_top5: "Migliori 5",
+            penalties: "Penalità", pts_deduct: "Punti da dedurre", reason_desc: "Motivo / Descrizione", add_penalty: "+ Aggiungi Penalità", part_detailed: "Dettagli Partecipanti"
         },
         de: {
             login_title: "Anmeldung / Registrierung", login_desc: "Benutzername und Passwort eingeben.", username: "Benutzer", password: "Passwort", login_btn: "Anmelden / Registrieren",
-            your_events: "Ihre Events", logout: "Abmelden", create_event: "+ Neues Event", step1_title: "Schritt 1: Setup", back: "← Zurück",
-            tourn_name: "1. Turniername", ranked_tourn: "Gewertetes Turnier", ranked_desc: "In Jahresbestenliste aufnehmen (Max 7/Jahr)", bulk_part: "2. Teilnehmer",
-            bulk_desc: "Namen einfügen. Symbole werden entfernt.", fish_species_title: "3. Arten & Multiplikatoren", add_species: "+ Art", start_event: "Event starten", next_btn: "Weiter",
+            your_events: "Ihre Events", logout: "Abmelden", create_event: "+ Neues Event", step1_title: "Schritt 1: Setup", back: "← Zurück", client_hub: "Kunden-Hub", public_hub: "Öffentlicher Hub", my_events: "Meine Events",
+            tourn_name: "1. Turniername", ranked_tourn: "Gewertetes Turnier", ranked_desc: "In Jahresbestenliste aufnehmen (Max 7/Jahr)", bulk_part: "Teilnehmer",
+            bulk_desc: "Namen einfügen. Symbole werden entfernt.", fish_species_title: "Arten & Multiplikatoren", add_species: "+ Art", start_event: "Event starten", next_btn: "Weiter",
             hub_title: "Turnier-Hub", edit_setup: "← Setup", manage_part: "Teilnehmer", add_new: "+ Neu", leaderboard: "Bestenliste", mode_pts: "Nach Punkten",
-            mode_cm: "Nach Zentimetern", save_event: "Event speichern", finish_event: "Event beenden", modal_add_title: "Teilnehmer hinzufügen", close: "Abbrechen", add: "Hinzufügen",
+            mode_cm: "Nach Größe/Gewicht", save_event: "Event speichern", finish_event: "Event beenden", modal_add_title: "Teilnehmer hinzufügen", close: "Abbrechen", add: "Hinzufügen",
             add_remove_fish: "Fisch Hinzufügen/Entfernen", species_sel: "Art", size_cm: "Größe", save: "Speichern", add_fish_btn: "+ Fisch Hinzufügen", edit_rules: "Regeln",
             add_rule: "+ Neue Regel", done: "Fertig", rule_from: "Von", rule_to: "Bis", rule_mult: "Multiplikator", download_chart: "PDF", download_season_pdf: "Saison-PDF",
             season_results: "Saisonergebnisse", current_catches: "Aktuelle Fänge", no_catches: "Keine Fänge.", too_small_title: "Fisch zu klein", 
@@ -595,8 +606,11 @@
             unranked_badge: "NICHT GEWERTET", rank_pts: "Rang-Pkt", tournaments: "turniere", editing_disabled: "Bearbeitung deaktiviert, bitte auf der nächsten Seite bearbeiten",
             finish_warning: "Wenn Sie das Event jetzt beenden, können Sie nichts mehr ändern.",
             status_finished: "Beendet", status_ongoing: "Laufend",
-            place: "Platz", name: "Name", points: "Punkte", total_cm: "Gesamt", biggest_fish: "Größter Fisch", details: "Details", generated_on: "Erstellt am",
-            tournament_results: "Turnierergebnisse", rank_pts_best5: "Rang-Pkt (Top 5)", tournaments_played: "Gespielte Turniere", all_placements: "Alle Platzierungen"
+            place: "Platz", name: "Name", points: "Punkte", total_cm: "Gesamt", biggest_fish: "Größter", details: "Details", generated_on: "Erstellt am",
+            tournament_results: "Turnierergebnisse", rank_pts_best5: "Rang-Pkt (Top 5)", tournaments_played: "Gespielte Turniere", all_placements: "Alle Platzierungen",
+            thumbnail_img: "Vorschaubild", desc_rules: "Beschreibung und Regeln", public_desc: "Für alle sichtbar machen", tourn_format: "Turnierformat",
+            meas_unit: "Maßeinheit", score_meth: "Wertungsmethode", catch_lim: "Fanglimit", lim_all: "Alle", lim_top5: "Top 5",
+            penalties: "Strafen", pts_deduct: "Abzuziehende Punkte", reason_desc: "Grund / Beschreibung", add_penalty: "+ Strafe hinzufügen", part_detailed: "Teilnehmer-Details"
         }
     };
 
@@ -608,11 +622,12 @@
                 el.innerText = translations[lang][key];
             }
         });
-        if(document.getElementById("setupSection").classList.contains("hidden") === false) refreshSetupUI();
-        if(document.getElementById("hubSection").classList.contains("hidden") === false) renderHubUI();
-        if(document.getElementById("rulesModal").classList.contains("hidden") === false && activeSpeciesIndex !== null) renderRules();
-        if(document.getElementById("fishModal").classList.contains("hidden") === false && activeFishParticipantIndex !== null) renderModalCatches();
-        if(!document.getElementById("dashboardSection").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
+        if(!document.getElementById("setupSection").classList.contains("hidden")) refreshSetupUI();
+        if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
+        if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
+        if(!document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
+        if(!document.getElementById("myEventsView").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
+        if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderLeaderboard(true);
     }
     
     function t(key) { return translations[currentLang] ? (translations[currentLang][key] || translations['en'][key] || key) : key; }
@@ -637,11 +652,11 @@
 
     // Handle Browser Back/Forward buttons using History API
     window.addEventListener("popstate", (event) => {
-        if (!loggedInUser) return;
         document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
         
         let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
         
+        document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.add("hidden");
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.add("hidden");
@@ -669,11 +684,23 @@
         });
     }
 
+    function openLogin() {
+        document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("loginSection").classList.remove("hidden");
+        window.scrollTo(0, 0);
+        history.pushState({view: 'loginSection'}, "");
+    }
+
     function loginSuccess(user) {
         loggedInUser = user;
         document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.remove("hidden");
+        
+        document.getElementById("headerClientHubBtn").classList.add("hidden");
         document.getElementById("headerLogoutBtn").classList.remove("hidden");
+        
+        document.getElementById("dashTabs").classList.remove("hidden");
+        switchDashboardTab('my');
         
         history.replaceState({view: 'dashboardSection'}, ""); 
         
@@ -683,11 +710,20 @@
     function handleLogout() {
         if (unsubscribeEventsListener) unsubscribeEventsListener();
         loggedInUser = "";
-        document.getElementById("dashboardSection").classList.add("hidden");
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.add("hidden");
-        document.getElementById("loginSection").classList.remove("hidden");
+        document.getElementById("loginSection").classList.add("hidden");
+        
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        
+        document.getElementById("headerClientHubBtn").classList.remove("hidden");
         document.getElementById("headerLogoutBtn").classList.add("hidden");
+        
+        document.getElementById("dashTabs").classList.add("hidden");
+        switchDashboardTab('public');
+        
+        history.replaceState({view: 'dashboardSection'}, "");
+        subscribeToEventsRealtime(); // Re-trigger public fetch
     }
 
     function subscribeToEventsRealtime() {
@@ -699,11 +735,11 @@
             
             snapshot.forEach(doc => { 
                 let data = { id: doc.id, ...doc.data() };
-                if (data.username === loggedInUser) loadedEvents.push(data);
+                if (loggedInUser && data.username === loggedInUser) loadedEvents.push(data);
                 if (data.details && data.details.isPublic) allPublicEvents.push(data);
             });
             
-            processDashboard();
+            if (loggedInUser) processDashboard();
             renderPublicHub();
 
             if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) {
@@ -867,7 +903,7 @@
             let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
                 <div class="flex flex-between" style="margin-bottom: 16px;">
                     <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
-                    <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">${t('download_season_pdf')}</a>
+                    <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">⬇ ${t('download_season_pdf')}</a>
                 </div>`;
             
             aotyArray.slice(0, 3).forEach((angler, idx) => {
@@ -896,8 +932,6 @@
             return eYear === String(selectedYear);
         }));
     }
-
-    function changeYear(y) { selectedYear = y; processDashboard(); }
 
     function renderEventsList(filteredEvents) {
         let container = document.getElementById("eventsList");
@@ -959,8 +993,21 @@
         if(!file) return;
         let reader = new FileReader();
         reader.onload = function(event) {
-            document.getElementById('thumbnailPreview').src = event.target.result;
-            document.getElementById('thumbnailPreview').style.display = 'block';
+            let img = new Image();
+            img.onload = function() {
+                let canvas = document.createElement('canvas');
+                let ctx = canvas.getContext('2d');
+                let maxW = 800;
+                let scale = img.width > maxW ? maxW / img.width : 1;
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                let compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                
+                document.getElementById('thumbnailPreview').src = compressedDataUrl;
+                document.getElementById('thumbnailPreview').style.display = 'block';
+            }
+            img.src = event.target.result;
         };
         reader.readAsDataURL(file);
     }
@@ -1109,6 +1156,7 @@
         }
     }
 
+    // RULES MODAL
     function openRulesModal(sIdx) { activeSpeciesIndex = sIdx; document.getElementById("rulesModal").classList.remove("hidden"); renderRules(); }
     function closeRulesModal() { document.getElementById("rulesModal").classList.add("hidden"); activeSpeciesIndex = null; refreshSetupUI(); }
     
@@ -1179,6 +1227,7 @@
         }).join('');
     }
 
+    // TO HUB
     function goToEventHub() {
         currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
         currentEvent.description = document.getElementById("eventDescInput").value.trim();
@@ -1267,7 +1316,6 @@
     }
 
     function editParticipantName(index) {
-        if(currentEvent.status === 'finished') return;
         let p = currentEvent.participants[index];
         let newName = prompt(t('edit_name') + ":", p.name);
         if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
@@ -1402,6 +1450,7 @@
         }
     }
 
+
     // -- SCORING & LEADERBOARD --
     function calculateFishPoints(abbr, size, speciesList, measureType) {
         if(measureType === 'weight') return size; 
@@ -1445,7 +1494,7 @@
                 <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:10px 16px;">Add/Rem</button>
             `;
 
-            let editBtn = isFinished ? '' : `<button onclick="editParticipantName(${pIndexReal})" class="icon-btn" style="padding:4px; background:transparent; color:var(--text-muted); box-shadow:none;">✏️</button>`;
+            let editBtn = `<button onclick="editParticipantName(${pIndexReal})" class="icon-btn" style="padding:4px; background:transparent; color:var(--text-muted); box-shadow:none;">✏️</button>`;
 
             filteredHtml += `
             <div class="card" style="padding:16px; margin-bottom:16px;">
@@ -1514,7 +1563,7 @@
             } else { topSummaryContainer.classList.add('hidden'); }
         }
 
-        let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm')}</th><th>Amt</th><th>Max</th></tr>`;
+        let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
         sortedByMain.forEach((p, idx) => {
             let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
             let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
@@ -1536,7 +1585,7 @@
         localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
         const payload = { username: loggedInUser, name: currentEvent.name, details: currentEvent, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
         db.collection("events").doc(currentEvent.id).set(payload).then(() => { if(redirect) showDashboard(); })
-        .catch(err => { console.error("Save error:", err); alert("Failed to save event to cloud."); });
+        .catch(err => { console.error("Save error:", err); alert("Failed to save event to cloud: " + err.message); });
     }
 
     // -- PUBLIC EVENT MODAL --
@@ -1623,7 +1672,7 @@
                         <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
                         <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
                         <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('points')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Total ${unitText.toUpperCase()}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('total_cm').toUpperCase()}</th>
                         <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Amt</th>
                         <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('biggest_fish')}</th>
                         <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 35%;">${t('details')}</th>
@@ -1722,7 +1771,18 @@
         let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
     }
     
+    // INITIALIZATION
     changeLanguage(document.getElementById("langSelect").value);
+    
+    // Default load to Public Hub
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("dashboardSection").classList.remove("hidden");
+    document.getElementById("dashTabs").classList.add("hidden");
+    document.getElementById("myEventsView").classList.add("hidden");
+    document.getElementById("publicHubView").classList.remove("hidden");
+    
+    history.replaceState({view: 'dashboardSection'}, "");
+    subscribeToEventsRealtime();
 </script>
 </body>
 </html>
