@@ -1,3 +1,6 @@
+Here is the updated full code for your game. It now features dynamic 8-bit pixel-art SVG icons generated directly in JavaScript (no external image files needed!) for every car tier and condition state (Wrecked, Normal Wear, Mint, Repaired, and Tuned Beast).
+The 8-bit icons appear on the car selection cards, inside the action screen, during the repair progress overlay, and in the selling/bidding result section.
+Complete Playable index.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -195,4 +198,589 @@
             padding: 40px 20px;
             background: radial-gradient(circle, var(--panel) 0%, var(--bg) 100%);
             border-radius: 16px;
-            border: 1px
+            border: 1px solid #333;
+            min-height: 250px;
+        }
+        .status-text {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .multiplier-display {
+            font-size: 5rem;
+            font-weight: 900;
+            color: white;
+            margin: 10px 0;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+        .multiplier-display.crashed { color: var(--lose); text-shadow: 0 0 20px rgba(255,71,87,0.4); }
+        .multiplier-display.won { color: var(--win); text-shadow: 0 0 30px rgba(46,213,115,0.6); transform: scale(1.1); transition: 0.3s transform cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        .coins-won { font-size: 1.2rem; color: #aaa; margin-bottom: 30px; height: 24px; }
+        .coins-won span { color: var(--gold); font-weight: bold; }
+        
+        /* Animations */
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        .pulsing { animation: pulse 1s infinite; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #444; border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        .scrolling-web {
+            display: none;
+            width: 80%; max-width: 300px;
+            height: 50px;
+            margin: 0 auto 15px auto;
+            border: 2px solid var(--accent-dark);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background: #111;
+        }
+        .scroll-lines {
+            position: absolute;
+            top: 0; left: 10%; width: 80%;
+            display: flex; flex-direction: column; gap: 8px;
+            animation: scrollUp 0.8s linear infinite;
+        }
+        .scroll-line { height: 8px; background: #333; border-radius: 4px; }
+        .scroll-line:nth-child(even) { background: var(--accent-dark); opacity: 0.5; width: 70%; }
+        
+        @keyframes scrollUp { 0% { transform: translateY(50px); } 100% { transform: translateY(-50px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="balance">Balance: $<span id="balanceDisplay">10,000</span></div>
+        <button onclick="topUp()">Deposit $5,000</button>
+    </header>
+
+    <div class="container">
+        <h2 id="phaseTitle">Select a Car to Flip</h2>
+        
+        <div class="car-grid" id="carGrid"></div>
+
+        <div class="action-area" id="actionArea">
+            <div id="overlay-loader">
+                <div id="loaderCarIcon" style="margin-bottom: 10px;"></div>
+                <div class="spinner"></div>
+                <h3 style="color:var(--gold); margin: 0 0 5px 0;">🔧 Shady Mechanic at work...</h3>
+                <div class="progress-container">
+                    <div class="progress-bar gold" id="repairProgressBar"></div>
+                </div>
+            </div>
+            
+            <div id="actionCarIcon" class="car-icon-container" style="width:160px; height:90px; margin: 0 auto 15px auto;"></div>
+            <h2 id="selectedCarName" style="margin-top:0;">Car Name</h2>
+            <div id="selectedCarDetails" style="font-size: 1.1rem; line-height: 1.6;"></div>
+            <div id="repair-result-banner"></div>
+
+            <div class="action-buttons">
+                <button class="btn-fix" id="btnFix" onclick="fixCar()">Fix Car</button>
+                <button class="btn-sell" id="btnSell" onclick="startSellPhase()">Sell As Is</button>
+                <button class="btn-cancel" id="btnCancel" onclick="startRound()">Cancel</button>
+            </div>
+        </div>
+
+        <div id="result-area">
+            <div id="resultCarIcon" class="car-icon-container" style="width:140px; height:80px; margin: 0 auto 20px auto;"></div>
+
+            <div class="scrolling-web" id="searchAnim">
+                <div class="scroll-lines">
+                    <div class="scroll-line"></div>
+                    <div class="scroll-line"></div>
+                    <div class="scroll-line"></div>
+                    <div class="scroll-line"></div>
+                </div>
+            </div>
+
+            <div class="progress-container" id="sellProgressContainer" style="display:none;">
+                <div class="progress-bar" id="sellProgressBar"></div>
+            </div>
+            
+            <div class="status-text" id="statusText"></div>
+            <div class="multiplier-display" id="multiplierDisplay" style="display:none;">1.00x</div>
+            <div class="coins-won" id="coinsWonDisplay"></div>
+            <button id="btnNextRound" onclick="startRound()" style="display:none; margin: 0 auto;">Play Next Round</button>
+        </div>
+    </div>
+
+    <script>
+        // Fleet Data
+        const fleet = [
+            { name: "Jonda Divic", tier: "cheap", basePrice: 200 },
+            { name: "Wolkswagen Holf", tier: "cheap", basePrice: 400 },
+            { name: "Qenault Uwingo", tier: "cheap", basePrice: 100 },
+            { name: "Voyota Damry", tier: "normal", basePrice: 2500 },
+            { name: "Jonda Bccord", tier: "normal", basePrice: 3000 },
+            { name: "Wolkswagen Qassat", tier: "normal", basePrice: 3500 },
+            { name: "Nercedes H-Wagon", tier: "luxury", basePrice: 30000 },
+            { name: "Gerrari E458", tier: "luxury", basePrice: 45000 },
+            { name: "Mamborghini Juracan", tier: "luxury", basePrice: 50000 }
+        ];
+
+        const conditions = ["Wrecked", "Normal wear", "Mint"];
+        
+        // Multiplier Pools designed for ~96% RTP
+        const potentialTiers = [
+            { id: 0, name: "Normal Win", class: "pot-0", winChance: 0.60, pool: [{m: 1.1, c: 60}, {m: 2, c: 35}, {m: 5, c: 5}] },
+            { id: 1, name: "Big Win", class: "pot-1", winChance: 0.40, pool: [{m: 1.2, c: 80}, {m: 3, c: 12}, {m: 10, c: 6}, {m: 25, c: 2}] },
+            { id: 2, name: "Huge Win", class: "pot-2", winChance: 0.25, pool: [{m: 1.2, c: 84}, {m: 5, c: 10}, {m: 25, c: 5}, {m: 100, c: 1}] },
+            { id: 3, name: "INSANE WIN", class: "pot-3", winChance: 0.10, pool: [{m: 1.2, c: 88}, {m: 10, c: 9}, {m: 100, c: 2.5}, {m: 1000, c: 0.5}] }
+        ];
+
+        // Flavor Messages for Mechanics
+        const repairEvents = {
+            fail: [
+                "💥 Mechanic broke a leg mid-repair! Repair failed completely.",
+                "🤦 Mechanic dropped your engine block on the floor. Oof.",
+                "🎰 Mechanic took your money and lost it playing online poker.",
+                "⚡ Mechanic wired the battery backwards and fried the ECU!"
+            ],
+            shoddy: [
+                "🍺 Mechanic was hungover, but duct-taped the bumper. (+1 Tier)",
+                "🌾 Mechanic used parts from an old lawnmower. (+1 Tier)",
+                "🛠️ Mechanic patched the oil leak with chewing gum and a prayer. (+1 Tier)"
+            ],
+            success: [
+                "✨ Mechanic worked overtime and restored it clean! (+2 Tiers)",
+                "🏎️ Mechanic tuned the engine to factory perfection! (+2 Tiers)",
+                "🧼 Mechanic buffed out every scratch till it shined like new! (+2 Tiers)"
+            ],
+            jackpot: [
+                "🎂 Mechanic had a birthday and gave you a twin-turbo upgrade for free! (INSANE TIER)",
+                "🚀 Mechanic secretly installed a nitrous system in the trunk! (INSANE TIER)",
+                "👑 Mechanic accidentally turned your car into a street legend! (INSANE TIER)"
+            ]
+        };
+
+        let balance = 10000;
+        let currentOffers = [];
+        let activeCar = null;
+        let lastRepairBanner = null;
+
+        // 8-bit SVG Generator Function
+        function getCarPixelArtSVG(tier, condition, width = 80, height = 50) {
+            let baseColor = "#3742fa";
+            let windowColor = "#70a1ff";
+            let wheelColor = "#1e272e";
+            let rimColor = "#d2dae2";
+
+            if (tier === "cheap") baseColor = "#747d8c";
+            if (tier === "normal") baseColor = "#3742fa";
+            if (tier === "luxury") baseColor = "#ffd700";
+
+            let effects = "";
+            
+            if (condition === "Wrecked") {
+                baseColor = tier === "cheap" ? "#8c7ae6" : (tier === "luxury" ? "#d35400" : "#57606f");
+                windowColor = "#2f3542"; // cracked/dark windows
+                // Smoke & rust effects
+                effects += `
+                    <rect x="6" y="2" width="2" height="2" fill="#718093" opacity="0.8"/>
+                    <rect x="4" y="0" width="3" height="3" fill="#a6b1e1" opacity="0.6"/>
+                    <rect x="22" y="8" width="2" height="2" fill="#e1b12c"/>
+                    <rect x="24" y="10" width="3" height="2" fill="#c0392b"/>
+                `;
+            } else if (condition === "Mint" || condition === "Repaired") {
+                effects += `
+                    <polygon points="26,3 27,5 29,5 27,7 28,9 26,8 24,9 25,7 23,5 25,5" fill="#ffffff"/>
+                    <polygon points="6,6 7,7 8,7 7,8 8,9 7,9 6,10 6,9 5,9 6,8 5,7 6,7" fill="#ffd700"/>
+                `;
+            } else if (condition === "Tuned Beast") {
+                // Spoiler, Nitrous Flame, Underglow
+                effects += `
+                    <rect x="1" y="5" width="2" height="6" fill="#ff4757"/>
+                    <rect x="0" y="4" width="5" height="2" fill="#ff4757"/>
+                    <rect x="28" y="14" width="4" height="2" fill="#ff3f34"/>
+                    <rect x="30" y="13" width="3" height="4" fill="#ffa801"/>
+                    <rect x="8" y="18" width="16" height="1" fill="#66fcf1" opacity="0.9"/>
+                `;
+            }
+
+            let pixels = "";
+            if (tier === "cheap") {
+                // Hatchback Shape
+                pixels = `
+                    <rect x="6" y="8" width="20" height="8" fill="${baseColor}"/>
+                    <rect x="10" y="5" width="12" height="4" fill="${baseColor}"/>
+                    <rect x="12" y="6" width="4" height="3" fill="${windowColor}"/>
+                    <rect x="17" y="6" width="4" height="3" fill="${windowColor}"/>
+                    <rect x="4" y="13" width="2" height="3" fill="#2f3542"/>
+                    <rect x="26" y="13" width="2" height="3" fill="#2f3542"/>
+                    <rect x="8" y="14" width="5" height="5" fill="${wheelColor}"/>
+                    <rect x="9" y="15" width="3" height="3" fill="${rimColor}"/>
+                    <rect x="19" y="14" width="5" height="5" fill="${wheelColor}"/>
+                    <rect x="20" y="15" width="3" height="3" fill="${rimColor}"/>
+                    <rect x="25" y="10" width="2" height="2" fill="#fbc531"/>
+                `;
+            } else if (tier === "normal") {
+                // Sedan Shape
+                pixels = `
+                    <rect x="4" y="10" width="24" height="6" fill="${baseColor}"/>
+                    <rect x="9" y="6" width="14" height="5" fill="${baseColor}"/>
+                    <rect x="11" y="7" width="5" height="3" fill="${windowColor}"/>
+                    <rect x="17" y="7" width="5" height="3" fill="${windowColor}"/>
+                    <rect x="7" y="14" width="5" height="5" fill="${wheelColor}"/>
+                    <rect x="8" y="15" width="3" height="3" fill="${rimColor}"/>
+                    <rect x="20" y="14" width="5" height="5" fill="${wheelColor}"/>
+                    <rect x="21" y="15" width="3" height="3" fill="${rimColor}"/>
+                    <rect x="27" y="11" width="2" height="2" fill="#fbc531"/>
+                    <rect x="3" y="11" width="2" height="2" fill="#e84118"/>
+                `;
+            } else {
+                // Supercar Shape
+                pixels = `
+                    <rect x="2" y="11" width="28" height="5" fill="${baseColor}"/>
+                    <rect x="10" y="8" width="12" height="4" fill="${baseColor}"/>
+                    <rect x="22" y="10" width="6" height="3" fill="${baseColor}"/>
+                    <rect x="13" y="9" width="8" height="2" fill="${windowColor}"/>
+                    <rect x="6" y="13" width="6" height="6" fill="${wheelColor}"/>
+                    <rect x="7" y="14" width="4" height="4" fill="${rimColor}"/>
+                    <rect x="21" y="13" width="6" height="6" fill="${wheelColor}"/>
+                    <rect x="22" y="14" width="4" height="4" fill="${rimColor}"/>
+                    <rect x="28" y="12" width="3" height="1" fill="#00d2d3"/>
+                    <rect x="1" y="12" width="2" height="2" fill="#ff4757"/>
+                `;
+            }
+
+            return `<svg viewBox="0 0 32 20" width="${width}" height="${height}" shape-rendering="crispEdges" style="image-rendering: pixelated; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));">${pixels}${effects}</svg>`;
+        }
+
+        function updateBalance() {
+            document.getElementById("balanceDisplay").innerText = balance.toLocaleString();
+        }
+
+        function topUp() {
+            balance += 5000;
+            updateBalance();
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getRandomMsg(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function formatCurrency(num) {
+            return "$" + num.toLocaleString();
+        }
+
+        function animateProgressBar(barElement, durationMs, onComplete) {
+            let start = null;
+            barElement.style.width = "0%";
+
+            function step(timestamp) {
+                if (!start) start = timestamp;
+                let progress = timestamp - start;
+                let pct = Math.min(100, (progress / durationMs) * 100);
+                barElement.style.width = pct + "%";
+
+                if (progress < durationMs) {
+                    requestAnimationFrame(step);
+                } else if (onComplete) {
+                    onComplete();
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function startRound() {
+            document.getElementById("actionArea").style.display = "none";
+            document.getElementById("result-area").style.display = "none";
+            document.getElementById("repair-result-banner").style.display = "none";
+            document.getElementById("carGrid").style.display = "grid";
+            document.getElementById("phaseTitle").style.display = "block";
+            document.getElementById("phaseTitle").innerText = "Select a Car to Flip";
+            
+            lastRepairBanner = null;
+            currentOffers = [];
+            let gridHTML = "";
+
+            for (let i = 0; i < 3; i++) {
+                let carTemplate = fleet[randomInt(0, fleet.length - 1)];
+                let condition = conditions[randomInt(0, 2)];
+                
+                let baseTier = condition === "Wrecked" ? 0 : (condition === "Normal wear" ? 1 : 2);
+                let finalTier = Math.min(3, Math.max(0, baseTier + randomInt(-1, 1)));
+
+                let priceMod = condition === "Wrecked" ? 0.6 : (condition === "Mint" ? 1.4 : 1.0);
+                let finalPrice = Math.floor(carTemplate.basePrice * priceMod);
+
+                let car = {
+                    ...carTemplate,
+                    price: finalPrice,
+                    condition: condition,
+                    tierLevel: finalTier,
+                    invested: finalPrice,
+                    isFixed: false
+                };
+                currentOffers.push(car);
+
+                let pTier = potentialTiers[car.tierLevel];
+
+                gridHTML += `
+                    <div class="car-card" onclick="selectCar(${i})">
+                        <div class="tier-badge tier-${car.tier}">Class: ${car.tier}</div>
+                        <h3>${car.name}</h3>
+                        <div class="car-icon-container">
+                            ${getCarPixelArtSVG(car.tier, car.condition, 90, 55)}
+                        </div>
+                        <p style="color:#aaa; margin:2px 0;">Condition: <span style="color:white;">${car.condition}</span></p>
+                        <p style="color:#aaa; margin:2px 0;">Price: <span style="color:white;">${formatCurrency(car.price)}</span></p>
+                        <div class="pot-badge ${pTier.class}">Potential: ${pTier.name}</div>
+                    </div>
+                `;
+            }
+            document.getElementById("carGrid").innerHTML = gridHTML;
+        }
+
+        function selectCar(index) {
+            activeCar = currentOffers[index];
+            if (balance < activeCar.price) {
+                alert("Insufficient balance. Please deposit funds.");
+                return;
+            }
+
+            balance -= activeCar.price;
+            updateBalance();
+
+            document.getElementById("carGrid").style.display = "none";
+            document.getElementById("actionArea").style.display = "block";
+            document.getElementById("phaseTitle").style.display = "none";
+            
+            updateActionArea();
+        }
+
+        function updateActionArea() {
+            document.getElementById("selectedCarName").innerText = activeCar.name;
+            document.getElementById("actionCarIcon").innerHTML = getCarPixelArtSVG(activeCar.tier, activeCar.condition, 120, 75);
+            
+            let pTier = potentialTiers[activeCar.tierLevel];
+            
+            let fixCost = 0;
+            let canFix = !activeCar.isFixed && activeCar.condition !== "Mint";
+
+            if (activeCar.condition === "Wrecked") {
+                fixCost = activeCar.price; 
+            } else if (activeCar.condition === "Normal wear") {
+                fixCost = Math.floor(activeCar.price * 0.50); 
+            }
+
+            let html = `
+                <p>Initial Investment: <strong>${formatCurrency(activeCar.invested)}</strong></p>
+                <p>Condition: <strong>${activeCar.condition}</strong></p>
+                <div class="pot-badge ${pTier.class}" style="font-size:1.2rem;">Current Potential: ${pTier.name}</div>
+            `;
+
+            let bannerEl = document.getElementById("repair-result-banner");
+            if (lastRepairBanner) {
+                bannerEl.style.display = "block";
+                bannerEl.className = lastRepairBanner.className;
+                bannerEl.innerText = lastRepairBanner.text;
+            } else {
+                bannerEl.style.display = "none";
+            }
+
+            if (canFix && activeCar.tierLevel < 3) {
+                html += `
+                    <div style="background: rgba(255,215,0,0.1); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px dashed var(--gold);">
+                        <p style="margin:0 0 5px 0; color: var(--gold);"><strong>Repair Shop Offer:</strong></p>
+                        <p style="margin:0; font-size: 0.95rem;">Pay ${formatCurrency(fixCost)} to gamble on a mechanic repair!</p>
+                    </div>
+                `;
+                document.getElementById("btnFix").style.display = "inline-block";
+                document.getElementById("btnFix").innerText = `Fix Car (-${formatCurrency(fixCost)})`;
+                document.getElementById("btnFix").disabled = balance < fixCost;
+                document.getElementById("btnSell").innerText = `Sell As Is`;
+            } else {
+                document.getElementById("btnFix").style.display = "none";
+                document.getElementById("btnSell").innerText = `Sell Car`;
+            }
+
+            document.getElementById("selectedCarDetails").innerHTML = html;
+        }
+
+        function fixCar() {
+            let fixCost = 0;
+            if (activeCar.condition === "Wrecked") fixCost = activeCar.price;
+            else if (activeCar.condition === "Normal wear") fixCost = Math.floor(activeCar.price * 0.50);
+
+            if (balance < fixCost) return;
+
+            // Trigger fixing UI animation
+            document.getElementById("btnFix").disabled = true;
+            document.getElementById("btnSell").disabled = true;
+            document.getElementById("btnCancel").disabled = true;
+            document.getElementById("loaderCarIcon").innerHTML = getCarPixelArtSVG(activeCar.tier, activeCar.condition, 100, 60);
+            document.getElementById("overlay-loader").style.display = "flex";
+
+            balance -= fixCost;
+            activeCar.invested += fixCost;
+            activeCar.isFixed = true; // Prevents infinite fixing
+
+            let repairBar = document.getElementById("repairProgressBar");
+
+            animateProgressBar(repairBar, 1800, () => {
+                // Roll Mechanic Event Outcome
+                let roll = Math.random();
+                if (roll <= 0.15) {
+                    // Fail / Botched (15%)
+                    lastRepairBanner = { className: "repair-fail", text: getRandomMsg(repairEvents.fail) };
+                } else if (roll <= 0.40) {
+                    // Shoddy (+1 Tier) (25%)
+                    activeCar.tierLevel = Math.min(3, activeCar.tierLevel + 1);
+                    activeCar.condition = "Repaired";
+                    lastRepairBanner = { className: "repair-shoddy", text: getRandomMsg(repairEvents.shoddy) };
+                } else if (roll <= 0.85) {
+                    // Success (+2 Tiers) (45%)
+                    let jump = activeCar.condition === "Wrecked" ? 2 : 1;
+                    activeCar.tierLevel = Math.min(3, activeCar.tierLevel + jump);
+                    activeCar.condition = "Mint";
+                    lastRepairBanner = { className: "repair-success", text: getRandomMsg(repairEvents.success) };
+                } else {
+                    // Jackpot (INSANE WIN Tier) (15%)
+                    activeCar.tierLevel = 3;
+                    activeCar.condition = "Tuned Beast";
+                    lastRepairBanner = { className: "repair-jackpot", text: getRandomMsg(repairEvents.jackpot) };
+                }
+                
+                updateBalance();
+                updateActionArea();
+
+                // Restore UI
+                document.getElementById("overlay-loader").style.display = "none";
+                document.getElementById("btnSell").disabled = false;
+                document.getElementById("btnCancel").disabled = false;
+            });
+        }
+
+        function rollMultiplier(tier) {
+            let roll = Math.random();
+            if (roll > tier.winChance) return 0;
+
+            let multRoll = Math.random() * 100;
+            let cumulative = 0;
+            for (let i = 0; i < tier.pool.length; i++) {
+                cumulative += tier.pool[i].c;
+                if (multRoll <= cumulative) {
+                    return tier.pool[i].m;
+                }
+            }
+            return tier.pool[tier.pool.length - 1].m; 
+        }
+
+        function startSellPhase() {
+            document.getElementById("actionArea").style.display = "none";
+            document.getElementById("result-area").style.display = "block";
+            document.getElementById("resultCarIcon").innerHTML = getCarPixelArtSVG(activeCar.tier, activeCar.condition, 110, 65);
+            
+            let statusEl = document.getElementById("statusText");
+            let multEl = document.getElementById("multiplierDisplay");
+            let coinsEl = document.getElementById("coinsWonDisplay");
+            let nextBtn = document.getElementById("btnNextRound");
+            let searchAnim = document.getElementById("searchAnim");
+            let sellProgContainer = document.getElementById("sellProgressContainer");
+            let sellProgBar = document.getElementById("sellProgressBar");
+
+            // UI Reset for Searching Phase
+            multEl.style.display = "none";
+            multEl.className = "multiplier-display";
+            coinsEl.innerHTML = "";
+            nextBtn.style.display = "none";
+            
+            statusEl.innerText = "Looking for buyers...";
+            statusEl.className = "status-text pulsing";
+            statusEl.style.color = "var(--accent)";
+            searchAnim.style.display = "block";
+            sellProgContainer.style.display = "block";
+
+            let pTier = potentialTiers[activeCar.tierLevel];
+            let finalMult = rollMultiplier(pTier);
+
+            // Animate 2.5 second progress bar during search
+            animateProgressBar(sellProgBar, 2500, () => {
+                searchAnim.style.display = "none";
+                sellProgContainer.style.display = "none";
+                multEl.style.display = "block";
+
+                if (finalMult === 0) {
+                    // Instant Crash / Impounded
+                    statusEl.innerText = "Busted! Car Impounded.";
+                    statusEl.classList.remove("pulsing");
+                    multEl.innerText = "0.00x";
+                    multEl.classList.add("crashed");
+                    coinsEl.innerHTML = `Total Loss: <span>-${formatCurrency(activeCar.invested)}</span>`;
+                    nextBtn.style.display = "block";
+                } else {
+                    // Win Animation
+                    statusEl.innerText = "Buyer found! Bidding started...";
+                    animateMultiplier(finalMult, activeCar.invested);
+                }
+            });
+        }
+
+        function animateMultiplier(targetMult, invested) {
+            let multEl = document.getElementById("multiplierDisplay");
+            let statusEl = document.getElementById("statusText");
+            let coinsEl = document.getElementById("coinsWonDisplay");
+            let nextBtn = document.getElementById("btnNextRound");
+            
+            // Scaled duration based on target multiplier
+            let duration = 1000;
+            if (targetMult > 2 && targetMult <= 10) duration = 2000;
+            else if (targetMult > 10 && targetMult <= 50) duration = 3000;
+            else if (targetMult > 50) duration = 5000;
+
+            let frames = (duration / 1000) * 60; // 60fps estimate
+            let step = (targetMult - 1.00) / frames;
+            if (step < 0.01) step = 0.01;
+
+            let currentMult = 1.00;
+
+            function tick() {
+                currentMult += step;
+                if (currentMult >= targetMult) {
+                    currentMult = targetMult;
+                    
+                    multEl.innerText = currentMult.toFixed(2) + "x";
+                    multEl.classList.add("won");
+                    statusEl.innerText = "SOLD!";
+                    statusEl.style.color = "var(--win)";
+                    statusEl.classList.remove("pulsing");
+                    
+                    let winnings = Math.floor(invested * currentMult);
+                    balance += winnings;
+                    updateBalance();
+                    
+                    coinsEl.innerHTML = `You won <span>${formatCurrency(winnings)}</span>!`;
+                    nextBtn.style.display = "block";
+                    return;
+                }
+                
+                multEl.innerText = currentMult.toFixed(2) + "x";
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // Initialize game on load
+        startRound();
+    </script>
+</body>
+</html>
+
