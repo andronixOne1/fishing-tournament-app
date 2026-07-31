@@ -67,11 +67,6 @@
         button.icon-btn { padding: 10px 14px; width: auto; font-size: 14px; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Dashboard Tabs */
-        .dash-tabs { display: flex; gap: 8px; margin-bottom: 20px; background: rgba(255,255,255,0.4); padding: 6px; border-radius: 20px; }
-        .dash-tab { flex: 1; padding: 12px; text-align: center; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 16px; transition: 0.3s; }
-        .dash-tab.active { background: white; color: var(--primary-dark); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-
         /* Specifics */
         .species-tab { padding: 10px 18px; border-radius: 12px; background: rgba(255, 255, 255, 0.6); border: 2px solid #e0e7ff; color: var(--text-muted); font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; }
         .species-tab.active { background: var(--primary-gradient); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
@@ -110,20 +105,22 @@
                 <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
                 <circle cx="12" cy="3" r="1.5"/>
             </svg>
-            <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard Hub</div>
+            <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Hub</div>
         </div>
         
         <div class="flex" style="gap: 8px;">
+            <button id="headerHomeBtn" class="secondary icon-btn" onclick="goHome()" data-i18n="home" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Home</button>
             <button id="headerClientAreaBtn" class="secondary icon-btn" onclick="openLogin()" data-i18n="client_area" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Client Area</button>
+            <button id="headerMyEventsBtn" class="hidden secondary icon-btn" onclick="openMyEvents()" data-i18n="my_events" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">My Events</button>
             <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
             <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
-                <option value="en">🇬🇧 EN</option>
-                <option value="ka">🇬🇪 KA</option>
-                <option value="uk">🇺🇦 UK</option>
-                <option value="ru">🇷🇺 RU</option>
-                <option value="fr">🇫🇷 FR</option>
-                <option value="it">🇮🇹 IT</option>
-                <option value="de">🇩🇪 DE</option>
+                <option value="en">🇬🇧</option>
+                <option value="ka">🇬🇪</option>
+                <option value="uk">🇺🇦</option>
+                <option value="ru">🇷🇺</option>
+                <option value="fr">🇫🇷</option>
+                <option value="it">🇮🇹</option>
+                <option value="de">🇩🇪</option>
             </select>
         </div>
     </div>
@@ -137,22 +134,25 @@
             <div class="form-group"><label data-i18n="username">Username</label><input type="text" id="usernameInput" placeholder="Username"></div>
             <div class="form-group"><label data-i18n="password">Password</label><input type="password" id="passwordInput" placeholder="Password"></div>
             <button onclick="handleLoginRegister()" data-i18n="login_btn" style="margin-top: 16px;">Login / Register</button>
-            <p id="accountLimitMsg" style="font-size: 13px; color: var(--danger); text-align: center; margin-top: 16px;"></p>
         </div>
     </div>
 
     <!-- MAIN DASHBOARD -->
     <div id="dashboardSection">
         
-        <div id="dashTabs" class="dash-tabs hidden">
-            <div id="tabBtnPublic" class="dash-tab active" data-i18n="public_hub" onclick="switchDashboardTab('public')">Public Hub</div>
-            <div id="tabBtnMy" class="dash-tab" data-i18n="my_events" onclick="switchDashboardTab('my')">My Events</div>
-        </div>
-
         <!-- MY EVENTS TAB -->
         <div id="myEventsView" class="hidden">
-            <div id="yearFilterContainer" style="margin-bottom: 20px; display: none;">
-                <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"></select>
+            <div class="flex flex-between" style="margin-bottom: 20px;">
+                <div id="yearFilterContainer" style="display: none;">
+                    <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"></select>
+                </div>
+                <div>
+                    <select id="myEventsSort" onchange="processDashboard()" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                        <option value="newest" data-i18n="sort_newest">Newest First</option>
+                        <option value="oldest" data-i18n="sort_oldest">Oldest First</option>
+                        <option value="az" data-i18n="sort_az">Name A-Z</option>
+                    </select>
+                </div>
             </div>
             
             <div id="aotyContainer" style="margin-bottom: 24px;" class="hidden"></div>
@@ -163,6 +163,14 @@
 
         <!-- PUBLIC HUB TAB -->
         <div id="publicHubView">
+            <div class="flex flex-between" style="margin-bottom: 20px;">
+                <h2 data-i18n="public_hub" style="margin: 0; font-size: 24px;">Public Hub</h2>
+                <select id="publicEventsSort" onchange="renderPublicHub()" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <option value="newest" data-i18n="sort_newest">Newest First</option>
+                    <option value="oldest" data-i18n="sort_oldest">Oldest First</option>
+                    <option value="az" data-i18n="sort_az">Name A-Z</option>
+                </select>
+            </div>
             <div id="publicEventsList"></div>
         </div>
     </div>
@@ -171,7 +179,7 @@
     <div id="setupSection" class="hidden">
         <div class="flex flex-between" style="margin-bottom: 20px;">
             <h2 id="setupTitle" data-i18n="step1_title" style="margin: 0; font-size: 24px;">Setup: General</h2>
-            <button class="secondary icon-btn" onclick="showDashboard()" data-i18n="back">← Back</button>
+            <button class="secondary icon-btn" onclick="openMyEvents()" data-i18n="back">← Back</button>
         </div>
 
         <!-- Basic Info -->
@@ -424,11 +432,6 @@
                     <div id="pubLeaderboard"></div>
                 </div>
             </div>
-            
-            <div class="card" style="padding:12px;">
-                <h3 style="margin-bottom:8px;" data-i18n="part_detailed">Participants Detailed</h3>
-                <div id="pubParticipantsDetail" style="font-size:13px;"></div>
-            </div>
         </div>
         <div style="padding:16px; background:var(--card-bg); border-top:1px solid var(--border);">
             <button class="secondary" onclick="closePublicEventModal()" data-i18n="close" style="box-shadow:none;">Close</button>
@@ -475,7 +478,7 @@
     const translations = {
         en: {
             login_title: "Login / Register", login_desc: "Enter any username and password.", username: "Username", password: "Password", login_btn: "Login / Register",
-            your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back", client_area: "Client Area", public_hub: "Public Hub", my_events: "My Events",
+            your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back", client_area: "Client Area", public_hub: "Public Hub", my_events: "My Events", home: "Home",
             tourn_name: "1. Tournament Name", ranked_tourn: "Ranked Tournament", ranked_desc: "Include in Yearly Leaderboard (Max 7/year)", bulk_part: "Participants List",
             bulk_desc: "Paste names. Symbols/brackets are auto-removed.", fish_species_title: "Species & Multipliers", add_species: "+ Add Species", start_event: "Start Event", next_btn: "Next",
             hub_title: "Tournament Hub", edit_setup: "← Setup", manage_part: "Participants", add_new: "+ Add", leaderboard: "Leaderboard", mode_pts: "Rank by Points",
@@ -491,11 +494,11 @@
             tournament_results: "Tournament Results", rank_pts_best5: "Rank Pts (Best 5)", tournaments_played: "Tournaments Played", all_placements: "All Placements",
             thumbnail_img: "Thumbnail / Header Image", desc_rules: "Description & Rules", public_desc: "Make visible to everyone", tourn_format: "Tournament Format",
             meas_unit: "Measurement Unit", score_meth: "Scoring Method", catch_lim: "Catch Limits", lim_all: "All Fish", lim_top5: "Top 5 Counted",
-            penalties: "Penalties", pts_deduct: "Points to Deduct", reason_desc: "Reason / Description", add_penalty: "+ Add Penalty", part_detailed: "Participants Detailed"
+            penalties: "Penalties", pts_deduct: "Points to Deduct", reason_desc: "Reason / Description", add_penalty: "+ Add Penalty", sort_newest: "Newest First", sort_oldest: "Oldest First", sort_az: "Name A-Z"
         },
         ka: {
             login_title: "შესვლა / რეგისტრაცია", login_desc: "შეიყვანეთ ნებისმიერი სახელი და პაროლი.", username: "მომხმარებელი", password: "პაროლი", login_btn: "შესვლა / რეგისტრაცია",
-            your_events: "თქვენი ღონისძიებები", logout: "გასვლა", create_event: "+ ახალი ღონისძიების შექმნა", step1_title: "ნაბიჯი 1: პარამეტრები", back: "← უკან", client_area: "კლიენტის სივრცე", public_hub: "საჯარო ჰაბი", my_events: "ჩემი ტურნირები",
+            your_events: "თქვენი ღონისძიებები", logout: "გასვლა", create_event: "+ ახალი ღონისძიების შექმნა", step1_title: "ნაბიჯი 1: პარამეტრები", back: "← უკან", client_area: "კლიენტის სივრცე", public_hub: "საჯარო ჰაბი", my_events: "ჩემი ტურნირები", home: "მთავარი",
             tourn_name: "1. ტურნირის სახელი", ranked_tourn: "სარეიტინგო ტურნირი", ranked_desc: "წლიურ რეიტინგში დამატება (მაქს 7/წელს)", bulk_part: "მონაწილეთა სია",
             bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.", fish_species_title: "სახეობები და კოეფიციენტები", add_species: "+ სახეობის დამატება", start_event: "ტურნირის დაწყება", next_btn: "შემდეგი",
             hub_title: "ტურნირის ჰაბი", edit_setup: "← პარამეტრები", manage_part: "მონაწილეები", add_new: "+ დამატება", leaderboard: "ლიდერბორდი", mode_pts: "ქულებით რეიტინგი",
@@ -511,11 +514,11 @@
             tournament_results: "ტურნირის შედეგები", rank_pts_best5: "სარეიტინგო ქულა (საუკ. 5)", tournaments_played: "ჩატარებული ტურნირები", all_placements: "ყველა პოზიცია",
             thumbnail_img: "მთავარი ფოტო", desc_rules: "აღწერა და წესები", public_desc: "საჯაროდ გამოჩენა", tourn_format: "ტურნირის ფორმატი",
             meas_unit: "საზომი ერთეული", score_meth: "ქულების დათვლა", catch_lim: "თევზების ლიმიტი", lim_all: "ყველა", lim_top5: "საუკეთესო 5",
-            penalties: "ჯარიმები", pts_deduct: "დასაკლები ქულა", reason_desc: "მიზეზი / აღწერა", add_penalty: "+ ჯარიმის დამატება", part_detailed: "მონაწილეები დეტალურად"
+            penalties: "ჯარიმები", pts_deduct: "დასაკლები ქულა", reason_desc: "მიზეზი / აღწერა", add_penalty: "+ ჯარიმის დამატება", sort_newest: "ახლები ჯერ", sort_oldest: "ძველები ჯერ", sort_az: "სახელი ა-ჰ"
         },
         uk: {
             login_title: "Вхід / Реєстрація", login_desc: "Введіть будь-яке ім'я та пароль.", username: "Користувач", password: "Пароль", login_btn: "Вхід / Реєстрація",
-            your_events: "Ваші події", logout: "Вийти", create_event: "+ Створити нову подію", step1_title: "Крок 1: Налаштування", back: "← Назад", client_area: "Клієнтська зона", public_hub: "Публічний хаб", my_events: "Мої події",
+            your_events: "Ваші події", logout: "Вийти", create_event: "+ Створити нову подію", step1_title: "Крок 1: Налаштування", back: "← Назад", client_area: "Клієнтська зона", public_hub: "Публічний хаб", my_events: "Мої події", home: "Головна",
             tourn_name: "1. Назва турніру", ranked_tourn: "Рейтинговий турнір", ranked_desc: "Включити в річний рейтинг (макс 7/рік)", bulk_part: "Список учасників",
             bulk_desc: "Вставте імена. Дужки та символи видаляються.", fish_species_title: "Види та коефіцієнти", add_species: "+ Додати вид", start_event: "Почати подію", next_btn: "Далі",
             hub_title: "Хаб турніру", edit_setup: "← Налаштування", manage_part: "Учасники", add_new: "+ Додати", leaderboard: "Таблиця лідерів", mode_pts: "Рейтинг за балами",
@@ -531,11 +534,11 @@
             tournament_results: "Результати турніру", rank_pts_best5: "Ранг. очок (Кращі 5)", tournaments_played: "Зіграно турнірів", all_placements: "Всі місця",
             thumbnail_img: "Головне фото", desc_rules: "Опис та правила", public_desc: "Зробити публічним", tourn_format: "Формат турніру",
             meas_unit: "Одиниця виміру", score_meth: "Метод підрахунку", catch_lim: "Ліміт риби", lim_all: "Всі", lim_top5: "Кращі 5",
-            penalties: "Штрафи", pts_deduct: "Очки для зняття", reason_desc: "Причина / Опис", add_penalty: "+ Додати штраф", part_detailed: "Деталі учасників"
+            penalties: "Штрафи", pts_deduct: "Очки для зняття", reason_desc: "Причина / Опис", add_penalty: "+ Додати штраф", sort_newest: "Спочатку нові", sort_oldest: "Спочатку старі", sort_az: "Ім'я А-Я"
         },
         ru: {
             login_title: "Вход / Регистрация", login_desc: "Введите любые имя и пароль.", username: "Имя пользователя", password: "Пароль", login_btn: "Вход / Регистрация",
-            your_events: "Ваши события", logout: "Выйти", create_event: "+ Создать событие", step1_title: "Шаг 1: Настройка", back: "← Назад", client_area: "Клиентская зона", public_hub: "Публичный хаб", my_events: "Мои события",
+            your_events: "Ваши события", logout: "Выйти", create_event: "+ Создать событие", step1_title: "Шаг 1: Настройка", back: "← Назад", client_area: "Клиентская зона", public_hub: "Публичный хаб", my_events: "Мои события", home: "Главная",
             tourn_name: "1. Название турнира", ranked_tourn: "Рейтинговый турнир", ranked_desc: "Включить в годовой рейтинг (макс 7/год)", bulk_part: "Список участников",
             bulk_desc: "Вставьте имена. Скобки и символы удалятся.", fish_species_title: "Виды и коэффициенты", add_species: "+ Добавить вид", start_event: "Начать событие", next_btn: "Далее",
             hub_title: "Хаб турнира", edit_setup: "← Настройка", manage_part: "Участники", add_new: "+ Добавить", leaderboard: "Таблица лидеров", mode_pts: "Рейтинг по очкам",
@@ -551,11 +554,11 @@
             tournament_results: "Результаты турнира", rank_pts_best5: "Ранг. очков (Топ 5)", tournaments_played: "Сыграно турниров", all_placements: "Все места",
             thumbnail_img: "Главное фото", desc_rules: "Описание и правила", public_desc: "Сделать публичным", tourn_format: "Формат турнира",
             meas_unit: "Единица измерения", score_meth: "Метод подсчета", catch_lim: "Лимит рыбы", lim_all: "Вся", lim_top5: "Лучшие 5",
-            penalties: "Штрафы", pts_deduct: "Очки для снятия", reason_desc: "Причина / Описание", add_penalty: "+ Добавить штраф", part_detailed: "Детали участников"
+            penalties: "Штрафы", pts_deduct: "Очки для снятия", reason_desc: "Причина / Описание", add_penalty: "+ Добавить штраф", sort_newest: "Сначала новые", sort_oldest: "Сначала старые", sort_az: "Имя А-Я"
         },
         fr: {
             login_title: "Connexion / Inscription", login_desc: "Entrez un nom d'utilisateur et un mot de passe.", username: "Utilisateur", password: "Mot de passe", login_btn: "Connexion / Inscription",
-            your_events: "Vos Événements", logout: "Déconnexion", create_event: "+ Créer Événement", step1_title: "Étape 1 : Config", back: "← Retour", client_area: "Espace Client", public_hub: "Hub Public", my_events: "Mes Événements",
+            your_events: "Vos Événements", logout: "Déconnexion", create_event: "+ Créer Événement", step1_title: "Étape 1 : Config", back: "← Retour", client_area: "Espace Client", public_hub: "Hub Public", my_events: "Mes Événements", home: "Accueil",
             tourn_name: "1. Nom du Tournoi", ranked_tourn: "Tournoi Classé", ranked_desc: "Inclure dans le classement annuel (Max 7/an)", bulk_part: "Participants",
             bulk_desc: "Collez les noms. Les symboles sont ignorés.", fish_species_title: "Espèces & Multiplicateurs", add_species: "+ Espèce", start_event: "Démarrer", next_btn: "Suivant",
             hub_title: "Hub du Tournoi", edit_setup: "← Config", manage_part: "Participants", add_new: "+ Ajouter", leaderboard: "Classement", mode_pts: "Par Points",
@@ -571,11 +574,11 @@
             tournament_results: "Résultats du Tournoi", rank_pts_best5: "Pts Class. (Top 5)", tournaments_played: "Tournois joués", all_placements: "Tous les classements",
             thumbnail_img: "Image / Miniature", desc_rules: "Description et Règles", public_desc: "Rendre visible par tous", tourn_format: "Format du Tournoi",
             meas_unit: "Unité de Mesure", score_meth: "Méthode de Calcul", catch_lim: "Limite de Prises", lim_all: "Toutes", lim_top5: "Top 5",
-            penalties: "Pénalités", pts_deduct: "Points à déduire", reason_desc: "Raison / Description", add_penalty: "+ Ajouter Pénalité", part_detailed: "Participants Détaillés"
+            penalties: "Pénalités", pts_deduct: "Points à déduire", reason_desc: "Raison / Description", add_penalty: "+ Ajouter Pénalité", sort_newest: "Plus récents", sort_oldest: "Plus anciens", sort_az: "Nom A-Z"
         },
         it: {
             login_title: "Accesso / Registrazione", login_desc: "Inserisci utente e password.", username: "Utente", password: "Password", login_btn: "Accedi / Registrati",
-            your_events: "I tuoi Eventi", logout: "Esci", create_event: "+ Crea Evento", step1_title: "Passo 1: Config", back: "← Indietro", client_area: "Area Clienti", public_hub: "Hub Pubblico", my_events: "I Miei Eventi",
+            your_events: "I tuoi Eventi", logout: "Esci", create_event: "+ Crea Evento", step1_title: "Passo 1: Config", back: "← Indietro", client_area: "Area Clienti", public_hub: "Hub Pubblico", my_events: "I Miei Eventi", home: "Home",
             tourn_name: "1. Nome Torneo", ranked_tourn: "Torneo Classificato", ranked_desc: "Includi nella classifica annuale (Max 7/anno)", bulk_part: "Partecipanti",
             bulk_desc: "Incolla i nomi. I simboli vengono rimossi.", fish_species_title: "Specie & Moltiplicatori", add_species: "+ Specie", start_event: "Inizia Evento", next_btn: "Avanti",
             hub_title: "Hub del Torneo", edit_setup: "← Config", manage_part: "Partecipanti", add_new: "+ Aggiungi", leaderboard: "Classifica", mode_pts: "Per Punti",
@@ -591,11 +594,11 @@
             tournament_results: "Risultati del Torneo", rank_pts_best5: "Pti Class. (Migliori 5)", tournaments_played: "Tornei giocati", all_placements: "Tutti i piazzamenti",
             thumbnail_img: "Immagine Copertina", desc_rules: "Descrizione e Regole", public_desc: "Rendi visibile a tutti", tourn_format: "Formato del Torneo",
             meas_unit: "Unità di Misura", score_meth: "Metodo di Punteggio", catch_lim: "Limite Catture", lim_all: "Tutti", lim_top5: "Migliori 5",
-            penalties: "Penalità", pts_deduct: "Punti da dedurre", reason_desc: "Motivo / Descrizione", add_penalty: "+ Aggiungi Penalità", part_detailed: "Dettagli Partecipanti"
+            penalties: "Penalità", pts_deduct: "Punti da dedurre", reason_desc: "Motivo / Descrizione", add_penalty: "+ Aggiungi Penalità", sort_newest: "Più recenti", sort_oldest: "Più vecchi", sort_az: "Nome A-Z"
         },
         de: {
             login_title: "Anmeldung / Registrierung", login_desc: "Benutzername und Passwort eingeben.", username: "Benutzer", password: "Passwort", login_btn: "Anmelden / Registrieren",
-            your_events: "Ihre Events", logout: "Abmelden", create_event: "+ Neues Event", step1_title: "Schritt 1: Setup", back: "← Zurück", client_area: "Kundenbereich", public_hub: "Öffentlicher Hub", my_events: "Meine Events",
+            your_events: "Ihre Events", logout: "Abmelden", create_event: "+ Neues Event", step1_title: "Schritt 1: Setup", back: "← Zurück", client_area: "Kundenbereich", public_hub: "Öffentlicher Hub", my_events: "Meine Events", home: "Startseite",
             tourn_name: "1. Turniername", ranked_tourn: "Gewertetes Turnier", ranked_desc: "In Jahresbestenliste aufnehmen (Max 7/Jahr)", bulk_part: "Teilnehmer",
             bulk_desc: "Namen einfügen. Symbole werden entfernt.", fish_species_title: "Arten & Multiplikatoren", add_species: "+ Art", start_event: "Event starten", next_btn: "Weiter",
             hub_title: "Turnier-Hub", edit_setup: "← Setup", manage_part: "Teilnehmer", add_new: "+ Neu", leaderboard: "Bestenliste", mode_pts: "Nach Punkten",
@@ -611,7 +614,7 @@
             tournament_results: "Turnierergebnisse", rank_pts_best5: "Rang-Pkt (Top 5)", tournaments_played: "Gespielte Turniere", all_placements: "Alle Platzierungen",
             thumbnail_img: "Vorschaubild", desc_rules: "Beschreibung und Regeln", public_desc: "Für alle sichtbar machen", tourn_format: "Turnierformat",
             meas_unit: "Maßeinheit", score_meth: "Wertungsmethode", catch_lim: "Fanglimit", lim_all: "Alle", lim_top5: "Top 5",
-            penalties: "Strafen", pts_deduct: "Abzuziehende Punkte", reason_desc: "Grund / Beschreibung", add_penalty: "+ Strafe hinzufügen", part_detailed: "Teilnehmer-Details"
+            penalties: "Strafen", pts_deduct: "Abzuziehende Punkte", reason_desc: "Grund / Beschreibung", add_penalty: "+ Strafe hinzufügen", sort_newest: "Neueste zuerst", sort_oldest: "Älteste zuerst", sort_az: "Name A-Z"
         }
     };
 
@@ -656,15 +659,41 @@
         document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
         
         let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
-        
+        let sub = (event.state && event.state.sub) ? event.state.sub : "public";
+
         document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("dashboardSection").classList.add("hidden");
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.add("hidden");
         
         document.getElementById(view).classList.remove("hidden");
+        
+        if(view === "dashboardSection") {
+            if(sub === 'my' && loggedInUser) {
+                document.getElementById("publicHubView").classList.add("hidden");
+                document.getElementById("myEventsView").classList.remove("hidden");
+                document.getElementById("headerClientAreaBtn").classList.add("hidden");
+                document.getElementById("headerMyEventsBtn").classList.add("hidden");
+            } else {
+                document.getElementById("myEventsView").classList.add("hidden");
+                document.getElementById("publicHubView").classList.remove("hidden");
+                if (loggedInUser) {
+                    document.getElementById("headerMyEventsBtn").classList.remove("hidden");
+                }
+            }
+        }
         window.scrollTo(0, 0);
     });
+
+    function getEvTime(ev) { return parseInt(ev.id.replace('ev_', '')) || 0; }
+    
+    function sortEventsArray(eventsArr, sortMode) {
+        return eventsArr.sort((a, b) => {
+            if (sortMode === 'newest') return getEvTime(b) - getEvTime(a);
+            if (sortMode === 'oldest') return getEvTime(a) - getEvTime(b);
+            if (sortMode === 'az') return a.name.localeCompare(b.name);
+        });
+    }
 
     function handleLoginRegister() {
         let user = document.getElementById("usernameInput").value.trim().toLowerCase();
@@ -692,39 +721,58 @@
         history.pushState({view: 'loginSection'}, "");
     }
 
+    function openMyEvents() {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.add("hidden");
+        
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        document.getElementById("publicHubView").classList.add("hidden");
+        document.getElementById("myEventsView").classList.remove("hidden");
+        
+        document.getElementById("headerMyEventsBtn").classList.add("hidden");
+        
+        window.scrollTo(0, 0);
+        history.pushState({view: 'dashboardSection', sub: 'my'}, "");
+        processDashboard();
+    }
+
+    function goHome() {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.add("hidden");
+        
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        document.getElementById("myEventsView").classList.add("hidden");
+        document.getElementById("publicHubView").classList.remove("hidden");
+        
+        if (loggedInUser) {
+            document.getElementById("headerMyEventsBtn").classList.remove("hidden");
+        }
+        
+        window.scrollTo(0, 0);
+        history.pushState({view: 'dashboardSection', sub: 'public'}, "");
+        renderPublicHub();
+    }
+
     function loginSuccess(user) {
         loggedInUser = user;
-        document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("dashboardSection").classList.remove("hidden");
-        
         document.getElementById("headerClientAreaBtn").classList.add("hidden");
         document.getElementById("headerLogoutBtn").classList.remove("hidden");
-        
-        document.getElementById("dashTabs").classList.remove("hidden");
-        switchDashboardTab('my');
-        
-        history.replaceState({view: 'dashboardSection'}, ""); 
-        
+        openMyEvents();
         subscribeToEventsRealtime();
     }
 
     function handleLogout() {
         if (unsubscribeEventsListener) unsubscribeEventsListener();
         loggedInUser = "";
-        document.getElementById("setupSection").classList.add("hidden");
-        document.getElementById("hubSection").classList.add("hidden");
-        document.getElementById("loginSection").classList.add("hidden");
-        
-        document.getElementById("dashboardSection").classList.remove("hidden");
-        
         document.getElementById("headerClientAreaBtn").classList.remove("hidden");
+        document.getElementById("headerMyEventsBtn").classList.add("hidden");
         document.getElementById("headerLogoutBtn").classList.add("hidden");
-        
-        document.getElementById("dashTabs").classList.add("hidden");
-        switchDashboardTab('public');
-        
-        history.replaceState({view: 'dashboardSection'}, "");
-        subscribeToEventsRealtime(); // Re-trigger public fetch
+        goHome();
+        subscribeToEventsRealtime(); 
     }
 
     function subscribeToEventsRealtime() {
@@ -753,21 +801,6 @@
         });
     }
 
-    function switchDashboardTab(tab) {
-        document.getElementById("tabBtnPublic").classList.remove("active");
-        document.getElementById("tabBtnMy").classList.remove("active");
-        document.getElementById("publicHubView").classList.add("hidden");
-        document.getElementById("myEventsView").classList.add("hidden");
-
-        if(tab === 'public') {
-            document.getElementById("tabBtnPublic").classList.add("active");
-            document.getElementById("publicHubView").classList.remove("hidden");
-        } else {
-            document.getElementById("tabBtnMy").classList.add("active");
-            document.getElementById("myEventsView").classList.remove("hidden");
-        }
-    }
-
     function renderPublicHub() {
         let container = document.getElementById("publicEventsList");
         if (allPublicEvents.length === 0) {
@@ -775,10 +808,11 @@
             return;
         }
 
-        allPublicEvents.sort((a, b) => b.id.localeCompare(a.id));
+        let sortMode = document.getElementById("publicEventsSort") ? document.getElementById("publicEventsSort").value : "newest";
+        let sortedPublic = sortEventsArray([...allPublicEvents], sortMode);
 
         let html = "";
-        allPublicEvents.forEach(ev => {
+        sortedPublic.forEach(ev => {
             let pCount = ev.details.participants.length;
             let cCount = ev.details.participants.reduce((sum, p) => sum + p.catches.length, 0);
             let thumb = ev.details.thumbnail ? `<img src="${ev.details.thumbnail}" class="event-hub-thumb">` : '';
@@ -904,7 +938,7 @@
             let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
                 <div class="flex flex-between" style="margin-bottom: 16px;">
                     <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
-                    <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">⬇ ${t('download_season_pdf')}</a>
+                    <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">${t('download_season_pdf')}</a>
                 </div>`;
             
             aotyArray.slice(0, 3).forEach((angler, idx) => {
@@ -928,11 +962,18 @@
             aotyContainer.classList.add("hidden");
         }
 
-        renderEventsList(loadedEvents.filter(e => {
+        let filteredEvents = loadedEvents.filter(e => {
             let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
             return eYear === String(selectedYear);
-        }));
+        });
+        
+        let sortMode = document.getElementById("myEventsSort") ? document.getElementById("myEventsSort").value : "newest";
+        let sortedEvents = sortEventsArray([...filteredEvents], sortMode);
+        
+        renderEventsList(sortedEvents);
     }
+
+    function changeYear(y) { selectedYear = y; processDashboard(); }
 
     function renderEventsList(filteredEvents) {
         let container = document.getElementById("eventsList");
@@ -966,6 +1007,7 @@
                 <div class="flex" style="gap:8px; align-items:center;">
                     <a href="javascript:void(0)" onclick="downloadChart('${ev.id}')" style="color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: underline; margin-right: 4px;">PDF</a>
                     <button onclick="editEvent('${ev.id}')" class="icon-btn primary-dark" style="padding:10px 14px; box-shadow:none;">Open</button>
+                    <button class="danger icon-btn" onclick="deleteEvent('${ev.id}')" style="padding:10px 14px; box-shadow:none;">Del</button>
                 </div>
             </div>`;
         });
@@ -1011,15 +1053,6 @@
             img.src = event.target.result;
         };
         reader.readAsDataURL(file);
-    }
-
-    function showDashboard() {
-        document.getElementById("setupSection").classList.add("hidden");
-        document.getElementById("hubSection").classList.add("hidden");
-        document.getElementById("dashboardSection").classList.remove("hidden");
-        window.scrollTo(0, 0);
-        
-        history.pushState({view: 'dashboardSection'}, "");
     }
 
     function openEventEditor(eventObj = null) {
@@ -1452,7 +1485,6 @@
         }
     }
 
-
     // -- SCORING & LEADERBOARD --
     function calculateFishPoints(abbr, size, speciesList, measureType) {
         if(measureType === 'weight') return size; 
@@ -1587,7 +1619,7 @@
         localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
         const payload = { username: loggedInUser, name: currentEvent.name, details: currentEvent, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
         db.collection("events").doc(currentEvent.id).set(payload).then(() => { if(redirect) showDashboard(); })
-        .catch(err => { console.error("Save error:", err); alert("Failed to save event to cloud."); });
+        .catch(err => { console.error("Save error:", err); alert("Failed to save event to cloud: " + err.message); });
     }
 
     // -- PUBLIC EVENT MODAL --
@@ -1620,14 +1652,6 @@
         document.getElementById("pubRules").innerHTML = rulesHtml;
 
         renderLeaderboard(true, ev);
-
-        // Participants Detailed
-        let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
-        document.getElementById("pubParticipantsDetail").innerHTML = ev.participants.map((p, i) => {
-            let catches = p.catches.length > 0 ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') : 'None';
-            let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger);">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
-            return `<div style="padding:8px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
-        }).join('');
 
         document.getElementById("publicEventModal").classList.remove("hidden");
     }
@@ -1787,7 +1811,7 @@
     document.getElementById("myEventsView").classList.add("hidden");
     document.getElementById("publicHubView").classList.remove("hidden");
     
-    history.replaceState({view: 'dashboardSection'}, "");
+    history.replaceState({view: 'dashboardSection', sub: 'public'}, "");
     subscribeToEventsRealtime();
 </script>
 </body>
