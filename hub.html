@@ -114,11 +114,15 @@
         </div>
         
         <div class="flex" style="gap: 8px;">
-            <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
+            <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
             <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
                 <option value="en">🇬🇧 EN</option>
                 <option value="ka">🇬🇪 KA</option>
+                <option value="uk">🇺🇦 UK</option>
                 <option value="ru">🇷🇺 RU</option>
+                <option value="fr">🇫🇷 FR</option>
+                <option value="it">🇮🇹 IT</option>
+                <option value="de">🇩🇪 DE</option>
             </select>
         </div>
     </div>
@@ -127,11 +131,12 @@
     <!-- LOGIN SCREEN -->
     <div id="loginSection">
         <div class="card" style="margin-top: 20px; padding: 32px 24px;">
-            <h2 style="text-align: center; margin-bottom: 8px;">Login / Register</h2>
-            <p style="text-align: center; color: var(--text-muted); margin-bottom: 32px; font-size: 14px;">Enter any username and password.</p>
-            <div class="form-group"><label>Username</label><input type="text" id="usernameInput" placeholder="Username"></div>
-            <div class="form-group"><label>Password</label><input type="password" id="passwordInput" placeholder="Password"></div>
-            <button onclick="handleLoginRegister()" style="margin-top: 16px;">Login / Register</button>
+            <h2 data-i18n="login_title" style="text-align: center; margin-bottom: 8px;">Login / Register</h2>
+            <p data-i18n="login_desc" style="text-align: center; color: var(--text-muted); margin-bottom: 32px; font-size: 14px;">Enter any username and password.</p>
+            <div class="form-group"><label data-i18n="username">Username</label><input type="text" id="usernameInput" placeholder="Username"></div>
+            <div class="form-group"><label data-i18n="password">Password</label><input type="password" id="passwordInput" placeholder="Password"></div>
+            <button onclick="handleLoginRegister()" data-i18n="login_btn" style="margin-top: 16px;">Login / Register</button>
+            <p id="accountLimitMsg" style="font-size: 13px; color: var(--danger); text-align: center; margin-top: 16px;"></p>
         </div>
     </div>
 
@@ -146,11 +151,12 @@
         <!-- MY EVENTS TAB -->
         <div id="myEventsView" class="hidden">
             <div id="yearFilterContainer" style="margin-bottom: 20px; display: none;">
-                <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none;"></select>
+                <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"></select>
             </div>
+            
             <div id="aotyContainer" style="margin-bottom: 24px;" class="hidden"></div>
             
-            <button onclick="openEventEditor()" style="margin-bottom: 24px; padding: 18px;">+ Create New Event</button>
+            <button onclick="openEventEditor()" data-i18n="create_event" style="margin-bottom: 24px; padding: 18px;">+ Create New Event</button>
             <div id="eventsList"></div>
         </div>
 
@@ -163,14 +169,14 @@
     <!-- STEP 1: EVENT SETUP -->
     <div id="setupSection" class="hidden">
         <div class="flex flex-between" style="margin-bottom: 20px;">
-            <h2 style="margin: 0; font-size: 24px;">Setup: General</h2>
-            <button class="secondary icon-btn" onclick="showDashboard()">← Back</button>
+            <h2 id="setupTitle" data-i18n="step1_title" style="margin: 0; font-size: 24px;">Setup: General</h2>
+            <button class="secondary icon-btn" onclick="showDashboard()" data-i18n="back">← Back</button>
         </div>
 
         <!-- Basic Info -->
         <div class="card">
             <div class="form-group">
-                <label>Tournament Name</label>
+                <label data-i18n="tourn_name">Tournament Name</label>
                 <input type="text" id="eventNameInput" placeholder="Weekend Championship">
             </div>
             <div class="form-group">
@@ -191,7 +197,7 @@
                 <label class="switch"><input type="checkbox" id="isPublicToggle"><span class="slider"></span></label>
             </div>
             <div class="flex flex-between" style="padding: 10px 0; border-top: 1px solid var(--border);">
-                <div><h3 style="margin:0;">Ranked Tournament</h3><p style="font-size:12px; color:var(--text-muted); margin:0;">Include in Yearly Leaderboard</p></div>
+                <div><h3 data-i18n="ranked_tourn" style="margin:0;">Ranked Tournament</h3><p data-i18n="ranked_desc" style="font-size:12px; color:var(--text-muted); margin:0;">Include in Yearly Leaderboard (Max 7/year)</p></div>
                 <label class="switch"><input type="checkbox" id="isRankedToggle" checked><span class="slider"></span></label>
             </div>
         </div>
@@ -199,7 +205,6 @@
         <!-- Format Rules -->
         <div class="card">
             <h3 style="margin-bottom:16px;">Tournament Format</h3>
-            
             <div class="form-group">
                 <label>Measurement Unit</label>
                 <div class="flex" style="gap:8px;">
@@ -207,7 +212,6 @@
                     <button id="unitBtnImperial" class="secondary" onclick="setUnit('imperial')" style="flex:1;">Imperial (in/lbs)</button>
                 </div>
             </div>
-
             <div class="form-group">
                 <label>Scoring Method</label>
                 <div class="flex" style="gap:8px;">
@@ -215,7 +219,6 @@
                     <button id="measureBtnWeight" class="secondary" onclick="setMeasure('weight')" style="flex:1;">Weight</button>
                 </div>
             </div>
-
             <div class="form-group">
                 <label>Catch Limits</label>
                 <div class="flex" style="gap:8px;">
@@ -223,7 +226,6 @@
                     <button id="limitBtnTop5" class="secondary" onclick="setLimit('top5')" style="flex:1;">Top 5 Counted</button>
                 </div>
             </div>
-
             <div class="form-group">
                 <label>Verification Format</label>
                 <div class="flex" style="gap:8px;">
@@ -236,24 +238,25 @@
         <!-- Participants -->
         <div class="card">
             <div class="flex flex-between">
-                <h3 style="margin:0;">Participants List</h3>
+                <h3 data-i18n="bulk_part" style="margin:0;">Participants List</h3>
                 <span id="participantCountStatus" class="badge">0</span>
             </div>
+            <p data-i18n="bulk_desc" style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names. Symbols/brackets are auto-removed.</p>
             <div style="position: relative;" id="bulkParticipantsWrapper">
-                <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()" style="margin-top:10px;"></textarea>
+                <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
                 <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
-                    <span>Editing this is disabled, please edit participant list on the next page</span>
+                    <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
                 </div>
             </div>
         </div>
 
         <!-- Species -->
         <div class="card">
-            <h3>Species & Multipliers</h3>
+            <h3 data-i18n="fish_species_title">Species & Multipliers</h3>
             <div class="tier-grid" style="background: transparent; border: none; padding: 0;">
                 <input type="text" id="speciesName" placeholder="Species (Perch)">
                 <input type="text" id="speciesAbbr" placeholder="Abbr (pr)">
-                <button onclick="addSpecies()" class="secondary full-width" style="box-shadow: none;">+ Add Species</button>
+                <button onclick="addSpecies()" class="secondary full-width" data-i18n="add_species" style="box-shadow: none;">+ Add Species</button>
             </div>
             <div id="speciesConfigContainer" style="margin-top: 24px;"></div>
         </div>
@@ -261,7 +264,7 @@
         <!-- Sticky Bottom Bar -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex">
-                <button onclick="goToEventHub()" class="primary-dark" style="padding: 16px;">Start Event →</button>
+                <button onclick="goToEventHub()" class="primary-dark" data-i18n="next_btn" style="padding: 16px;">Next</button>
             </div>
         </div>
     </div>
@@ -269,28 +272,28 @@
     <!-- STEP 2: TOURNAMENT HUB -->
     <div id="hubSection" class="hidden">
         <div class="flex flex-between" style="margin-bottom: 20px;">
-            <h2 id="hubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 24px;">Hub</h2>
-            <button class="secondary icon-btn" onclick="backToSetup()">← Setup</button>
+            <h2 id="hubTitle" data-i18n="hub_title" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 24px;">Hub</h2>
+            <button class="secondary icon-btn" onclick="backToSetup()" data-i18n="edit_setup">← Setup</button>
         </div>
 
         <div class="card">
             <div class="flex flex-between" style="margin-bottom: 16px;">
                 <div class="flex">
-                    <h3 style="margin:0;">Participants</h3>
+                    <h3 data-i18n="manage_part" style="margin:0;">Participants</h3>
                     <span id="hubParticipantCount" class="badge">0</span>
                 </div>
-                <button id="hubAddNewParticipantBtn" onclick="openAddParticipantModal()" class="icon-btn">+ Add</button>
+                <button id="hubAddNewParticipantBtn" onclick="openAddParticipantModal()" class="icon-btn" data-i18n="add_new">+ Add</button>
             </div>
             <input type="text" id="searchParticipant" placeholder="Search name..." oninput="renderHubUI()" style="margin-bottom: 16px;">
             <div id="participantsHubContainer"></div>
         </div>
 
         <div class="card">
-            <h3>Leaderboard</h3>
+            <h3 data-i18n="leaderboard">Leaderboard</h3>
             <div id="leaderboardTopSummary" style="margin-bottom: 16px; background: rgba(253, 224, 71, 0.2); border: 1px solid #fde047; padding: 16px; border-radius: var(--card-radius);"></div>
             <div class="form-group">
                 <select id="rankingMode" onchange="renderLeaderboard()">
-                    <option value="points">Rank by Points</option>
+                    <option value="points" data-i18n="mode_pts">Rank by Points</option>
                     <option value="measure">Rank by Size/Weight</option>
                 </select>
             </div>
@@ -301,10 +304,10 @@
 
         <!-- Sticky Bottom Bar -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
-            <div class="flex" style="gap: 8px;">
-                <button onclick="downloadChart()" class="secondary" style="flex: 0.2; box-shadow:none; padding:12px;">⬇ PDF</button>
-                <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 0.4; padding:12px;">Finish Event</button>
-                <button onclick="saveCurrentEvent(true)" class="primary-dark" style="flex: 0.4; padding:12px;">Save Event</button>
+            <div class="flex" style="gap: 12px; width: 100%; align-items: center;">
+                <a href="javascript:void(0)" onclick="downloadChart()" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
+                <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" data-i18n="finish_event" style="flex: 1; padding:12px;">Finish Event</button>
+                <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_event" style="flex: 1; padding:12px;">Save Event</button>
             </div>
         </div>
     </div>
@@ -319,8 +322,8 @@
         <h3 id="rulesModalTitle" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Edit Rules</h3>
         <div id="rulesContainer" style="overflow-y: auto; margin-top:20px; padding-right:4px;"></div>
         <div class="flex" style="margin-top: 20px; gap:12px; flex-shrink: 0;">
-            <button class="secondary" onclick="addNewRule()" style="box-shadow: none;">+ Add New Rule</button>
-            <button onclick="closeRulesModal()" class="primary-dark">Done</button>
+            <button class="secondary" onclick="addNewRule()" data-i18n="add_rule" style="box-shadow: none;">+ Add New Rule</button>
+            <button onclick="closeRulesModal()" class="primary-dark" data-i18n="done">Done</button>
         </div>
     </div>
 </div>
@@ -329,13 +332,13 @@
 <div id="participantModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'participantModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
-        <h3 style="font-size: 20px; flex-shrink: 0;">Add New Participant</h3>
+        <h3 data-i18n="modal_add_title" style="font-size: 20px; flex-shrink: 0;">Add New Participant</h3>
         <div class="form-group" style="margin-top: 20px;">
             <input type="text" id="modalParticipantName" placeholder="Participant Name">
         </div>
         <div class="flex tier-grid" style="margin-top: 24px; padding:0; background:none; border:none; flex-shrink: 0;">
-            <button class="secondary" onclick="closeAddParticipantModal()" style="box-shadow: none;">Cancel</button>
-            <button onclick="confirmAddParticipantModal()">Add</button>
+            <button class="secondary" onclick="closeAddParticipantModal()" data-i18n="close" style="box-shadow: none;">Cancel</button>
+            <button onclick="confirmAddParticipantModal()" data-i18n="add">Add</button>
         </div>
     </div>
 </div>
@@ -344,23 +347,23 @@
 <div id="fishModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'fishModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
-        <h3 style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Add / Remove Catch</h3>
+        <h3 data-i18n="add_remove_fish" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Add / Remove Catch</h3>
         
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
-                <label>Species</label>
+                <label data-i18n="species_sel">Species</label>
                 <div id="modalSpeciesTabs" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
             </div>
             <div class="form-group">
-                <label id="modalFishSizeLabel">Measurement</label>
+                <label id="modalFishSizeLabel" data-i18n="size_cm">Measurement</label>
                 <input type="number" id="modalFishSize" placeholder="Enter value" inputmode="decimal">
             </div>
-            <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 16px;">+ Add Catch</button>
+            <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_fish_btn">+ Add Catch</button>
             <div id="modalCurrentCatches" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
 
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
-            <button class="secondary full-width" onclick="closeFishModal()" style="box-shadow: none;">Done</button>
+            <button class="secondary full-width" onclick="closeFishModal()" data-i18n="done" style="box-shadow: none;">Done</button>
         </div>
     </div>
 </div>
@@ -385,7 +388,7 @@
         </div>
 
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
-            <button class="secondary full-width" onclick="closePenaltyModal()" style="box-shadow: none;">Done</button>
+            <button class="secondary full-width" onclick="closePenaltyModal()" data-i18n="done" style="box-shadow: none;">Done</button>
         </div>
     </div>
 </div>
@@ -393,11 +396,11 @@
 <!-- SMALL FISH WARNING MODAL -->
 <div id="smallFishWarningModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'smallFishWarningModal')" style="align-items: center; z-index: 1050;">
     <div class="card" style="width: 90%; max-width: 340px; text-align: center; padding: 28px 24px; margin-bottom: 0; display: block; border-radius: 24px;">
-        <h3 style="color: var(--danger); margin-bottom: 12px; font-size: 20px;">Fish Too Small</h3>
-        <p style="color: var(--text-muted); margin-bottom: 24px;">The fish is too small based on the rules.</p>
+        <h3 data-i18n="too_small_title" style="color: var(--danger); margin-bottom: 12px; font-size: 20px;">Fish Too Small</h3>
+        <p data-i18n="too_small_desc" style="color: var(--text-muted); margin-bottom: 24px;">The fish is too small based on the rules.</p>
         <div class="flex" style="gap: 12px;">
-            <button class="secondary" onclick="cancelSmallFish()" style="box-shadow: none;">OK</button>
-            <button class="danger" onclick="ignoreSmallFish()" style="box-shadow: none;">Ignore</button>
+            <button class="secondary" onclick="cancelSmallFish()" data-i18n="ok" style="box-shadow: none;">OK</button>
+            <button class="danger" onclick="ignoreSmallFish()" data-i18n="ignore" style="box-shadow: none;">Ignore</button>
         </div>
     </div>
 </div>
@@ -421,7 +424,7 @@
 
             <div class="card" style="padding:0;">
                 <div style="padding:12px 16px; border-bottom:1px solid var(--border);">
-                    <h3 style="margin:0;">Leaderboard</h3>
+                    <h3 data-i18n="leaderboard" style="margin:0;">Leaderboard</h3>
                 </div>
                 <div class="table-container" style="margin:0;">
                     <div id="pubLeaderboard"></div>
@@ -434,7 +437,7 @@
             </div>
         </div>
         <div style="padding:16px; background:var(--card-bg); border-top:1px solid var(--border);">
-            <button class="secondary" onclick="closePublicEventModal()" style="box-shadow:none;">Close</button>
+            <button class="secondary" onclick="closePublicEventModal()" data-i18n="close" style="box-shadow:none;">Close</button>
         </div>
     </div>
 </div>
@@ -459,8 +462,8 @@
 
     let currentEvent = null;
     let loggedInUser = "";
-    let loadedEvents = [];     // Events belonging to logged in user
-    let allPublicEvents = [];  // All public events across DB
+    let loadedEvents = [];     
+    let allPublicEvents = [];  
     
     let activeFishParticipantIndex = null;
     let activePenaltyParticipantIndex = null;
@@ -471,19 +474,148 @@
     let currentLang = "en";
     let selectedYear = new Date().getFullYear().toString();
 
-    // Setup Configs tracking
     let confUnit = 'metric';
     let confMeasure = 'size';
     let confLimit = 'all';
 
+    const translations = {
+        en: {
+            login_title: "Login / Register", login_desc: "Enter any username and password.", username: "Username", password: "Password", login_btn: "Login / Register",
+            your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back",
+            tourn_name: "1. Tournament Name", ranked_tourn: "Ranked Tournament", ranked_desc: "Include in Yearly Leaderboard (Max 7/year)", bulk_part: "2. Participants List",
+            bulk_desc: "Paste names. Symbols/brackets are auto-removed.", fish_species_title: "3. Species & Multipliers", add_species: "+ Add Species", start_event: "Start Event", next_btn: "Next",
+            hub_title: "Tournament Hub", edit_setup: "← Setup", manage_part: "Participants", add_new: "+ Add", leaderboard: "Leaderboard", mode_pts: "Rank by Points",
+            mode_cm: "Rank by Centimeters", save_event: "Save Event", finish_event: "Finish Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
+            add_remove_fish: "Add / Remove Fish", species_sel: "Species", size_cm: "Measurement", save: "Save", add_fish_btn: "+ Add Catch", edit_rules: "Edit Rules",
+            add_rule: "+ Add New Rule", done: "Done", rule_from: "From", rule_to: "To", rule_mult: "Multiplier", download_chart: "PDF", download_season_pdf: "Season PDF",
+            season_results: "Season Results", current_catches: "Current Catches", no_catches: "No catches logged.", too_small_title: "Fish Too Small", 
+            too_small_desc: "The fish is too small based on the rules.", ok: "OK", ignore: "Ignore", angler_of_year: "Angler of the Year", edit_name: "Edit Name", 
+            unranked_badge: "UNRANKED", rank_pts: "Rank Pts", tournaments: "tournaments", editing_disabled: "Editing this is disabled, please edit participant list on the next page",
+            finish_warning: "If you finish the event now you will not be able to change anything anymore and the event will be officially finished.",
+            status_finished: "Finished", status_ongoing: "Ongoing",
+            place: "Place", name: "Name", points: "Points", total_cm: "Total", biggest_fish: "Biggest Fish", details: "Details", generated_on: "Generated on", 
+            tournament_results: "Tournament Results", rank_pts_best5: "Rank Pts (Best 5)", tournaments_played: "Tournaments Played", all_placements: "All Placements"
+        },
+        ka: {
+            login_title: "შესვლა / რეგისტრაცია", login_desc: "შეიყვანეთ ნებისმიერი სახელი და პაროლი.", username: "მომხმარებელი", password: "პაროლი", login_btn: "შესვლა / რეგისტრაცია",
+            your_events: "თქვენი ღონისძიებები", logout: "გასვლა", create_event: "+ ახალი ღონისძიების შექმნა", step1_title: "ნაბიჯი 1: პარამეტრები", back: "← უკან",
+            tourn_name: "1. ტურნირის სახელი", ranked_tourn: "სარეიტინგო ტურნირი", ranked_desc: "წლიურ რეიტინგში დამატება (მაქს 7/წელს)", bulk_part: "2. მონაწილეთა სია",
+            bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.", fish_species_title: "3. სახეობები და კოეფიციენტები", add_species: "+ სახეობის დამატება", start_event: "ტურნირის დაწყება", next_btn: "შემდეგი",
+            hub_title: "ტურნირის ჰაბი", edit_setup: "← პარამეტრები", manage_part: "მონაწილეები", add_new: "+ დამატება", leaderboard: "ლიდერბორდი", mode_pts: "ქულებით რეიტინგი",
+            mode_cm: "სანტიმეტრებით რეიტინგი", save_event: "ტურნირის შენახვა", finish_event: "ტურნირის დასრულება", modal_add_title: "მონაწილის დამატება", close: "გაუქმება", add: "დამატება",
+            add_remove_fish: "თევზის დამატება/წაშლა", species_sel: "სახეობა", size_cm: "ზომა", save: "შენახვა", add_fish_btn: "+ თევზის დამატება", edit_rules: "წესები",
+            add_rule: "+ ახალი წესი", done: "მზადაა", rule_from: "-დან", rule_to: "-მდე", rule_mult: "კოეფიციენტი", download_chart: "PDF", download_season_pdf: "სეზონის PDF",
+            season_results: "სეზონის შედეგები", current_catches: "მიმდინარე თევზები", no_catches: "თევზი არ არის.", too_small_title: "თევზი ძალიან პატარაა", 
+            too_small_desc: "წესების მიხედვით თევზი ძალიან პატარაა.", ok: "OK", ignore: "იგნორირება", angler_of_year: "წლის მეთევზე", edit_name: "სახელის შეცვლა", 
+            unranked_badge: "არასარეიტინგო", rank_pts: "სარეიტინგო ქულა", tournaments: "ტურნირი", editing_disabled: "რედაქტირება გამორთულია, გთხოვთ შეცვალოთ მონაწილეთა სია შემდეგ გვერდზე",
+            finish_warning: "თუ ახლა დაასრულებთ ტურნირს, ვეღარაფერს შეცვლით და ტურნირი ოფიციალურად დასრულდება.",
+            status_finished: "დასრულებულია", status_ongoing: "მიმდინარე",
+            place: "ადგილი", name: "სახელი", points: "ქულა", total_cm: "ჯამი", biggest_fish: "ყველაზე დიდი", details: "დეტალები", generated_on: "გენერირებულია",
+            tournament_results: "ტურნირის შედეგები", rank_pts_best5: "სარეიტინგო ქულა (საუკ. 5)", tournaments_played: "ჩატარებული ტურნირები", all_placements: "ყველა პოზიცია"
+        },
+        uk: {
+            login_title: "Вхід / Реєстрація", login_desc: "Введіть будь-яке ім'я та пароль.", username: "Користувач", password: "Пароль", login_btn: "Вхід / Реєстрація",
+            your_events: "Ваші події", logout: "Вийти", create_event: "+ Створити нову подію", step1_title: "Крок 1: Налаштування", back: "← Назад",
+            tourn_name: "1. Назва турніру", ranked_tourn: "Рейтинговий турнір", ranked_desc: "Включити в річний рейтинг (макс 7/рік)", bulk_part: "2. Список учасників",
+            bulk_desc: "Вставте імена. Дужки та символи видаляються.", fish_species_title: "3. Види та коефіцієнти", add_species: "+ Додати вид", start_event: "Почати подію", next_btn: "Далі",
+            hub_title: "Хаб турніру", edit_setup: "← Налаштування", manage_part: "Учасники", add_new: "+ Додати", leaderboard: "Таблиця лідерів", mode_pts: "Рейтинг за балами",
+            mode_cm: "Рейтинг за сантиметрами", save_event: "Зберегти подію", finish_event: "Завершити подію", modal_add_title: "Додати учасника", close: "Скасувати", add: "Додати",
+            add_remove_fish: "Додати/Видалити рибу", species_sel: "Вид", size_cm: "Розмір", save: "Зберегти", add_fish_btn: "+ Додати рибу", edit_rules: "Правила",
+            add_rule: "+ Нове правило", done: "Готово", rule_from: "Від", rule_to: "До", rule_mult: "Множник", download_chart: "PDF", download_season_pdf: "PDF сезону",
+            season_results: "Результати сезону", current_catches: "Поточний улов", no_catches: "Немає улову.", too_small_title: "Риба занадто мала", 
+            too_small_desc: "За правилами риба занадто мала.", ok: "OK", ignore: "Ігнорувати", angler_of_year: "Рибалка року", edit_name: "Редагувати ім'я", 
+            unranked_badge: "БЕЗ РЕЙТИНГУ", rank_pts: "Ранг. очок", tournaments: "турнірів", editing_disabled: "Редагування вимкнено, редагуйте список на наступній сторінці",
+            finish_warning: "Якщо ви завершите подію зараз, ви більше не зможете нічого змінити.",
+            status_finished: "Завершено", status_ongoing: "Триває",
+            place: "Місце", name: "Ім'я", points: "Очки", total_cm: "Всього", biggest_fish: "Найбільша риба", details: "Деталі", generated_on: "Згенеровано",
+            tournament_results: "Результати турніру", rank_pts_best5: "Ранг. очок (Кращі 5)", tournaments_played: "Зіграно турнірів", all_placements: "Всі місця"
+        },
+        ru: {
+            login_title: "Вход / Регистрация", login_desc: "Введите любые имя и пароль.", username: "Имя пользователя", password: "Пароль", login_btn: "Вход / Регистрация",
+            your_events: "Ваши события", logout: "Выйти", create_event: "+ Создать событие", step1_title: "Шаг 1: Настройка", back: "← Назад",
+            tourn_name: "1. Название турнира", ranked_tourn: "Рейтинговый турнир", ranked_desc: "Включить в годовой рейтинг (макс 7/год)", bulk_part: "2. Список участников",
+            bulk_desc: "Вставьте имена. Скобки и символы удалятся.", fish_species_title: "3. Виды и коэффициенты", add_species: "+ Добавить вид", start_event: "Начать событие", next_btn: "Далее",
+            hub_title: "Хаб турнира", edit_setup: "← Настройка", manage_part: "Участники", add_new: "+ Добавить", leaderboard: "Таблица лидеров", mode_pts: "Рейтинг по очкам",
+            mode_cm: "Рейтинг по см", save_event: "Сохранить событие", finish_event: "Завершить событие", modal_add_title: "Добавить участника", close: "Отмена", add: "Добавить",
+            add_remove_fish: "Добавить/Удалить рыбу", species_sel: "Вид", size_cm: "Размер", save: "Сохранить", add_fish_btn: "+ Добавить рыбу", edit_rules: "Правила",
+            add_rule: "+ Новое правило", done: "Готово", rule_from: "От", rule_to: "До", rule_mult: "Множитель", download_chart: "PDF", download_season_pdf: "PDF сезона",
+            season_results: "Результаты сезона", current_catches: "Текущий улов", no_catches: "Нет улова.", too_small_title: "Рыба слишком мала", 
+            too_small_desc: "По правилам рыба слишком мала.", ok: "OK", ignore: "Игнорировать", angler_of_year: "Рыболов года", edit_name: "Изменить имя", 
+            unranked_badge: "ВНЕ РЕЙТИНГА", rank_pts: "Ранг. очков", tournaments: "турниров", editing_disabled: "Редактирование отключено, измените список на следующей странице",
+            finish_warning: "Если вы завершите турнир сейчас, вы больше не сможете ничего изменить.",
+            status_finished: "Завершен", status_ongoing: "Идет",
+            place: "Место", name: "Имя", points: "Очки", total_cm: "Всего", biggest_fish: "Самая большая", details: "Детали", generated_on: "Сгенерировано",
+            tournament_results: "Результаты турнира", rank_pts_best5: "Ранг. очков (Топ 5)", tournaments_played: "Сыграно турниров", all_placements: "Все места"
+        },
+        fr: {
+            login_title: "Connexion / Inscription", login_desc: "Entrez un nom d'utilisateur et un mot de passe.", username: "Utilisateur", password: "Mot de passe", login_btn: "Connexion / Inscription",
+            your_events: "Vos Événements", logout: "Déconnexion", create_event: "+ Créer Événement", step1_title: "Étape 1 : Config", back: "← Retour",
+            tourn_name: "1. Nom du Tournoi", ranked_tourn: "Tournoi Classé", ranked_desc: "Inclure dans le classement annuel (Max 7/an)", bulk_part: "2. Participants",
+            bulk_desc: "Collez les noms. Les symboles sont ignorés.", fish_species_title: "3. Espèces & Multiplicateurs", add_species: "+ Espèce", start_event: "Démarrer", next_btn: "Suivant",
+            hub_title: "Hub du Tournoi", edit_setup: "← Config", manage_part: "Participants", add_new: "+ Ajouter", leaderboard: "Classement", mode_pts: "Par Points",
+            mode_cm: "Par Centimètres", save_event: "Enregistrer", finish_event: "Terminer", modal_add_title: "Ajouter Participant", close: "Annuler", add: "Ajouter",
+            add_remove_fish: "Ajouter/Retirer Prise", species_sel: "Espèce", size_cm: "Mesure", save: "Enregistrer", add_fish_btn: "+ Ajouter Prise", edit_rules: "Règles",
+            add_rule: "+ Nouvelle Règle", done: "Terminé", rule_from: "De", rule_to: "À", rule_mult: "Multiplicateur", download_chart: "PDF", download_season_pdf: "PDF de la Saison",
+            season_results: "Résultats de la Saison", current_catches: "Prises Actuelles", no_catches: "Aucune prise.", too_small_title: "Poisson trop petit", 
+            too_small_desc: "Le poisson est trop petit selon les règles.", ok: "OK", ignore: "Ignorer", angler_of_year: "Pêcheur de l'Année", edit_name: "Modifier le nom", 
+            unranked_badge: "NON CLASSÉ", rank_pts: "Pts Class.", tournaments: "tournois", editing_disabled: "Modification désactivée, veuillez modifier la liste sur la page suivante",
+            finish_warning: "Si vous terminez l'événement maintenant, vous ne pourrez plus rien modifier.",
+            status_finished: "Terminé", status_ongoing: "En cours",
+            place: "Place", name: "Nom", points: "Points", total_cm: "Total", biggest_fish: "Plus gros", details: "Détails", generated_on: "Généré le",
+            tournament_results: "Résultats du Tournoi", rank_pts_best5: "Pts Class. (Top 5)", tournaments_played: "Tournois joués", all_placements: "Tous les classements"
+        },
+        it: {
+            login_title: "Accesso / Registrazione", login_desc: "Inserisci utente e password.", username: "Utente", password: "Password", login_btn: "Accedi / Registrati",
+            your_events: "I tuoi Eventi", logout: "Esci", create_event: "+ Crea Evento", step1_title: "Passo 1: Config", back: "← Indietro",
+            tourn_name: "1. Nome Torneo", ranked_tourn: "Torneo Classificato", ranked_desc: "Includi nella classifica annuale (Max 7/anno)", bulk_part: "2. Partecipanti",
+            bulk_desc: "Incolla i nomi. I simboli vengono rimossi.", fish_species_title: "3. Specie & Moltiplicatori", add_species: "+ Specie", start_event: "Inizia Evento", next_btn: "Avanti",
+            hub_title: "Hub del Torneo", edit_setup: "← Config", manage_part: "Partecipanti", add_new: "+ Aggiungi", leaderboard: "Classifica", mode_pts: "Per Punti",
+            mode_cm: "Per Centimetri", save_event: "Salva Evento", finish_event: "Termina Evento", modal_add_title: "Aggiungi Partecipante", close: "Annulla", add: "Aggiungi",
+            add_remove_fish: "Aggiungi/Rimuovi Pesce", species_sel: "Specie", size_cm: "Misura", save: "Salva", add_fish_btn: "+ Aggiungi Pesce", edit_rules: "Regole",
+            add_rule: "+ Nuova Regola", done: "Fatto", rule_from: "Da", rule_to: "A", rule_mult: "Moltiplicatore", download_chart: "PDF", download_season_pdf: "PDF Stagione",
+            season_results: "Risultati Stagione", current_catches: "Catture Attuali", no_catches: "Nessuna cattura.", too_small_title: "Pesce troppo piccolo", 
+            too_small_desc: "Il pesce è troppo piccolo secondo le regole.", ok: "OK", ignore: "Ignora", angler_of_year: "Pescatore dell'Anno", edit_name: "Modifica Nome", 
+            unranked_badge: "NON CLASSIFICATO", rank_pts: "Pti Class.", tournaments: "tornei", editing_disabled: "Modifica disabilitata, per favore modifica la lista nella pagina successiva",
+            finish_warning: "Se termini l'evento ora, non potrai più modificare nulla.",
+            status_finished: "Finito", status_ongoing: "In corso",
+            place: "Posto", name: "Nome", points: "Punti", total_cm: "Totale", biggest_fish: "Pesce più grande", details: "Dettagli", generated_on: "Generato il",
+            tournament_results: "Risultati del Torneo", rank_pts_best5: "Pti Class. (Migliori 5)", tournaments_played: "Tornei giocati", all_placements: "Tutti i piazzamenti"
+        },
+        de: {
+            login_title: "Anmeldung / Registrierung", login_desc: "Benutzername und Passwort eingeben.", username: "Benutzer", password: "Passwort", login_btn: "Anmelden / Registrieren",
+            your_events: "Ihre Events", logout: "Abmelden", create_event: "+ Neues Event", step1_title: "Schritt 1: Setup", back: "← Zurück",
+            tourn_name: "1. Turniername", ranked_tourn: "Gewertetes Turnier", ranked_desc: "In Jahresbestenliste aufnehmen (Max 7/Jahr)", bulk_part: "2. Teilnehmer",
+            bulk_desc: "Namen einfügen. Symbole werden entfernt.", fish_species_title: "3. Arten & Multiplikatoren", add_species: "+ Art", start_event: "Event starten", next_btn: "Weiter",
+            hub_title: "Turnier-Hub", edit_setup: "← Setup", manage_part: "Teilnehmer", add_new: "+ Neu", leaderboard: "Bestenliste", mode_pts: "Nach Punkten",
+            mode_cm: "Nach Zentimetern", save_event: "Event speichern", finish_event: "Event beenden", modal_add_title: "Teilnehmer hinzufügen", close: "Abbrechen", add: "Hinzufügen",
+            add_remove_fish: "Fisch Hinzufügen/Entfernen", species_sel: "Art", size_cm: "Größe", save: "Speichern", add_fish_btn: "+ Fisch Hinzufügen", edit_rules: "Regeln",
+            add_rule: "+ Neue Regel", done: "Fertig", rule_from: "Von", rule_to: "Bis", rule_mult: "Multiplikator", download_chart: "PDF", download_season_pdf: "Saison-PDF",
+            season_results: "Saisonergebnisse", current_catches: "Aktuelle Fänge", no_catches: "Keine Fänge.", too_small_title: "Fisch zu klein", 
+            too_small_desc: "Der Fisch ist nach den Regeln zu klein.", ok: "OK", ignore: "Ignorieren", angler_of_year: "Angler des Jahres", edit_name: "Name bearbeiten", 
+            unranked_badge: "NICHT GEWERTET", rank_pts: "Rang-Pkt", tournaments: "turniere", editing_disabled: "Bearbeitung deaktiviert, bitte auf der nächsten Seite bearbeiten",
+            finish_warning: "Wenn Sie das Event jetzt beenden, können Sie nichts mehr ändern.",
+            status_finished: "Beendet", status_ongoing: "Laufend",
+            place: "Platz", name: "Name", points: "Punkte", total_cm: "Gesamt", biggest_fish: "Größter Fisch", details: "Details", generated_on: "Erstellt am",
+            tournament_results: "Turnierergebnisse", rank_pts_best5: "Rang-Pkt (Top 5)", tournaments_played: "Gespielte Turniere", all_placements: "Alle Platzierungen"
+        }
+    };
+
     function changeLanguage(lang) {
         currentLang = lang;
-        // Basic translation implementation maintained
+        document.querySelectorAll("[data-i18n]").forEach(el => {
+            let key = el.getAttribute("data-i18n");
+            if (translations[lang] && translations[lang][key]) {
+                el.innerText = translations[lang][key];
+            }
+        });
+        if(document.getElementById("setupSection").classList.contains("hidden") === false) refreshSetupUI();
+        if(document.getElementById("hubSection").classList.contains("hidden") === false) renderHubUI();
+        if(document.getElementById("rulesModal").classList.contains("hidden") === false && activeSpeciesIndex !== null) renderRules();
+        if(document.getElementById("fishModal").classList.contains("hidden") === false && activeFishParticipantIndex !== null) renderModalCatches();
+        if(!document.getElementById("dashboardSection").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
     }
     
-    function t(key) {
-        return key; // Passthrough for fallback
-    }
+    function t(key) { return translations[currentLang] ? (translations[currentLang][key] || translations['en'][key] || key) : key; }
 
     function handleOverlayClick(e, modalId) {
         if (e.target.id === modalId) {
@@ -502,6 +634,21 @@
         cleaned = cleaned.replace(/[0-9!@#$%^&*_+=\-\[\]{};':"\\|.<>\/?~`“”„«»]/g, ' ');
         return cleaned.split(/[\n,]+/).map(n => n.replace(/\s+/g, ' ').trim()).filter(n => n.length > 0);
     }
+
+    // Handle Browser Back/Forward buttons using History API
+    window.addEventListener("popstate", (event) => {
+        if (!loggedInUser) return;
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        
+        let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
+        
+        document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.add("hidden");
+        
+        document.getElementById(view).classList.remove("hidden");
+        window.scrollTo(0, 0);
+    });
 
     function handleLoginRegister() {
         let user = document.getElementById("usernameInput").value.trim().toLowerCase();
@@ -527,6 +674,9 @@
         document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.remove("hidden");
         document.getElementById("headerLogoutBtn").classList.remove("hidden");
+        
+        history.replaceState({view: 'dashboardSection'}, ""); 
+        
         subscribeToEventsRealtime();
     }
 
@@ -543,7 +693,6 @@
     function subscribeToEventsRealtime() {
         if (unsubscribeEventsListener) unsubscribeEventsListener();
         
-        // Fetch all events for Public Hub AND user events. 
         unsubscribeEventsListener = db.collection("events").onSnapshot(snapshot => {
             loadedEvents = [];
             allPublicEvents = [];
@@ -589,7 +738,6 @@
             return;
         }
 
-        // Sort latest first (assuming higher ID or timestamp)
         allPublicEvents.sort((a, b) => b.id.localeCompare(a.id));
 
         let html = "";
@@ -598,7 +746,7 @@
             let cCount = ev.details.participants.reduce((sum, p) => sum + p.catches.length, 0);
             let thumb = ev.details.thumbnail ? `<img src="${ev.details.thumbnail}" class="event-hub-thumb">` : '';
             let statusColor = ev.details.status === 'finished' ? 'background:#e2e8f0; color:#475569;' : 'background:#d1fae5; color:#059669;';
-            let statusText = ev.details.status === 'finished' ? 'Finished' : 'Ongoing';
+            let statusText = ev.details.status === 'finished' ? t('status_finished') : t('status_ongoing');
 
             html += `
             <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
@@ -619,65 +767,110 @@
         container.innerHTML = html;
     }
 
+    /* ---------------- AOTY RANKING ENGINE ---------------- */
+    function getEventPlacements(evDetails) {
+        let processed = evDetails.participants.map(p => {
+            let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; 
+            let countedCatches = evDetails.limitType === 'top5' ? [...p.catches].sort((a,b)=>b.size-a.size).slice(0,5) : p.catches;
+            let amountCatches = countedCatches.length;
+            
+            countedCatches.forEach(c => {
+                totalMeasure += c.size;
+                if (c.size > maxFishMeasure) maxFishMeasure = c.size;
+                totalPts += calculateFishPoints(c.abbr, c.size, evDetails.species || [], evDetails.measureType);
+            });
+            
+            let penPts = 0;
+            if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
+            totalPts -= penPts;
+
+            return { name: p.name, normName: (p.name || "unknown").toLowerCase().trim(), totalPts, totalMeasure, maxFishMeasure, amountCatches };
+        });
+
+        let caught = processed.filter(p => p.amountCatches > 0 && p.totalPts > 0);
+        let zero = processed.filter(p => p.amountCatches === 0 || p.totalPts <= 0);
+
+        caught.sort((a, b) => {
+            if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts; 
+            if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
+            return b.maxFishMeasure - a.maxFishMeasure; 
+        });
+
+        let placements = {};
+        caught.forEach((p, idx) => { placements[p.normName] = idx + 1; });
+
+        if (zero.length > 0) {
+            let M = caught.length;
+            let T = processed.length;
+            let zeroRank = Math.floor(((M + 1) + T) / 2);
+            zero.forEach(p => { placements[p.normName] = zeroRank; });
+        }
+
+        return placements;
+    }
+
     function processDashboard() {
-        let years = [...new Set(loadedEvents.map(e => e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString())))].filter(y => y && y.length === 4);
+        let years = [...new Set(loadedEvents.map(e => {
+            return String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+        }))].filter(y => y && y.length === 4);
+
         if(years.length === 0) years = [new Date().getFullYear().toString()];
         years.sort((a,b) => b - a);
 
-        if(!years.includes(selectedYear)) selectedYear = years[0];
+        if(!years.includes(String(selectedYear))) selectedYear = years[0];
 
         let yearSelect = document.getElementById("yearSelect");
         if(yearSelect) {
-            yearSelect.innerHTML = years.map(y => `<option value="${y}" ${y === selectedYear ? 'selected' : ''}>${y}</option>`).join('');
+            yearSelect.innerHTML = years.map(y => `<option value="${y}" ${String(y) === String(selectedYear) ? 'selected' : ''}>${y}</option>`).join('');
             document.getElementById("yearFilterContainer").style.display = loadedEvents.length > 0 ? "block" : "none";
         }
 
+        let rankedFinishedEvents = loadedEvents.filter(e => {
+            let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+            let status = e.details.status || 'finished'; 
+            return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
+        }); 
+
         let yearlyAgg = {};
-        let filteredEvents = loadedEvents.filter(e => {
-            let eYear = e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString());
-            return eYear === selectedYear;
+        rankedFinishedEvents.forEach(ev => {
+            let placements = getEventPlacements(ev.details);
+            Object.keys(placements).forEach(normName => {
+                if(!yearlyAgg[normName]) {
+                    let originalName = ev.details.participants.find(p => p.name.toLowerCase().trim() === normName)?.name || normName;
+                    yearlyAgg[normName] = { name: originalName, scores: [] };
+                }
+                yearlyAgg[normName].scores.push(placements[normName]);
+            });
         });
 
-        filteredEvents.forEach(ev => {
-            if(ev.details.isRanked !== false) {
-                ev.details.participants.forEach(p => {
-                    let normName = p.name.toLowerCase().trim();
-                    if(!yearlyAgg[normName]) yearlyAgg[normName] = { name: p.name, totalPts: 0, catches: 0, maxFishPts: 0 };
-                    
-                    let countedCatches = p.catches;
-                    if(ev.details.limitType === 'top5') {
-                        countedCatches = [...p.catches].sort((a, b) => b.size - a.size).slice(0, 5);
-                    }
+        let aotyArray = Object.values(yearlyAgg).map(angler => {
+            let sortedScores = [...angler.scores].sort((a, b) => a - b);
+            let best5 = sortedScores.slice(0, 5); 
+            let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
+            return {
+                name: angler.name,
+                validEventsCount: angler.scores.length,
+                totalRankPts: totalRankPts
+            };
+        }).filter(a => a.validEventsCount > 0);
 
-                    countedCatches.forEach(c => {
-                        let pts = calculateFishPoints(c.abbr, c.size, ev.details.species, ev.details.measureType);
-                        yearlyAgg[normName].totalPts += pts;
-                        yearlyAgg[normName].catches += 1;
-                        if(pts > yearlyAgg[normName].maxFishPts) yearlyAgg[normName].maxFishPts = pts;
-                    });
-                    
-                    // Subtract penalties
-                    let pens = p.penalties || [];
-                    pens.forEach(pen => { yearlyAgg[normName].totalPts -= parseFloat(pen.points); });
-                });
-            }
+        aotyArray.sort((a, b) => {
+            let aEvents = Math.min(a.validEventsCount, 5);
+            let bEvents = Math.min(b.validEventsCount, 5);
+            if(aEvents !== bEvents) return bEvents - aEvents; 
+            return a.totalRankPts - b.totalRankPts; 
         });
-
-        let aotyArray = Object.values(yearlyAgg)
-            .filter(a => a.totalPts > 0)
-            .sort((a, b) => {
-                if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-                if(a.catches !== b.catches) return a.catches - b.catches; 
-                return b.maxFishPts - a.maxFishPts; 
-            }).slice(0, 3);
 
         let aotyContainer = document.getElementById("aotyContainer");
         if(aotyArray.length > 0) {
             let medals = ["🥇", "🥈", "🥉"];
             let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
-                <h3 style="color:white; margin-bottom: 16px; text-align: center; font-size:18px;">🏆 Angler of the Year (${selectedYear})</h3>`;
+                <div class="flex flex-between" style="margin-bottom: 16px;">
+                    <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
+                    <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">${t('download_season_pdf')}</a>
+                </div>`;
             
-            aotyArray.forEach((angler, idx) => {
+            aotyArray.slice(0, 3).forEach((angler, idx) => {
                 aotyHtml += `
                 <div class="flex flex-between" style="background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 16px; margin-bottom: 8px; backdrop-filter: blur(8px);">
                     <div class="flex" style="gap: 12px;">
@@ -685,8 +878,8 @@
                         <b style="font-size: 16px;">${angler.name}</b>
                     </div>
                     <div style="text-align:right;">
-                        <b style="font-size: 16px;">${angler.totalPts.toFixed(1)} <span style="font-size:12px; font-weight:normal;">pts</span></b><br>
-                        <span style="font-size:12px; opacity:0.8;">${angler.catches} catches</span>
+                        <b style="font-size: 16px;">${angler.totalRankPts} <span style="font-size:12px; font-weight:normal;">${t('rank_pts')}</span></b><br>
+                        <span style="font-size:12px; opacity:0.8;">${angler.validEventsCount} ${t('tournaments')}</span>
                     </div>
                 </div>`;
             });
@@ -698,13 +891,13 @@
             aotyContainer.classList.add("hidden");
         }
 
-        renderEventsList(filteredEvents);
+        renderEventsList(loadedEvents.filter(e => {
+            let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+            return eYear === String(selectedYear);
+        }));
     }
 
-    function changeYear(y) {
-        selectedYear = y;
-        processDashboard();
-    }
+    function changeYear(y) { selectedYear = y; processDashboard(); }
 
     function renderEventsList(filteredEvents) {
         let container = document.getElementById("eventsList");
@@ -716,19 +909,28 @@
         filteredEvents.forEach(ev => {
             let publishDate = ev.details.date || "Unknown Date";
             let rankIcon = ev.details.isRanked !== false ? '🏆' : '⚪';
-            let rankBadge = ev.details.isRanked === false ? `<span class="badge" style="background:#ffe4e6; color:#be123c; padding:2px 6px; font-size:10px; margin-left:6px; box-shadow:none;">UNRANKED</span>` : '';
+            let rankBadge = ev.details.isRanked === false ? `<span class="badge" style="background:#ffe4e6; color:#be123c; padding:2px 6px; font-size:10px; margin-left:6px; box-shadow:none;">${t('unranked_badge')}</span>` : '';
+            
+            let evStatus = ev.details.status || 'finished';
+            let statusColor = evStatus === 'finished' ? 'background:#e2e8f0; color:#475569;' : 'background:#d1fae5; color:#059669;';
+            let statusText = evStatus === 'finished' ? t('status_finished') : t('status_ongoing');
+            let statusBadge = `<span class="badge" style="${statusColor} padding:2px 6px; font-size:10px; margin-left:6px; box-shadow:none;">${statusText}</span>`;
+
             html += `<div class="card flex flex-between" style="padding: 16px;">
                 <div style="flex:1;">
-                    <div class="flex" style="font-weight:700; margin-bottom:6px; font-size:16px;">
+                    <div class="flex flex-wrap" style="font-weight:700; margin-bottom:6px; font-size:16px;">
                         <span style="font-size:18px;">${rankIcon}</span> 
                         <span>${ev.name}</span>
-                        ${rankBadge}
+                        <div class="flex" style="gap:4px;">
+                            ${statusBadge}
+                            ${rankBadge}
+                        </div>
                     </div>
                     <div style="font-size:13px; color:var(--text-muted); font-weight:500;">📅 ${publishDate} • ${ev.details.participants.length} Participants</div>
                 </div>
-                <div class="flex" style="gap:8px;">
-                    <button onclick="downloadChart('${ev.id}')" class="secondary icon-btn" title="Download PDF" style="padding:10px 14px; box-shadow:none;">⬇ PDF</button>
-                    <button onclick="editEvent('${ev.id}')" class="primary-dark icon-btn" style="padding:10px 14px; box-shadow:none;">Open</button>
+                <div class="flex" style="gap:8px; align-items:center;">
+                    <a href="javascript:void(0)" onclick="downloadChart('${ev.id}')" style="color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: underline; margin-right: 4px;">PDF</a>
+                    <button onclick="editEvent('${ev.id}')" class="icon-btn primary-dark" style="padding:10px 14px; box-shadow:none;">Open</button>
                 </div>
             </div>`;
         });
@@ -736,7 +938,6 @@
     }
 
     /* ---------------- SETUP PAGE LOGIC ---------------- */
-
     function setUnit(u) {
         confUnit = u;
         document.getElementById('unitBtnMetric').className = u === 'metric' ? 'primary-dark' : 'secondary';
@@ -764,10 +965,21 @@
         reader.readAsDataURL(file);
     }
 
+    function showDashboard() {
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        window.scrollTo(0, 0);
+        
+        history.pushState({view: 'dashboardSection'}, "");
+    }
+
     function openEventEditor(eventObj = null) {
         document.getElementById("dashboardSection").classList.add("hidden");
         document.getElementById("setupSection").classList.remove("hidden");
         window.scrollTo(0, 0);
+
+        history.pushState({view: 'setupSection'}, "");
 
         if (eventObj) {
             currentEvent = JSON.parse(JSON.stringify(eventObj));
@@ -830,6 +1042,17 @@
         refreshSetupUI();
     }
 
+    function editEvent(id) {
+        let found = loadedEvents.find(e => e.id === id);
+        if (found) openEventEditor(found.details);
+    }
+
+    function deleteEvent(id) {
+        if (confirm("Delete this event from the cloud?")) {
+            db.collection("events").doc(id).delete();
+        }
+    }
+
     function updateParticipantCountStatus() {
         let rawText = document.getElementById("bulkParticipantsInput").value;
         document.getElementById("participantCountStatus").innerText = parseParticipants(rawText).length;
@@ -886,7 +1109,6 @@
         }
     }
 
-    // RULES MODAL
     function openRulesModal(sIdx) { activeSpeciesIndex = sIdx; document.getElementById("rulesModal").classList.remove("hidden"); renderRules(); }
     function closeRulesModal() { document.getElementById("rulesModal").classList.add("hidden"); activeSpeciesIndex = null; refreshSetupUI(); }
     
@@ -942,8 +1164,8 @@
             return `
             <div class="tier-grid" style="position:relative;">
                 <button class="danger icon-btn" style="position:absolute; top:-8px; right:-8px; padding:4px 8px; font-size:11px; border-radius:50%; box-shadow:none;" onclick="removeRule(${tIdx})">✕</button>
-                <div><label>From</label><input type="number" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)"></div>
-                <div><label>To</label>
+                <div><label>${t('rule_from')}</label><input type="number" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)"></div>
+                <div><label>${t('rule_to')}</label>
                     <div style="display:flex; gap:4px;">
                         <select onchange="updateRuleField(${tIdx}, 'toType', this.value)" style="flex:1;">
                             <option value="number" ${tData.to !== 'above' ? 'selected' : ''}>Number</option>
@@ -952,17 +1174,16 @@
                         ${tData.to !== 'above' ? `<input type="number" value="${tData.to}" onchange="updateRuleField(${tIdx}, 'to', this.value)" style="flex:1;">` : ''}
                     </div>
                 </div>
-                <div class="full-width"><label>Multiplier</label><select onchange="updateRuleField(${tIdx}, 'multiplier', this.value)">${multOptions}</select></div>
+                <div class="full-width"><label>${t('rule_mult')}</label><select onchange="updateRuleField(${tIdx}, 'multiplier', this.value)">${multOptions}</select></div>
             </div>`;
         }).join('');
     }
 
-    // TO HUB
     function goToEventHub() {
         currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
         currentEvent.description = document.getElementById("eventDescInput").value.trim();
         currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
-        currentEvent.isRanked = document.getElementById("isRankedToggle").checked;
+        let wantsRanked = document.getElementById("isRankedToggle").checked;
         
         let thumbSrc = document.getElementById('thumbnailPreview').src;
         if(thumbSrc && thumbSrc.startsWith('data:')) currentEvent.thumbnail = thumbSrc;
@@ -974,6 +1195,21 @@
         if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
         if(!currentEvent.status) currentEvent.status = "ongoing";
         
+        if(wantsRanked) {
+            let existingRankedCount = loadedEvents.filter(e => {
+                let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+                let status = e.details.status || 'finished';
+                return eYear === String(currentEvent.year) && e.details.isRanked !== false && status === 'finished' && e.id !== currentEvent.id;
+            }).length;
+
+            if(existingRankedCount >= 7) {
+                alert(`Limit reached! You already have 7 ranked tournaments in ${currentEvent.year}. This event will be set as Unranked.`);
+                wantsRanked = false;
+                document.getElementById("isRankedToggle").checked = false;
+            }
+        }
+        currentEvent.isRanked = wantsRanked;
+
         if (!currentEvent.isStarted) {
             let items = parseParticipants(document.getElementById("bulkParticipantsInput").value);
             let existingMap = {};
@@ -994,6 +1230,8 @@
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.remove("hidden");
         window.scrollTo(0, 0);
+        
+        history.pushState({view: 'hubSection'}, "");
         renderHubUI();
     }
 
@@ -1001,13 +1239,15 @@
         document.getElementById("hubSection").classList.add("hidden");
         document.getElementById("setupSection").classList.remove("hidden");
         window.scrollTo(0, 0);
+        
+        history.pushState({view: 'setupSection'}, "");
     }
 
     /* ---------------- EVENT HUB LOGIC ---------------- */
     
     function promptFinishEvent() {
         if(currentEvent.status === 'finished') return;
-        if (confirm("If you finish the event now you will not be able to change anything anymore and the event will be officially finished (okay, cancel)")) {
+        if (confirm(t('finish_warning'))) {
             currentEvent.status = "finished";
             saveCurrentEvent(true);
         }
@@ -1029,7 +1269,7 @@
     function editParticipantName(index) {
         if(currentEvent.status === 'finished') return;
         let p = currentEvent.participants[index];
-        let newName = prompt("Edit Name:", p.name);
+        let newName = prompt(t('edit_name') + ":", p.name);
         if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
             p.name = newName.trim();
             renderHubUI(); saveCurrentEvent(false);
@@ -1048,7 +1288,7 @@
         activeFishParticipantIndex = pIndexReal;
         
         let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
-        document.getElementById("modalFishSizeLabel").innerText = `Measurement (${unitText})`;
+        document.getElementById("modalFishSizeLabel").innerText = `${t('size_cm')} (${unitText})`;
 
         document.getElementById("modalSpeciesTabs").innerHTML = currentEvent.species.map((s, idx) => `
             <div class="species-tab ${idx === 0 ? 'active' : ''}" onclick="selectModalSpecies('${s.abbr}', this)">${s.abbr}</div>
@@ -1097,10 +1337,10 @@
         let container = document.getElementById("modalCurrentCatches");
         if (activeFishParticipantIndex === null) return;
         let p = currentEvent.participants[activeFishParticipantIndex];
-        if (p.catches.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">No catches logged.</p>`; return; }
+        if (p.catches.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">${t('no_catches')}</p>`; return; }
         
         let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
-        container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">Current Catches:</label>` + 
+        container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">${t('current_catches')}:</label>` + 
             p.catches.map((c, cIdx) => `
             <div class="flex flex-between" style="padding:12px 0; border-bottom:1px solid var(--border);">
                 <span><b>${c.size}</b>${unitText} <span class="badge" style="background:#f1f5f9; box-shadow:none;">${c.abbr.toUpperCase()}</span></span>
@@ -1162,10 +1402,9 @@
         }
     }
 
-
     // -- SCORING & LEADERBOARD --
     function calculateFishPoints(abbr, size, speciesList, measureType) {
-        if(measureType === 'weight') return size; // Direct weight 1:1 points
+        if(measureType === 'weight') return size; 
         let sp = speciesList.find(s => s.abbr === abbr);
         if (!sp) return size;
         let matchingTier = sp.tiers.find(t => {
@@ -1184,7 +1423,10 @@
 
         let query = document.getElementById("searchParticipant").value.toLowerCase();
         let container = document.getElementById("participantsHubContainer");
-        document.getElementById("hubParticipantCount").innerText = currentEvent.participants.length;
+        let addRemoveText = t("add_remove_fish");
+
+        let countEl = document.getElementById("hubParticipantCount");
+        if(countEl) countEl.innerText = currentEvent.participants.length;
 
         let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
 
@@ -1194,11 +1436,11 @@
 
             let catchesText = p.catches.length > 0 
                 ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') 
-                : `<span style="color:var(--text-muted); opacity: 0.7; font-style:italic;">No catches</span>`;
+                : `<span style="color:var(--text-muted); opacity: 0.7; font-style:italic;">${t('no_catches')}</span>`;
 
             let penBadge = (p.penalties && p.penalties.length > 0) ? `<button onclick="showPenaltyReason(${pIndexReal})" class="danger icon-btn" style="padding:2px 6px; border-radius:50%; box-shadow:none; font-size:10px;" title="Has Penalties">❗</button>` : '';
 
-            let actionButtons = isFinished ? `<span style="font-size:12px; color:var(--text-muted);">Locked</span>` : `
+            let actionButtons = isFinished ? `<span style="font-size:12px; color:var(--text-muted); font-weight:bold; padding-right:8px;">Locked</span>` : `
                 <button onclick="openPenaltyModal(${pIndexReal})" class="secondary icon-btn" style="padding:10px; box-shadow:none;" title="Add Penalty">⚖️</button>
                 <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:10px 16px;">Add/Rem</button>
             `;
@@ -1227,7 +1469,7 @@
 
         let mode = isPublicView ? 'points' : document.getElementById("rankingMode").value;
         let container = document.getElementById(isPublicView ? "pubLeaderboard" : "leaderboardContainer");
-        let topSummaryContainer = document.getElementById(isPublicView ? "pubTopSummary" : "leaderboardTopSummary"); // (Ignored pubTopSummary for brevity but can add)
+        let topSummaryContainer = document.getElementById(isPublicView ? "pubTopSummary" : "leaderboardTopSummary"); 
         
         let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
 
@@ -1260,7 +1502,7 @@
                 topSummaryContainer.innerHTML = `
                     <div class="flex flex-between">
                         <div>
-                            <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase;">🏆 Biggest Fish</div>
+                            <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase;">🏆 ${t('biggest_fish')}</div>
                             <div style="font-weight:700; font-size:18px; color:var(--text); margin-top:4px;">${sortedByBiggest[0].name}</div>
                         </div>
                         <div style="text-align:right;">
@@ -1272,7 +1514,7 @@
             } else { topSummaryContainer.classList.add('hidden'); }
         }
 
-        let html = `<table><tr><th style="width:40px;">#</th><th>Name</th><th>Pts</th><th>${unitText.toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
+        let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm')}</th><th>Amt</th><th>Max</th></tr>`;
         sortedByMain.forEach((p, idx) => {
             let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
             let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
@@ -1326,7 +1568,6 @@
         }).join('');
         document.getElementById("pubRules").innerHTML = rulesHtml;
 
-        // Leaderboard
         renderLeaderboard(true, ev);
 
         // Participants Detailed
@@ -1375,17 +1616,17 @@
 
         let htmlContent = `
             <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
-                <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">Tournament Results: ${ev.name}</h2>
-                <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">Generated on: ${new Date().toLocaleDateString()} | Format: ${ev.limitType==='top5'?'Top 5 Counted':'All Fish'}</p>
+                <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">${t('tournament_results')}: ${ev.name}</h2>
+                <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()} | Format: ${ev.limitType==='top5'?'Top 5 Counted':'All Fish'}</p>
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                     <thead><tr style="background-color: #4f46e5; color: #ffffff;">
-                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Place</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Name</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Points</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Total ${unitText.toUpperCase()}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Catches</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe;">Biggest</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; width: 35%;">Details</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('points')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Total ${unitText.toUpperCase()}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Amt</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('biggest_fish')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 35%;">${t('details')}</th>
                     </tr></thead><tbody>
                         ${processed.map((p, i) => `
                             <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
@@ -1408,6 +1649,77 @@
         };
         let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent;
         html2pdf().set(opt).from(tempDiv).save();
+    }
+
+    function downloadSeasonChart() {
+        let rankedFinishedEvents = loadedEvents.filter(e => {
+            let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+            let status = e.details.status || 'finished';
+            return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
+        });
+
+        if (rankedFinishedEvents.length === 0) {
+            alert("No finished ranked tournaments found for this season.");
+            return;
+        }
+
+        let yearlyAgg = {};
+        rankedFinishedEvents.forEach(ev => {
+            let placements = getEventPlacements(ev.details);
+            Object.keys(placements).forEach(normName => {
+                if(!yearlyAgg[normName]) {
+                    let originalName = ev.details.participants.find(p => p.name.toLowerCase().trim() === normName)?.name || normName;
+                    yearlyAgg[normName] = { name: originalName, scores: [] };
+                }
+                yearlyAgg[normName].scores.push(placements[normName]);
+            });
+        });
+
+        let aotyArray = Object.values(yearlyAgg).map(angler => {
+            let sortedScores = [...angler.scores].sort((a, b) => a - b);
+            let best5 = sortedScores.slice(0, 5); 
+            let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
+            return {
+                name: angler.name,
+                validEventsCount: angler.scores.length,
+                totalRankPts: totalRankPts,
+                allScoresStr: sortedScores.join(', ')
+            };
+        }).filter(a => a.validEventsCount > 0);
+
+        aotyArray.sort((a, b) => {
+            let aEvents = Math.min(a.validEventsCount, 5);
+            let bEvents = Math.min(b.validEventsCount, 5);
+            if(aEvents !== bEvents) return bEvents - aEvents; 
+            return a.totalRankPts - b.totalRankPts; 
+        });
+
+        let htmlContent = `
+            <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 800px; margin: 0 auto; background: white;">
+                <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">${t('season_results')} ${selectedYear}</h2>
+                <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                    <thead><tr style="background-color: #4f46e5; color: #ffffff;">
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('rank_pts_best5')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('tournaments_played')}</th>
+                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('all_placements')}</th>
+                    </tr></thead>
+                    <tbody>${aotyArray.map((p, index) => `
+                        <tr style="${index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${index + 1}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalRankPts}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.validEventsCount}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px;">${p.allScoresStr}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+        let opt = { margin: 0.3, filename: `season_${selectedYear}_results.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+        let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
     }
     
     changeLanguage(document.getElementById("langSelect").value);
