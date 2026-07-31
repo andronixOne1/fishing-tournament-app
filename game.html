@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Flipping Simulator - 8-Bit Edition</title>
+    <title>Car Flipping Simulator - Chaos Edition</title>
     <style>
         :root {
             --bg: #0b0c10;
@@ -72,7 +72,6 @@
             font-size: 0.9rem;
             animation: pulse 1s infinite;
         }
-        /* ---------------------------- */
 
         header {
             width: 100%;
@@ -164,13 +163,21 @@
             border-radius: 6px;
             font-weight: bold;
             font-size: 0.9rem;
-            margin: 10px 0;
+            margin: 8px 0;
             border: 1px solid currentColor;
         }
         .pot-0 { color: #a4b0be; } 
         .pot-1 { color: #3498db; } 
         .pot-2 { color: #9b59b6; } 
         .pot-3 { color: #ff4757; text-shadow: 0 0 8px rgba(255,71,87,0.5); font-weight: 900;}
+
+        .sell-chance-badge {
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+        .chance-up { color: var(--win); }
+        .chance-down { color: var(--lose); }
 
         .action-area {
             background: var(--panel);
@@ -248,10 +255,10 @@
             min-height: 250px;
         }
         .status-text {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             color: var(--accent);
             margin-bottom: 20px;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             text-transform: uppercase;
         }
         .multiplier-display {
@@ -308,7 +315,6 @@
 </head>
 <body>
 
-    <!-- GLOBAL LOADING SCREEN -->
     <div id="global-loader">
         <h1>Car Flip Simulator</h1>
         <div id="bootCarIcon"></div>
@@ -400,27 +406,51 @@
         // Flavor Messages for Mechanics
         const repairEvents = {
             fail: [
-                "💥 Mechanic broke a leg mid-repair! Repair failed completely.",
-                "🤦 Mechanic dropped your engine block on the floor. Oof.",
-                "🎰 Mechanic took your money and lost it playing online poker.",
-                "⚡ Mechanic wired the battery backwards and fried the ECU!"
+                "💥 Mechanic broke a leg mid-repair! Engine ruined (-15% Sell Chance).",
+                "🤦 Mechanic dropped your engine block! Severe damage (-15% Sell Chance).",
+                "🎰 Mechanic gambled your money away and damaged parts (-15% Sell Chance).",
+                "⚡ Mechanic wired the battery backwards and fried electronics (-15% Sell Chance)!"
             ],
             shoddy: [
-                "🍺 Mechanic was hungover, but duct-taped the bumper. (+1 Tier)",
-                "🌾 Mechanic used parts from an old lawnmower. (+1 Tier)",
-                "🛠️ Mechanic patched the oil leak with chewing gum and a prayer. (+1 Tier)"
+                "🍺 Mechanic was hungover, but duct-taped the bumper (+5% Sell Chance, +1 Tier).",
+                "🌾 Mechanic used parts from an old lawnmower (+5% Sell Chance, +1 Tier).",
+                "🛠️ Mechanic patched the leak with chewing gum (+5% Sell Chance, +1 Tier)."
             ],
             success: [
-                "✨ Mechanic worked overtime and restored it clean! (+2 Tiers)",
-                "🏎️ Mechanic tuned the engine to factory perfection! (+2 Tiers)",
-                "🧼 Mechanic buffed out every scratch till it shined like new! (+2 Tiers)"
+                "✨ Mechanic worked overtime and restored it clean (+15% Sell Chance, +2 Tiers)!",
+                "🏎️ Mechanic tuned the engine to factory perfection (+15% Sell Chance, +2 Tiers)!",
+                "🧼 Mechanic buffed out every scratch till it shined (+15% Sell Chance, +2 Tiers)!"
             ],
             jackpot: [
-                "🎂 Mechanic had a birthday and gave you a twin-turbo upgrade for free! (INSANE TIER)",
-                "🚀 Mechanic secretly installed a nitrous system in the trunk! (INSANE TIER)",
-                "👑 Mechanic accidentally turned your car into a street legend! (INSANE TIER)"
+                "🎂 Mechanic gave you a free twin-turbo upgrade (+30% Sell Chance, INSANE TIER)!",
+                "🚀 Mechanic secretly installed a nitrous system (+30% Sell Chance, INSANE TIER)!",
+                "👑 Mechanic accidentally turned your car into a street legend (+30% Sell Chance, INSANE TIER)!"
             ]
         };
+
+        // 20 Funny Loss / Failure Explanations
+        const failureMessages = [
+            "Nobody needed the car, so it got scrapped!",
+            "The car got stolen by Santa Claus and his crew!",
+            "A flock of pigeons designated your car a total biohazard zone. Unsellable!",
+            "The car spontaneously disassembled itself upon buyer inspection.",
+            "A sinkhole opened up in the parking lot and swallowed it whole!",
+            "Your car was repossessed by a shady mafia boss claiming it was theirs.",
+            "You accidentally left the keys inside and a raccoon drove it into a lake.",
+            "The car got struck by lightning and reduced to a pile of ash!",
+            "A rogue AI took over the vehicle and drove it straight into outer space.",
+            "The test driver mistook the gas for the brake and drove off a cliff!",
+            "It failed the emissions test so badly it got outlawed by the UN.",
+            "Termites somehow ate through the entire metal chassis. Impressive loss!",
+            "The car was towed away because you parked it in front of the White House.",
+            "A movie studio bought it, immediately blew it up for an explosion scene, and skipped town without paying.",
+            "The gas tank leaked completely, and it was overrun by an angry hive of killer bees.",
+            "An eccentric billionaire paid you in Monopoly money, then vanished into thin air.",
+            "The car rolled away backwards down a hill because you forgot the handbrake.",
+            "Alien abduction! A UFO beamed the vehicle up into the sky.",
+            "The buyer turned out to be an undercover cop; the car was confiscated as evidence.",
+            "A local monster truck rally used your car as a ramp. Completely flattened!"
+        ];
 
         let balance = 10000;
         let currentOffers = [];
@@ -440,9 +470,9 @@
 
             let effects = "";
             
-            if (condition === "Wrecked") {
+            if (condition === "Wrecked" || condition === "Ruined") {
                 baseColor = tier === "cheap" ? "#8c7ae6" : (tier === "luxury" ? "#d35400" : "#57606f");
-                windowColor = "#2f3542"; // cracked/dark windows
+                windowColor = "#2f3542";
                 effects += `
                     <rect x="6" y="2" width="2" height="2" fill="#718093" opacity="0.8"/>
                     <rect x="4" y="0" width="3" height="3" fill="#a6b1e1" opacity="0.6"/>
@@ -527,6 +557,11 @@
             return arr[Math.floor(Math.random() * arr.length)];
         }
 
+        // Shortcut to get one of the 20 hilarious failure scenarios
+        function getRandomFailureReason() {
+            return getRandomMsg(failureMessages);
+        }
+
         function formatCurrency(num) {
             return "$" + num.toLocaleString();
         }
@@ -550,27 +585,27 @@
             requestAnimationFrame(step);
         }
 
-        // Simulates the initial game boot-up loading screen
+        function getEffectiveSellChance(car) {
+            let pTier = potentialTiers[car.tierLevel];
+            let effective = pTier.winChance + car.winChanceBonus;
+            return Math.round(Math.max(0.05, Math.min(0.95, effective)) * 100);
+        }
+
         function simulateGameLoad() {
             const globalLoader = document.getElementById("global-loader");
             const loadBar = document.getElementById("globalProgressBar");
             const loadingText = document.getElementById("loadingText");
             
-            // Set the boot car icon
             document.getElementById("bootCarIcon").innerHTML = getCarPixelArtSVG("luxury", "Tuned Beast", 120, 75);
 
-            // Animate loading bar over 1.5 seconds
             animateProgressBar(loadBar, 1500, () => {
                 loadingText.innerText = "System Ready!";
                 loadingText.style.color = "var(--win)";
                 loadingText.style.animation = "none";
                 
-                // Fade out global loader after a tiny pause
                 setTimeout(() => {
                     globalLoader.style.opacity = "0";
                     globalLoader.style.visibility = "hidden";
-                    
-                    // Start the first round behind the scenes
                     startRound();
                 }, 400);
             });
@@ -603,12 +638,14 @@
                     price: finalPrice,
                     condition: condition,
                     tierLevel: finalTier,
+                    winChanceBonus: 0, 
                     invested: finalPrice,
                     isFixed: false
                 };
                 currentOffers.push(car);
 
                 let pTier = potentialTiers[car.tierLevel];
+                let sellChancePct = getEffectiveSellChance(car);
 
                 gridHTML += `
                     <div class="car-card" onclick="selectCar(${i})">
@@ -620,6 +657,7 @@
                         <p style="color:#aaa; margin:2px 0;">Condition: <span style="color:white;">${car.condition}</span></p>
                         <p style="color:#aaa; margin:2px 0;">Price: <span style="color:white;">${formatCurrency(car.price)}</span></p>
                         <div class="pot-badge ${pTier.class}">Potential: ${pTier.name}</div>
+                        <div class="sell-chance-badge">Sell Chance: ${sellChancePct}%</div>
                     </div>
                 `;
             }
@@ -648,11 +686,19 @@
             document.getElementById("actionCarIcon").innerHTML = getCarPixelArtSVG(activeCar.tier, activeCar.condition, 120, 75);
             
             let pTier = potentialTiers[activeCar.tierLevel];
-            
-            let fixCost = 0;
-            let canFix = !activeCar.isFixed && activeCar.condition !== "Mint";
+            let sellChancePct = getEffectiveSellChance(activeCar);
 
-            if (activeCar.condition === "Wrecked") {
+            let bonusText = "";
+            if (activeCar.winChanceBonus > 0) {
+                bonusText = `<span class="chance-up">(+${Math.round(activeCar.winChanceBonus * 100)}% Bonus)</span>`;
+            } else if (activeCar.winChanceBonus < 0) {
+                bonusText = `<span class="chance-down">(${Math.round(activeCar.winChanceBonus * 100)}% Penalty)</span>`;
+            }
+
+            let fixCost = 0;
+            let canFix = !activeCar.isFixed && activeCar.condition !== "Mint" && activeCar.condition !== "Tuned Beast";
+
+            if (activeCar.condition === "Wrecked" || activeCar.condition === "Ruined") {
                 fixCost = activeCar.price; 
             } else if (activeCar.condition === "Normal wear") {
                 fixCost = Math.floor(activeCar.price * 0.50); 
@@ -661,7 +707,8 @@
             let html = `
                 <p>Initial Investment: <strong>${formatCurrency(activeCar.invested)}</strong></p>
                 <p>Condition: <strong>${activeCar.condition}</strong></p>
-                <div class="pot-badge ${pTier.class}" style="font-size:1.2rem;">Current Potential: ${pTier.name}</div>
+                <div class="pot-badge ${pTier.class}" style="font-size:1.1rem;">Potential: ${pTier.name}</div>
+                <p style="font-size: 1.1rem;">Sell Success Chance: <strong>${sellChancePct}%</strong> ${bonusText}</p>
             `;
 
             let bannerEl = document.getElementById("repair-result-banner");
@@ -676,8 +723,8 @@
             if (canFix && activeCar.tierLevel < 3) {
                 html += `
                     <div style="background: rgba(255,215,0,0.1); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px dashed var(--gold);">
-                        <p style="margin:0 0 5px 0; color: var(--gold);"><strong>Repair Shop Offer:</strong></p>
-                        <p style="margin:0; font-size: 0.95rem;">Pay ${formatCurrency(fixCost)} to gamble on a mechanic repair!</p>
+                        <p style="margin:0 0 5px 0; color: var(--gold);"><strong>Repair Shop Gamble:</strong></p>
+                        <p style="margin:0; font-size: 0.95rem;">Pay ${formatCurrency(fixCost)} to fix the car! Success boosts your Sell Chance (+15%) and Potential Tier. Botched work reduces Sell Chance (-15%).</p>
                     </div>
                 `;
                 document.getElementById("btnFix").style.display = "inline-block";
@@ -694,12 +741,11 @@
 
         function fixCar() {
             let fixCost = 0;
-            if (activeCar.condition === "Wrecked") fixCost = activeCar.price;
+            if (activeCar.condition === "Wrecked" || activeCar.condition === "Ruined") fixCost = activeCar.price;
             else if (activeCar.condition === "Normal wear") fixCost = Math.floor(activeCar.price * 0.50);
 
             if (balance < fixCost) return;
 
-            // Trigger fixing UI animation
             document.getElementById("btnFix").disabled = true;
             document.getElementById("btnSell").disabled = true;
             document.getElementById("btnCancel").disabled = true;
@@ -708,29 +754,29 @@
 
             balance -= fixCost;
             activeCar.invested += fixCost;
-            activeCar.isFixed = true; // Prevents infinite fixing
+            activeCar.isFixed = true; 
 
             let repairBar = document.getElementById("repairProgressBar");
 
             animateProgressBar(repairBar, 1800, () => {
-                // Roll Mechanic Event Outcome
                 let roll = Math.random();
                 if (roll <= 0.15) {
-                    // Fail / Botched (15%)
+                    activeCar.winChanceBonus -= 0.15;
+                    activeCar.condition = "Ruined";
                     lastRepairBanner = { className: "repair-fail", text: getRandomMsg(repairEvents.fail) };
                 } else if (roll <= 0.40) {
-                    // Shoddy (+1 Tier) (25%)
+                    activeCar.winChanceBonus += 0.05;
                     activeCar.tierLevel = Math.min(3, activeCar.tierLevel + 1);
                     activeCar.condition = "Repaired";
                     lastRepairBanner = { className: "repair-shoddy", text: getRandomMsg(repairEvents.shoddy) };
                 } else if (roll <= 0.85) {
-                    // Success (+2 Tiers) (45%)
+                    activeCar.winChanceBonus += 0.15;
                     let jump = activeCar.condition === "Wrecked" ? 2 : 1;
                     activeCar.tierLevel = Math.min(3, activeCar.tierLevel + jump);
                     activeCar.condition = "Mint";
                     lastRepairBanner = { className: "repair-success", text: getRandomMsg(repairEvents.success) };
                 } else {
-                    // Jackpot (INSANE WIN Tier) (15%)
+                    activeCar.winChanceBonus += 0.30;
                     activeCar.tierLevel = 3;
                     activeCar.condition = "Tuned Beast";
                     lastRepairBanner = { className: "repair-jackpot", text: getRandomMsg(repairEvents.jackpot) };
@@ -739,26 +785,28 @@
                 updateBalance();
                 updateActionArea();
 
-                // Restore UI
                 document.getElementById("overlay-loader").style.display = "none";
                 document.getElementById("btnSell").disabled = false;
                 document.getElementById("btnCancel").disabled = false;
             });
         }
 
-        function rollMultiplier(tier) {
+        function rollMultiplier(car) {
+            let pTier = potentialTiers[car.tierLevel];
+            let effectiveWinChance = Math.max(0.05, Math.min(0.95, pTier.winChance + car.winChanceBonus));
+
             let roll = Math.random();
-            if (roll > tier.winChance) return 0;
+            if (roll > effectiveWinChance) return 0; // Lost!
 
             let multRoll = Math.random() * 100;
             let cumulative = 0;
-            for (let i = 0; i < tier.pool.length; i++) {
-                cumulative += tier.pool[i].c;
+            for (let i = 0; i < pTier.pool.length; i++) {
+                cumulative += pTier.pool[i].c;
                 if (multRoll <= cumulative) {
-                    return tier.pool[i].m;
+                    return pTier.pool[i].m;
                 }
             }
-            return tier.pool[tier.pool.length - 1].m; 
+            return pTier.pool[pTier.pool.length - 1].m; 
         }
 
         function startSellPhase() {
@@ -774,7 +822,6 @@
             let sellProgContainer = document.getElementById("sellProgressContainer");
             let sellProgBar = document.getElementById("sellProgressBar");
 
-            // UI Reset for Searching Phase
             multEl.style.display = "none";
             multEl.className = "multiplier-display";
             coinsEl.innerHTML = "";
@@ -786,25 +833,22 @@
             searchAnim.style.display = "block";
             sellProgContainer.style.display = "block";
 
-            let pTier = potentialTiers[activeCar.tierLevel];
-            let finalMult = rollMultiplier(pTier);
+            let finalMult = rollMultiplier(activeCar);
 
-            // Animate 2.5 second progress bar during search
             animateProgressBar(sellProgBar, 2500, () => {
                 searchAnim.style.display = "none";
                 sellProgContainer.style.display = "none";
                 multEl.style.display = "block";
 
                 if (finalMult === 0) {
-                    // Instant Crash / Impounded
-                    statusEl.innerText = "Busted! Car Impounded.";
+                    // Update: Dynamic chaotic failure messages instead of generic impoundment
+                    statusEl.innerText = getRandomFailureReason();
                     statusEl.classList.remove("pulsing");
                     multEl.innerText = "0.00x";
                     multEl.classList.add("crashed");
                     coinsEl.innerHTML = `Total Loss: <span>-${formatCurrency(activeCar.invested)}</span>`;
                     nextBtn.style.display = "block";
                 } else {
-                    // Win Animation
                     statusEl.innerText = "Buyer found! Bidding started...";
                     animateMultiplier(finalMult, activeCar.invested);
                 }
@@ -817,13 +861,12 @@
             let coinsEl = document.getElementById("coinsWonDisplay");
             let nextBtn = document.getElementById("btnNextRound");
             
-            // Scaled duration based on target multiplier
             let duration = 1000;
             if (targetMult > 2 && targetMult <= 10) duration = 2000;
             else if (targetMult > 10 && targetMult <= 50) duration = 3000;
             else if (targetMult > 50) duration = 5000;
 
-            let frames = (duration / 1000) * 60; // 60fps estimate
+            let frames = (duration / 1000) * 60;
             let step = (targetMult - 1.00) / frames;
             if (step < 0.01) step = 0.01;
 
@@ -855,7 +898,6 @@
             requestAnimationFrame(tick);
         }
 
-        // Kick off the loading sequence when the script runs
         window.onload = simulateGameLoad;
     </script>
 </body>
