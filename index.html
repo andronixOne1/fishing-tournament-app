@@ -17,28 +17,13 @@
     <style>
         /* MODERN INDIGO THEME */
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            --bg: #eef2ff;
-            --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-            --card-bg: rgba(255, 255, 255, 0.65);
-            --text: #1e1b4b;
-            --text-muted: #6366f1;
-            --border: rgba(99, 102, 241, 0.15);
-            --danger: #f43f5e;
-            --danger-dark: #be123c;
-            --success: #10b981;
-
-            --card-radius: 24px;
-            --input-radius: 16px;
-            --btn-radius: 24px;
-            --card-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
-            --header-bg: #4f46e5;
-            --header-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --header-text: #ffffff;
-            --glass-blur: blur(16px);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+            --primary: #6366f1; --primary-dark: #4f46e5; --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --bg: #eef2ff; --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.65); --text: #1e1b4b; --text-muted: #6366f1;
+            --border: rgba(99, 102, 241, 0.15); --danger: #f43f5e; --danger-dark: #be123c; --success: #10b981;
+            --card-radius: 24px; --input-radius: 16px; --btn-radius: 24px; --card-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
+            --header-bg: #4f46e5; --header-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --header-text: #ffffff; --glass-blur: blur(16px); --glass-border: 1px solid rgba(255, 255, 255, 0.6);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
@@ -281,10 +266,10 @@
 
         <!-- Sticky Bottom Bar for Step 2 -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
-            <div class="flex" style="gap: 8px;">
-                <button onclick="downloadChart()" class="secondary" data-i18n="download_chart" style="flex: 0.2; box-shadow:none; padding:12px;">⬇ PDF</button>
-                <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" data-i18n="finish_event" style="flex: 0.4; padding:12px;">Finish Event</button>
-                <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_event" style="flex: 0.4; padding:12px;">Save Event</button>
+            <div class="flex" style="gap: 12px; width: 100%; align-items: center;">
+                <a href="javascript:void(0)" onclick="downloadChart()" data-i18n="download_chart" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
+                <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" data-i18n="finish_event" style="flex: 1; padding:12px;">Finish Event</button>
+                <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_event" style="flex: 1; padding:12px;">Save Event</button>
             </div>
         </div>
     </div>
@@ -396,7 +381,7 @@
             hub_title: "Tournament Hub", edit_setup: "← Setup", manage_part: "Participants", add_new: "+ Add", leaderboard: "Leaderboard", mode_pts: "Rank by Points",
             mode_cm: "Rank by Centimeters", save_event: "Save Event", finish_event: "Finish Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
             add_remove_fish: "Add / Remove Fish", species_sel: "Species", size_cm: "Size (cm)", save: "Save", add_fish_btn: "+ Add Fish", edit_rules: "Edit Rules",
-            add_rule: "+ Add New Rule", done: "Done", rule_from: "From", rule_to: "To", rule_mult: "Multiplier", download_chart: "⬇ PDF", download_season_pdf: "Season PDF",
+            add_rule: "+ Add New Rule", done: "Done", rule_from: "From", rule_to: "To", rule_mult: "Multiplier", download_chart: "PDF", download_season_pdf: "Season PDF",
             season_results: "Season Results", current_catches: "Current Catches", no_catches: "No catches logged.", too_small_title: "Fish Too Small", 
             too_small_desc: "The fish is too small based on the rules.", ok: "OK", ignore: "Ignore", angler_of_year: "Angler of the Year", edit_name: "Edit Name", 
             unranked_badge: "UNRANKED", rank_pts: "Rank Pts", tournaments: "tournaments", editing_disabled: "Editing this is disabled, please edit participant list on the next page",
@@ -413,7 +398,7 @@
             hub_title: "ტურნირის ჰაბი", edit_setup: "← პარამეტრები", manage_part: "მონაწილეები", add_new: "+ დამატება", leaderboard: "ლიდერბორდი", mode_pts: "ქულებით რეიტინგი",
             mode_cm: "სანტიმეტრებით რეიტინგი", save_event: "ტურნირის შენახვა", finish_event: "ტურნირის დასრულება", modal_add_title: "მონაწილის დამატება", close: "გაუქმება", add: "დამატება",
             add_remove_fish: "თევზის დამატება/წაშლა", species_sel: "სახეობა", size_cm: "ზომა (სმ)", save: "შენახვა", add_fish_btn: "+ თევზის დამატება", edit_rules: "წესები",
-            add_rule: "+ ახალი წესი", done: "მზადაა", rule_from: "-დან", rule_to: "-მდე", rule_mult: "კოეფიციენტი", download_chart: "⬇ PDF", download_season_pdf: "სეზონის PDF",
+            add_rule: "+ ახალი წესი", done: "მზადაა", rule_from: "-დან", rule_to: "-მდე", rule_mult: "კოეფიციენტი", download_chart: "PDF", download_season_pdf: "სეზონის PDF",
             season_results: "სეზონის შედეგები", current_catches: "მიმდინარე თევზები", no_catches: "თევზი არ არის.", too_small_title: "თევზი ძალიან პატარაა", 
             too_small_desc: "წესების მიხედვით თევზი ძალიან პატარაა.", ok: "OK", ignore: "იგნორირება", angler_of_year: "წლის მეთევზე", edit_name: "სახელის შეცვლა", 
             unranked_badge: "არასარეიტინგო", rank_pts: "სარეიტინგო ქულა", tournaments: "ტურნირი", editing_disabled: "რედაქტირება გამორთულია, გთხოვთ შეცვალოთ მონაწილეთა სია შემდეგ გვერდზე",
@@ -430,7 +415,7 @@
             hub_title: "Хаб турніру", edit_setup: "← Налаштування", manage_part: "Учасники", add_new: "+ Додати", leaderboard: "Таблиця лідерів", mode_pts: "Рейтинг за балами",
             mode_cm: "Рейтинг за сантиметрами", save_event: "Зберегти подію", finish_event: "Завершити подію", modal_add_title: "Додати учасника", close: "Скасувати", add: "Додати",
             add_remove_fish: "Додати/Видалити рибу", species_sel: "Вид", size_cm: "Розмір (см)", save: "Зберегти", add_fish_btn: "+ Додати рибу", edit_rules: "Правила",
-            add_rule: "+ Нове правило", done: "Готово", rule_from: "Від", rule_to: "До", rule_mult: "Множник", download_chart: "⬇ PDF", download_season_pdf: "PDF сезону",
+            add_rule: "+ Нове правило", done: "Готово", rule_from: "Від", rule_to: "До", rule_mult: "Множник", download_chart: "PDF", download_season_pdf: "PDF сезону",
             season_results: "Результати сезону", current_catches: "Поточний улов", no_catches: "Немає улову.", too_small_title: "Риба занадто мала", 
             too_small_desc: "За правилами риба занадто мала.", ok: "OK", ignore: "Ігнорувати", angler_of_year: "Рибалка року", edit_name: "Редагувати ім'я", 
             unranked_badge: "БЕЗ РЕЙТИНГУ", rank_pts: "Ранг. очок", tournaments: "турнірів", editing_disabled: "Редагування вимкнено, редагуйте список на наступній сторінці",
@@ -447,7 +432,7 @@
             hub_title: "Хаб турнира", edit_setup: "← Настройка", manage_part: "Участники", add_new: "+ Добавить", leaderboard: "Таблица лидеров", mode_pts: "Рейтинг по очкам",
             mode_cm: "Рейтинг по см", save_event: "Сохранить событие", finish_event: "Завершить событие", modal_add_title: "Добавить участника", close: "Отмена", add: "Добавить",
             add_remove_fish: "Добавить/Удалить рыбу", species_sel: "Вид", size_cm: "Размер (см)", save: "Сохранить", add_fish_btn: "+ Добавить рыбу", edit_rules: "Правила",
-            add_rule: "+ Новое правило", done: "Готово", rule_from: "От", rule_to: "До", rule_mult: "Множитель", download_chart: "⬇ PDF", download_season_pdf: "PDF сезона",
+            add_rule: "+ Новое правило", done: "Готово", rule_from: "От", rule_to: "До", rule_mult: "Множитель", download_chart: "PDF", download_season_pdf: "PDF сезона",
             season_results: "Результаты сезона", current_catches: "Текущий улов", no_catches: "Нет улова.", too_small_title: "Рыба слишком мала", 
             too_small_desc: "По правилам рыба слишком мала.", ok: "OK", ignore: "Игнорировать", angler_of_year: "Рыболов года", edit_name: "Изменить имя", 
             unranked_badge: "ВНЕ РЕЙТИНГА", rank_pts: "Ранг. очков", tournaments: "турниров", editing_disabled: "Редактирование отключено, измените список на следующей странице",
@@ -464,7 +449,7 @@
             hub_title: "Hub du Tournoi", edit_setup: "← Config", manage_part: "Participants", add_new: "+ Ajouter", leaderboard: "Classement", mode_pts: "Par Points",
             mode_cm: "Par Centimètres", save_event: "Enregistrer", finish_event: "Terminer", modal_add_title: "Ajouter Participant", close: "Annuler", add: "Ajouter",
             add_remove_fish: "Ajouter/Retirer Prise", species_sel: "Espèce", size_cm: "Taille (cm)", save: "Enregistrer", add_fish_btn: "+ Ajouter Prise", edit_rules: "Règles",
-            add_rule: "+ Nouvelle Règle", done: "Terminé", rule_from: "De", rule_to: "À", rule_mult: "Multiplicateur", download_chart: "⬇ PDF", download_season_pdf: "PDF de la Saison",
+            add_rule: "+ Nouvelle Règle", done: "Terminé", rule_from: "De", rule_to: "À", rule_mult: "Multiplicateur", download_chart: "PDF", download_season_pdf: "PDF de la Saison",
             season_results: "Résultats de la Saison", current_catches: "Prises Actuelles", no_catches: "Aucune prise.", too_small_title: "Poisson trop petit", 
             too_small_desc: "Le poisson est trop petit selon les règles.", ok: "OK", ignore: "Ignorer", angler_of_year: "Pêcheur de l'Année", edit_name: "Modifier le nom", 
             unranked_badge: "NON CLASSÉ", rank_pts: "Pts Class.", tournaments: "tournois", editing_disabled: "Modification désactivée, veuillez modifier la liste sur la page suivante",
@@ -481,7 +466,7 @@
             hub_title: "Hub del Torneo", edit_setup: "← Config", manage_part: "Partecipanti", add_new: "+ Aggiungi", leaderboard: "Classifica", mode_pts: "Per Punti",
             mode_cm: "Per Centimetri", save_event: "Salva Evento", finish_event: "Termina Evento", modal_add_title: "Aggiungi Partecipante", close: "Annulla", add: "Aggiungi",
             add_remove_fish: "Aggiungi/Rimuovi Pesce", species_sel: "Specie", size_cm: "Misura (cm)", save: "Salva", add_fish_btn: "+ Aggiungi Pesce", edit_rules: "Regole",
-            add_rule: "+ Nuova Regola", done: "Fatto", rule_from: "Da", rule_to: "A", rule_mult: "Moltiplicatore", download_chart: "⬇ PDF", download_season_pdf: "PDF Stagione",
+            add_rule: "+ Nuova Regola", done: "Fatto", rule_from: "Da", rule_to: "A", rule_mult: "Moltiplicatore", download_chart: "PDF", download_season_pdf: "PDF Stagione",
             season_results: "Risultati Stagione", current_catches: "Catture Attuali", no_catches: "Nessuna cattura.", too_small_title: "Pesce troppo piccolo", 
             too_small_desc: "Il pesce è troppo piccolo secondo le regole.", ok: "OK", ignore: "Ignora", angler_of_year: "Pescatore dell'Anno", edit_name: "Modifica Nome", 
             unranked_badge: "NON CLASSIFICATO", rank_pts: "Pti Class.", tournaments: "tornei", editing_disabled: "Modifica disabilitata, per favore modifica la lista nella pagina successiva",
@@ -498,7 +483,7 @@
             hub_title: "Turnier-Hub", edit_setup: "← Setup", manage_part: "Teilnehmer", add_new: "+ Neu", leaderboard: "Bestenliste", mode_pts: "Nach Punkten",
             mode_cm: "Nach Zentimetern", save_event: "Event speichern", finish_event: "Event beenden", modal_add_title: "Teilnehmer hinzufügen", close: "Abbrechen", add: "Hinzufügen",
             add_remove_fish: "Fisch Hinzufügen/Entfernen", species_sel: "Art", size_cm: "Größe (cm)", save: "Speichern", add_fish_btn: "+ Fisch Hinzufügen", edit_rules: "Regeln",
-            add_rule: "+ Neue Regel", done: "Fertig", rule_from: "Von", rule_to: "Bis", rule_mult: "Multiplikator", download_chart: "⬇ PDF", download_season_pdf: "Saison-PDF",
+            add_rule: "+ Neue Regel", done: "Fertig", rule_from: "Von", rule_to: "Bis", rule_mult: "Multiplikator", download_chart: "PDF", download_season_pdf: "Saison-PDF",
             season_results: "Saisonergebnisse", current_catches: "Aktuelle Fänge", no_catches: "Keine Fänge.", too_small_title: "Fisch zu klein", 
             too_small_desc: "Der Fisch ist nach den Regeln zu klein.", ok: "OK", ignore: "Ignorieren", angler_of_year: "Angler des Jahres", edit_name: "Name bearbeiten", 
             unranked_badge: "NICHT GEWERTET", rank_pts: "Rang-Pkt", tournaments: "turniere", editing_disabled: "Bearbeitung deaktiviert, bitte auf der nächsten Seite bearbeiten",
@@ -610,7 +595,6 @@
             return { name: p.name, normName: (p.name || "unknown").toLowerCase().trim(), totalPts, totalCm, maxFishCm, amountCatches };
         });
 
-        // Split into fish catchers vs zero-fish
         let caught = processed.filter(p => p.amountCatches > 0 && p.totalPts > 0);
         let zero = processed.filter(p => p.amountCatches === 0 || p.totalPts === 0);
 
@@ -651,9 +635,9 @@
 
         let rankedFinishedEvents = loadedEvents.filter(e => {
             let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
-            let status = e.details.status || 'finished'; // Default legacy events to finished
+            let status = e.details.status || 'finished'; 
             return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
-        }); // Removed .slice(0, 7) to ensure no events are arbitrarily skipped before parsing
+        }); 
 
         let yearlyAgg = {};
         rankedFinishedEvents.forEach(ev => {
@@ -678,7 +662,6 @@
             };
         }).filter(a => a.validEventsCount > 0);
 
-        // Sorting Fix: First sort by events played up to 5 (descending). Then lowest rank points (ascending).
         aotyArray.sort((a, b) => {
             let aEvents = Math.min(a.validEventsCount, 5);
             let bEvents = Math.min(b.validEventsCount, 5);
@@ -692,7 +675,7 @@
             let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
                 <div class="flex flex-between" style="margin-bottom: 16px;">
                     <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
-                    <button onclick="downloadSeasonChart()" class="secondary icon-btn" style="padding: 6px 10px; font-size: 12px; box-shadow: none; color: var(--primary-dark); background: white;">⬇ ${t('download_season_pdf')}</button>
+                    <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">${t('download_season_pdf')}</a>
                 </div>`;
             
             aotyArray.slice(0, 3).forEach((angler, idx) => {
@@ -751,8 +734,8 @@
                     </div>
                     <div style="font-size:13px; color:var(--text-muted); font-weight:500;">📅 ${publishDate} • ${ev.details.participants.length} Participants</div>
                 </div>
-                <div class="flex" style="gap:8px;">
-                    <button onclick="downloadChart('${ev.id}')" class="success icon-btn" title="Download PDF" style="padding:10px 14px; box-shadow:none;">⬇ PDF</button>
+                <div class="flex" style="gap:8px; align-items:center;">
+                    <a href="javascript:void(0)" onclick="downloadChart('${ev.id}')" style="color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: underline; margin-right: 4px;">${t('download_chart')}</a>
                     <button onclick="editEvent('${ev.id}')" class="icon-btn" style="padding:10px 14px; box-shadow:none;">Open</button>
                     <button class="danger icon-btn" onclick="deleteEvent('${ev.id}')" style="padding:10px 14px; box-shadow:none;">Del</button>
                 </div>
@@ -1119,6 +1102,7 @@
 
         let query = document.getElementById("searchParticipant").value.toLowerCase();
         let container = document.getElementById("participantsHubContainer");
+        let addRemoveText = t("add_remove_fish");
 
         let countEl = document.getElementById("hubParticipantCount");
         if(countEl) countEl.innerText = currentEvent.participants.length;
@@ -1132,7 +1116,7 @@
                 : `<span style="color:var(--text-muted); opacity: 0.7; font-style:italic;">${t('no_catches')}</span>`;
 
             let editBtn = `<button onclick="editParticipantName(${pIndexReal})" class="icon-btn" style="padding:4px; background:transparent; color:var(--text-muted); box-shadow:none;">✏️</button>`;
-            let actionButtons = isFinished ? `<span style="font-size:12px; color:var(--text-muted); font-weight:bold; padding-right:8px;">Locked</span>` : `<button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:10px 16px;">${t('add_remove_fish')}</button>`;
+            let actionButtons = isFinished ? `<span style="font-size:12px; color:var(--text-muted); font-weight:bold; padding-right:8px;">Locked</span>` : `<button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:10px 16px;">${addRemoveText}</button>`;
 
             filteredHtml += `
             <div class="card" style="padding:16px; margin-bottom:16px;">
@@ -1169,7 +1153,7 @@
         let sortedByMain = [...processed].sort((a, b) => {
             if(mode === 'points') {
                 if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-                if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
+                if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; // Fewer catches is tiebreaker
                 return b.maxFishCm - a.maxFishCm; 
             } else {
                 if(b.totalCm !== a.totalCm) return b.totalCm - a.totalCm;
@@ -1282,7 +1266,7 @@
             let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
             let status = e.details.status || 'finished';
             return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
-        }); // Removing .slice(0,7) to safely process all valid events before extracting
+        });
 
         if (rankedEvents.length === 0) {
             alert("No ranked tournaments found for this season.");
