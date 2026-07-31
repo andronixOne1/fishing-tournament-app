@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Flipping Simulator - High Stakes</title>
+    <title>Car Flipping Simulator - Shady Mechanic Edition</title>
     <style>
         :root {
             --bg: #0b0c10;
@@ -123,17 +123,56 @@
         .btn-cancel { background: transparent; border: 1px solid #555; color: #ccc; }
         .btn-cancel:hover { background: #333; }
 
+        /* Progress Bar Styling */
+        .progress-container {
+            width: 80%;
+            max-width: 320px;
+            height: 14px;
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 10px;
+            margin: 15px auto;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        .progress-bar.gold {
+            background: linear-gradient(90deg, #ffa502, var(--gold));
+            box-shadow: 0 0 10px var(--gold);
+        }
+
         #overlay-loader {
             display: none;
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(31, 40, 51, 0.9);
+            background: rgba(31, 40, 51, 0.95);
             border-radius: 12px;
             align-items: center;
             justify-content: center;
             flex-direction: column;
             z-index: 10;
         }
+
+        #repair-result-banner {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        .repair-fail { background: rgba(255, 71, 87, 0.2); border: 1px solid var(--lose); color: var(--lose); }
+        .repair-shoddy { background: rgba(255, 165, 2, 0.2); border: 1px solid #ffa502; color: #ffa502; }
+        .repair-success { background: rgba(46, 213, 115, 0.2); border: 1px solid var(--win); color: var(--win); }
+        .repair-jackpot { background: rgba(255, 215, 0, 0.2); border: 1px solid var(--gold); color: var(--gold); text-shadow: 0 0 5px rgba(255,215,0,0.5); }
 
         #result-area {
             display: none;
@@ -166,11 +205,7 @@
         .coins-won span { color: var(--gold); font-weight: bold; }
         
         /* Animations */
-        @keyframes pulse {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-        }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
         .pulsing { animation: pulse 1s infinite; }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -179,14 +214,14 @@
             border: 4px solid #444; border-top-color: var(--gold);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .scrolling-web {
             display: none;
             width: 80%; max-width: 300px;
-            height: 60px;
-            margin: 0 auto 20px auto;
+            height: 50px;
+            margin: 0 auto 15px auto;
             border: 2px solid var(--accent-dark);
             border-radius: 8px;
             overflow: hidden;
@@ -197,15 +232,13 @@
             position: absolute;
             top: 0; left: 10%; width: 80%;
             display: flex; flex-direction: column; gap: 8px;
-            animation: scrollUp 1s linear infinite;
+            animation: scrollUp 0.8s linear infinite;
         }
         .scroll-line { height: 8px; background: #333; border-radius: 4px; }
         .scroll-line:nth-child(even) { background: var(--accent-dark); opacity: 0.5; width: 70%; }
         
-        @keyframes scrollUp {
-            0% { transform: translateY(60px); }
-            100% { transform: translateY(-60px); }
-        }
+        @keyframes scrollUp { 0% { transform: translateY(50px); } 100% { transform: translateY(-50px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
     </style>
 </head>
@@ -224,11 +257,16 @@
         <div class="action-area" id="actionArea">
             <div id="overlay-loader">
                 <div class="spinner"></div>
-                <h3 style="color:var(--gold); margin:0;">🔧 Fixing up the vehicle...</h3>
+                <h3 style="color:var(--gold); margin: 0 0 5px 0;">🔧 Shady Mechanic at work...</h3>
+                <div class="progress-container">
+                    <div class="progress-bar gold" id="repairProgressBar"></div>
+                </div>
             </div>
             
             <h2 id="selectedCarName" style="margin-top:0;">Car Name</h2>
             <div id="selectedCarDetails" style="font-size: 1.1rem; line-height: 1.6;"></div>
+            <div id="repair-result-banner"></div>
+
             <div class="action-buttons">
                 <button class="btn-fix" id="btnFix" onclick="fixCar()">Fix Car</button>
                 <button class="btn-sell" id="btnSell" onclick="startSellPhase()">Sell As Is</button>
@@ -245,307 +283,12 @@
                     <div class="scroll-line"></div>
                 </div>
             </div>
+
+            <div class="progress-container" id="sellProgressContainer" style="display:none;">
+                <div class="progress-bar" id="sellProgressBar"></div>
+            </div>
             
             <div class="status-text" id="statusText"></div>
             <div class="multiplier-display" id="multiplierDisplay" style="display:none;">1.00x</div>
             <div class="coins-won" id="coinsWonDisplay"></div>
-            <button id="btnNextRound" onclick="startRound()" style="display:none; margin: 0 auto;">Play Next Round</button>
-        </div>
-    </div>
-
-    <script>
-        // Data Structure with altered First Letters
-        const fleet = [
-            { name: "Jonda Divic", tier: "cheap", basePrice: 200 },
-            { name: "Wolkswagen Holf", tier: "cheap", basePrice: 400 },
-            { name: "Qenault Uwingo", tier: "cheap", basePrice: 100 },
-            { name: "Voyota Damry", tier: "normal", basePrice: 2500 },
-            { name: "Jonda Bccord", tier: "normal", basePrice: 3000 },
-            { name: "Wolkswagen Qassat", tier: "normal", basePrice: 3500 },
-            { name: "Nercedes H-Wagon", tier: "luxury", basePrice: 30000 },
-            { name: "Gerrari E458", tier: "luxury", basePrice: 45000 },
-            { name: "Mamborghini Juracan", tier: "luxury", basePrice: 50000 }
-        ];
-
-        const conditions = ["Wrecked", "Normal wear", "Mint"];
-        
-        // Multiplier Pools designed for ~96% RTP
-        const potentialTiers = [
-            { id: 0, name: "Normal Win", class: "pot-0", winChance: 0.60, pool: [{m: 1.1, c: 60}, {m: 2, c: 35}, {m: 5, c: 5}] },
-            { id: 1, name: "Big Win", class: "pot-1", winChance: 0.40, pool: [{m: 1.2, c: 80}, {m: 3, c: 12}, {m: 10, c: 6}, {m: 25, c: 2}] },
-            { id: 2, name: "Huge Win", class: "pot-2", winChance: 0.25, pool: [{m: 1.2, c: 84}, {m: 5, c: 10}, {m: 25, c: 5}, {m: 100, c: 1}] },
-            { id: 3, name: "INSANE WIN", class: "pot-3", winChance: 0.10, pool: [{m: 1.2, c: 88}, {m: 10, c: 9}, {m: 100, c: 2.5}, {m: 1000, c: 0.5}] }
-        ];
-
-        let balance = 10000;
-        let currentOffers = [];
-        let activeCar = null;
-
-        function updateBalance() {
-            document.getElementById("balanceDisplay").innerText = balance.toLocaleString();
-        }
-
-        function topUp() {
-            balance += 5000;
-            updateBalance();
-        }
-
-        function randomInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-
-        function formatCurrency(num) {
-            return "$" + num.toLocaleString();
-        }
-
-        function startRound() {
-            document.getElementById("actionArea").style.display = "none";
-            document.getElementById("result-area").style.display = "none";
-            document.getElementById("carGrid").style.display = "grid";
-            document.getElementById("phaseTitle").style.display = "block";
-            document.getElementById("phaseTitle").innerText = "Select a Car to Flip";
-            
-            currentOffers = [];
-            let gridHTML = "";
-
-            for (let i = 0; i < 3; i++) {
-                let carTemplate = fleet[randomInt(0, fleet.length - 1)];
-                let condition = conditions[randomInt(0, 2)];
-                
-                let baseTier = condition === "Wrecked" ? 0 : (condition === "Normal wear" ? 1 : 2);
-                let finalTier = Math.min(3, Math.max(0, baseTier + randomInt(-1, 1)));
-
-                let priceMod = condition === "Wrecked" ? 0.6 : (condition === "Mint" ? 1.4 : 1.0);
-                let finalPrice = Math.floor(carTemplate.basePrice * priceMod);
-
-                let car = {
-                    ...carTemplate,
-                    price: finalPrice,
-                    condition: condition,
-                    tierLevel: finalTier,
-                    invested: finalPrice
-                };
-                currentOffers.push(car);
-
-                let pTier = potentialTiers[car.tierLevel];
-
-                gridHTML += `
-                    <div class="car-card" onclick="selectCar(${i})">
-                        <div class="tier-badge tier-${car.tier}">Class: ${car.tier}</div>
-                        <h3>${car.name}</h3>
-                        <p style="color:#aaa; margin:5px 0;">Condition: <span style="color:white;">${car.condition}</span></p>
-                        <p style="color:#aaa; margin:5px 0;">Price: <span style="color:white;">${formatCurrency(car.price)}</span></p>
-                        <div class="pot-badge ${pTier.class}">Potential: ${pTier.name}</div>
-                    </div>
-                `;
-            }
-            document.getElementById("carGrid").innerHTML = gridHTML;
-        }
-
-        function selectCar(index) {
-            activeCar = currentOffers[index];
-            if (balance < activeCar.price) {
-                alert("Insufficient balance. Please deposit funds.");
-                return;
-            }
-
-            balance -= activeCar.price;
-            updateBalance();
-
-            document.getElementById("carGrid").style.display = "none";
-            document.getElementById("actionArea").style.display = "block";
-            document.getElementById("phaseTitle").style.display = "none";
-            
-            updateActionArea();
-        }
-
-        function updateActionArea() {
-            document.getElementById("selectedCarName").innerText = activeCar.name;
-            let pTier = potentialTiers[activeCar.tierLevel];
-            
-            let fixCost = 0;
-            let tierJump = 0;
-            let canFix = false;
-
-            if (activeCar.condition === "Wrecked") {
-                fixCost = activeCar.price; 
-                tierJump = 2;
-                canFix = true;
-            } else if (activeCar.condition === "Normal wear") {
-                fixCost = Math.floor(activeCar.price * 0.50); 
-                tierJump = 1;
-                canFix = true;
-            }
-
-            let nextTierLevel = Math.min(3, activeCar.tierLevel + tierJump);
-            let nextTier = potentialTiers[nextTierLevel];
-
-            let html = `
-                <p>Initial Investment: <strong>${formatCurrency(activeCar.invested)}</strong></p>
-                <p>Condition: <strong>${activeCar.condition}</strong></p>
-                <div class="pot-badge ${pTier.class}" style="font-size:1.2rem;">Current Potential: ${pTier.name}</div>
-            `;
-
-            if (canFix && activeCar.tierLevel < 3) {
-                html += `
-                    <div style="background: rgba(255,215,0,0.1); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px dashed var(--gold);">
-                        <p style="margin:0 0 10px 0; color: var(--gold);"><strong>Repair Shop Offer:</strong></p>
-                        <p style="margin:0; font-size: 0.95rem;">Invest ${formatCurrency(fixCost)} to upgrade potential to <span class="${nextTier.class}"><strong>${nextTier.name}</strong></span>!</p>
-                    </div>
-                `;
-                document.getElementById("btnFix").style.display = "inline-block";
-                document.getElementById("btnFix").innerText = `Fix Car (-${formatCurrency(fixCost)})`;
-                document.getElementById("btnFix").disabled = balance < fixCost;
-                document.getElementById("btnSell").innerText = `Sell As Is`;
-            } else {
-                document.getElementById("btnFix").style.display = "none";
-                document.getElementById("btnSell").innerText = `Sell Car`;
-            }
-
-            document.getElementById("selectedCarDetails").innerHTML = html;
-        }
-
-        function fixCar() {
-            let fixCost = 0;
-            let tierJump = 0;
-
-            if (activeCar.condition === "Wrecked") {
-                fixCost = activeCar.price;
-                tierJump = 2;
-            } else if (activeCar.condition === "Normal wear") {
-                fixCost = Math.floor(activeCar.price * 0.50);
-                tierJump = 1;
-            }
-
-            if (balance < fixCost) return;
-
-            // Trigger fixing anticipation
-            document.getElementById("btnFix").disabled = true;
-            document.getElementById("btnSell").disabled = true;
-            document.getElementById("btnCancel").disabled = true;
-            document.getElementById("overlay-loader").style.display = "flex";
-
-            setTimeout(() => {
-                balance -= fixCost;
-                activeCar.invested += fixCost;
-                activeCar.condition = "Mint"; 
-                activeCar.tierLevel = Math.min(3, activeCar.tierLevel + tierJump);
-                
-                updateBalance();
-                updateActionArea();
-
-                // Restore UI
-                document.getElementById("overlay-loader").style.display = "none";
-                document.getElementById("btnSell").disabled = false;
-                document.getElementById("btnCancel").disabled = false;
-            }, 1800); // 1.8 seconds fixing anticipation
-        }
-
-        function rollMultiplier(tier) {
-            let roll = Math.random();
-            if (roll > tier.winChance) return 0;
-
-            let multRoll = Math.random() * 100;
-            let cumulative = 0;
-            for (let i = 0; i < tier.pool.length; i++) {
-                cumulative += tier.pool[i].c;
-                if (multRoll <= cumulative) {
-                    return tier.pool[i].m;
-                }
-            }
-            return tier.pool[tier.pool.length - 1].m; 
-        }
-
-        function startSellPhase() {
-            document.getElementById("actionArea").style.display = "none";
-            document.getElementById("result-area").style.display = "block";
-            
-            let statusEl = document.getElementById("statusText");
-            let multEl = document.getElementById("multiplierDisplay");
-            let coinsEl = document.getElementById("coinsWonDisplay");
-            let nextBtn = document.getElementById("btnNextRound");
-            let searchAnim = document.getElementById("searchAnim");
-
-            // UI Reset for Searching Phase
-            multEl.style.display = "none";
-            multEl.className = "multiplier-display";
-            coinsEl.innerHTML = "";
-            nextBtn.style.display = "none";
-            
-            statusEl.innerText = "Looking for buyers...";
-            statusEl.className = "status-text pulsing";
-            statusEl.style.color = "var(--accent)";
-            searchAnim.style.display = "block";
-
-            let pTier = potentialTiers[activeCar.tierLevel];
-            let finalMult = rollMultiplier(pTier);
-
-            // 2.5 seconds anticipation
-            setTimeout(() => {
-                searchAnim.style.display = "none";
-                multEl.style.display = "block";
-
-                if (finalMult === 0) {
-                    // Instant Crash
-                    statusEl.innerText = "Busted! Car Impounded.";
-                    statusEl.classList.remove("pulsing");
-                    multEl.innerText = "0.00x";
-                    multEl.classList.add("crashed");
-                    coinsEl.innerHTML = `Total Loss: <span>-${formatCurrency(activeCar.invested)}</span>`;
-                    nextBtn.style.display = "block";
-                } else {
-                    // Start ticking animation
-                    statusEl.innerText = "Buyer found! Bidding started...";
-                    animateMultiplier(finalMult, activeCar.invested);
-                }
-            }, 2500);
-        }
-
-        function animateMultiplier(targetMult, invested) {
-            let multEl = document.getElementById("multiplierDisplay");
-            let statusEl = document.getElementById("statusText");
-            let coinsEl = document.getElementById("coinsWonDisplay");
-            let nextBtn = document.getElementById("btnNextRound");
-            
-            // Determine time dynamically based on the target
-            let duration = 1000;
-            if (targetMult > 2 && targetMult <= 10) duration = 2000;
-            else if (targetMult > 10 && targetMult <= 50) duration = 3000;
-            else if (targetMult > 50) duration = 5000;
-
-            let frames = (duration / 1000) * 60; // 60fps estimate
-            let step = (targetMult - 1.00) / frames;
-            if (step < 0.01) step = 0.01;
-
-            let currentMult = 1.00;
-
-            function tick() {
-                currentMult += step;
-                if (currentMult >= targetMult) {
-                    currentMult = targetMult;
-                    
-                    multEl.innerText = currentMult.toFixed(2) + "x";
-                    multEl.classList.add("won");
-                    statusEl.innerText = "SOLD!";
-                    statusEl.style.color = "var(--win)";
-                    statusEl.classList.remove("pulsing");
-                    
-                    let winnings = Math.floor(invested * currentMult);
-                    balance += winnings;
-                    updateBalance();
-                    
-                    coinsEl.innerHTML = `You won <span>${formatCurrency(winnings)}</span>!`;
-                    nextBtn.style.display = "block";
-                    return;
-                }
-                
-                multEl.innerText = currentMult.toFixed(2) + "x";
-                requestAnimationFrame(tick);
-            }
-            requestAnimationFrame(tick);
-        }
-
-        startRound();
-    </script>
-</body>
-</html>
+            <button id="btnNextRound" onclick="startRound()" style="display:none; margin: 0 auto;">Play Next Round</
