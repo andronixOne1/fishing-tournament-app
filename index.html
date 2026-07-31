@@ -17,13 +17,28 @@
     <style>
         /* MODERN INDIGO THEME */
         :root {
-            --primary: #6366f1; --primary-dark: #4f46e5; --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            --bg: #eef2ff; --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-            --card-bg: rgba(255, 255, 255, 0.65); --text: #1e1b4b; --text-muted: #6366f1;
-            --border: rgba(99, 102, 241, 0.15); --danger: #f43f5e; --danger-dark: #be123c; --success: #10b981;
-            --card-radius: 24px; --input-radius: 16px; --btn-radius: 24px; --card-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
-            --header-bg: #4f46e5; --header-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --header-text: #ffffff; --glass-blur: blur(16px); --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --bg: #eef2ff;
+            --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.65);
+            --text: #1e1b4b;
+            --text-muted: #6366f1;
+            --border: rgba(99, 102, 241, 0.15);
+            --danger: #f43f5e;
+            --danger-dark: #be123c;
+            --success: #10b981;
+
+            --card-radius: 24px;
+            --input-radius: 16px;
+            --btn-radius: 24px;
+            --card-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
+            --header-bg: #4f46e5;
+            --header-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --header-text: #ffffff;
+            --glass-blur: blur(16px);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.6);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
@@ -527,6 +542,21 @@
         return cleaned.split(/[\n,]+/).map(n => n.replace(/\s+/g, ' ').trim()).filter(n => n.length > 0);
     }
 
+    // Handle Browser Back/Forward buttons using History API
+    window.addEventListener("popstate", (event) => {
+        if (!loggedInUser) return;
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        
+        let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
+        
+        document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.add("hidden");
+        
+        document.getElementById(view).classList.remove("hidden");
+        window.scrollTo(0, 0);
+    });
+
     function handleLoginRegister() {
         let user = document.getElementById("usernameInput").value.trim().toLowerCase();
         let pass = document.getElementById("passwordInput").value.trim();
@@ -551,6 +581,9 @@
         document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.remove("hidden");
         document.getElementById("headerLogoutBtn").classList.remove("hidden");
+        
+        history.replaceState({view: 'dashboardSection'}, ""); 
+        
         subscribeToEventsRealtime();
     }
 
@@ -635,9 +668,9 @@
 
         let rankedFinishedEvents = loadedEvents.filter(e => {
             let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
-            let status = e.details.status || 'finished'; 
+            let status = e.details.status || 'finished'; // Default legacy events to finished
             return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
-        }); 
+        });
 
         let yearlyAgg = {};
         rankedFinishedEvents.forEach(ev => {
@@ -744,10 +777,21 @@
         container.innerHTML = html;
     }
 
+    function showDashboard() {
+        document.getElementById("setupSection").classList.add("hidden");
+        document.getElementById("hubSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        window.scrollTo(0, 0);
+        
+        history.pushState({view: 'dashboardSection'}, "");
+    }
+
     function openEventEditor(eventObj = null) {
         document.getElementById("dashboardSection").classList.add("hidden");
         document.getElementById("setupSection").classList.remove("hidden");
         window.scrollTo(0, 0);
+
+        history.pushState({view: 'setupSection'}, "");
 
         if (eventObj) {
             currentEvent = JSON.parse(JSON.stringify(eventObj));
@@ -790,13 +834,6 @@
         if (confirm("Delete this event from the cloud?")) {
             db.collection("events").doc(id).delete();
         }
-    }
-
-    function showDashboard() {
-        document.getElementById("setupSection").classList.add("hidden");
-        document.getElementById("hubSection").classList.add("hidden");
-        document.getElementById("dashboardSection").classList.remove("hidden");
-        window.scrollTo(0, 0);
     }
 
     function updateParticipantCountStatus() {
@@ -973,6 +1010,9 @@
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.remove("hidden");
         window.scrollTo(0, 0);
+        
+        history.pushState({view: 'hubSection'}, "");
+        
         renderHubUI();
     }
 
@@ -980,6 +1020,8 @@
         document.getElementById("hubSection").classList.add("hidden");
         document.getElementById("setupSection").classList.remove("hidden");
         window.scrollTo(0, 0);
+        
+        history.pushState({view: 'setupSection'}, "");
     }
 
     function promptFinishEvent() {
@@ -1153,7 +1195,7 @@
         let sortedByMain = [...processed].sort((a, b) => {
             if(mode === 'points') {
                 if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-                if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; // Fewer catches is tiebreaker
+                if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
                 return b.maxFishCm - a.maxFishCm; 
             } else {
                 if(b.totalCm !== a.totalCm) return b.totalCm - a.totalCm;
