@@ -101,9 +101,6 @@
         .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(224, 231, 255, 0.5); padding: 12px; border-radius: var(--card-radius); margin-bottom: 12px; border: none; }
         .tier-grid input, .tier-grid select { padding: 12px; font-size: 14px; }
         .tier-grid .full-width { grid-column: span 2; }
-
-        /* Area Tabs Scroll hiding */
-        #areaRoundsTabs::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -162,11 +159,11 @@
                 <div id="yearFilterContainer" style="display: none;">
                     <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border:none;"></select>
                 </div>
-                <div>
-                    <select id="dashModeSelect" onchange="processDashboard()" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                        <option value="standard" data-i18n="mode_standard">Standard Mode</option>
-                        <option value="areatrout" data-i18n="mode_area">Area Trout Mode</option>
-                    </select>
+                
+                <!-- Pill Toggle for Dashboard Filter -->
+                <div class="flex" style="background: rgba(255,255,255,0.6); padding: 4px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <button id="dashFilterStandard" class="primary-dark icon-btn" onclick="setDashFilter('standard')" style="border-radius: 12px; margin: 0; box-shadow: none;" data-i18n="mode_standard">Standard</button>
+                    <button id="dashFilterArea" class="secondary icon-btn" onclick="setDashFilter('areatrout')" style="border-radius: 12px; margin: 0; box-shadow: none;" data-i18n="mode_area">Area</button>
                 </div>
             </div>
             <div>
@@ -284,7 +281,10 @@
                 <div class="flex flex-between" style="margin-bottom: 16px;">
                     <h3 data-i18n="matches" style="margin:0;">Matches</h3>
                 </div>
-                <div class="flex" style="overflow-x:auto; gap:8px; margin-bottom:16px; padding-bottom:4px; flex-wrap:nowrap;" id="areaRoundsTabs"></div>
+                
+                <div id="areaRoundsTabs" style="margin-bottom: 12px;"></div>
+                <div id="areaParticipantsLeft" style="font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 16px; text-align: center;"></div>
+                
                 <div id="areaMatchesList"></div>
             </div>
         </div>
@@ -301,10 +301,12 @@
                 </select>
             </div>
             
+            <!-- Standard Leaderboard Table -->
             <div class="table-container" id="standardLeaderboardWrap">
                 <div id="leaderboardContainer"></div>
             </div>
 
+            <!-- Area Trout Leaderboard Table -->
             <div class="table-container hidden" id="areaLeaderboardWrap">
                 <div id="leaderboardAreaContainer"></div>
             </div>
@@ -409,7 +411,9 @@
     let pendingSmallFish = null;
     let currentLang = "en";
     let selectedYear = new Date().getFullYear().toString();
+    
     let confMode = 'standard';
+    let currentDashMode = 'standard';
 
     const translations = {
         en: {
@@ -672,6 +676,13 @@
         document.getElementById('speciesCard').style.display = isStd ? 'block' : 'none';
     }
 
+    function setDashFilter(mode) {
+        currentDashMode = mode;
+        document.getElementById('dashFilterStandard').className = mode === 'standard' ? 'primary-dark icon-btn' : 'secondary icon-btn';
+        document.getElementById('dashFilterArea').className = mode === 'areatrout' ? 'primary-dark icon-btn' : 'secondary icon-btn';
+        processDashboard();
+    }
+
     /* ---------------- AOTY RANKING ENGINE ---------------- */
     function getEventPlacements(evDetails) {
         let processed;
@@ -764,7 +775,7 @@
             document.getElementById("yearFilterContainer").style.display = loadedEvents.length > 0 ? "block" : "none";
         }
 
-        let dashMode = document.getElementById("dashModeSelect") ? document.getElementById("dashModeSelect").value : "standard";
+        let dashMode = currentDashMode;
 
         let rankedFinishedEvents = loadedEvents.filter(e => {
             let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
@@ -1311,19 +1322,39 @@
         renderAreaLeaderboard();
     }
 
+    function getStageName(matchCount, stageIdx) {
+        if (matchCount === 1) return "Final";
+        if (matchCount === 2) return "Semi-Finals";
+        if (matchCount > 2 && matchCount <= 4) return "Quarter-Finals";
+        if (matchCount > 4 && matchCount <= 8) return "Round of 16";
+        return "Stage " + (stageIdx + 1);
+    }
+
     function renderAreaHub() {
         let isFinished = currentEvent.status === 'finished';
-        let totalStages = currentEvent.areaRounds.length;
         let currStage = currentEvent.currentStage || 0;
         
         if (activeAreaRound > currStage) activeAreaRound = currStage;
 
-        let tabsHtml = '';
+        let optionsHtml = '';
         for(let i = 0; i <= currStage; i++) {
-            let stageName = (currentEvent.areaRounds[i].matches.length === 1 && currentEvent.areaRounds.length > 1 && i === currentEvent.areaRounds.length - 1) ? 'Final' : `Stage ${i+1}`;
-            tabsHtml += `<button class="${activeAreaRound === i ? 'primary-dark' : 'secondary'}" onclick="activeAreaRound=${i}; renderAreaHub();" style="flex-shrink:0; padding: 6px 12px; border-radius: 8px; box-shadow:none;">${stageName}</button>`;
+            let matchCount = currentEvent.areaRounds[i].matches.length;
+            let sName = getStageName(matchCount, i);
+            optionsHtml += `<option value="${i}" ${activeAreaRound === i ? 'selected' : ''}>${sName}</option>`;
         }
-        document.getElementById("areaRoundsTabs").innerHTML = tabsHtml;
+        
+        document.getElementById("areaRoundsTabs").innerHTML = `
+            <select onchange="activeAreaRound=parseInt(this.value); renderAreaHub();" style="width:100%; padding:12px 16px; border-radius:12px; font-weight:bold; color:var(--primary-dark); border:2px solid var(--border); box-shadow:0 4px 10px rgba(0,0,0,0.05); background:#fff;">
+                ${optionsHtml}
+            </select>
+        `;
+
+        let pLeft = 0;
+        currentEvent.areaRounds[activeAreaRound].matches.forEach(m => {
+            if (m.p1 && m.p1 !== 'bye') pLeft++;
+            if (m.p2 && m.p2 !== 'bye') pLeft++;
+        });
+        document.getElementById("areaParticipantsLeft").innerHTML = `Participants Remaining: <span style="color:var(--text);">${pLeft}</span>`;
 
         let matchesHtml = currentEvent.areaRounds[activeAreaRound].matches.map((m, mIdx) => {
             if (m.p1 === 'bye' || m.p2 === 'bye') return ''; 
@@ -1683,7 +1714,7 @@
     }
 
     function downloadSeasonChart() {
-        let dashMode = document.getElementById("dashModeSelect") ? document.getElementById("dashModeSelect").value : "standard";
+        let dashMode = currentDashMode;
 
         let rankedFinishedEvents = loadedEvents.filter(e => {
             let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
@@ -1751,7 +1782,6 @@
         let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
     }
     
-    // INITIALIZATION
     changeLanguage(document.getElementById("langSelect").value);
 </script>
 </body>
