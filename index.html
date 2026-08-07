@@ -102,6 +102,7 @@
         .tier-grid input, .tier-grid select { padding: 12px; font-size: 14px; }
         .tier-grid .full-width { grid-column: span 2; }
 
+        /* Area Tabs Scroll hiding */
         #areaRoundsTabs::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -163,8 +164,8 @@
                 </div>
                 <div>
                     <select id="dashModeSelect" onchange="processDashboard()" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                        <option value="standard" data-i18n="mode_standard">Standard</option>
-                        <option value="areatrout" data-i18n="mode_area">Area Trout</option>
+                        <option value="standard" data-i18n="mode_standard">Standard Mode</option>
+                        <option value="areatrout" data-i18n="mode_area">Area Trout Mode</option>
                     </select>
                 </div>
             </div>
@@ -231,7 +232,6 @@
             
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
-                <!-- Disabled Overlay Box -->
                 <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
                     <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
                 </div>
@@ -301,12 +301,10 @@
                 </select>
             </div>
             
-            <!-- Standard Leaderboard Table -->
             <div class="table-container" id="standardLeaderboardWrap">
                 <div id="leaderboardContainer"></div>
             </div>
 
-            <!-- Area Trout Leaderboard Table -->
             <div class="table-container hidden" id="areaLeaderboardWrap">
                 <div id="leaderboardAreaContainer"></div>
             </div>
@@ -315,13 +313,14 @@
         <!-- Sticky Bottom Bar for Step 2 -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div id="bottomActionBarButtons" class="flex" style="gap: 12px; width: 100%; align-items: center;">
-                <!-- Buttons injected dynamically -->
+                <!-- Buttons injected dynamically based on stage/mode -->
             </div>
         </div>
     </div>
 </div>
 
-<!-- BOTTOM SHEET MODALS -->
+<!-- ================= MODALS ================= -->
+
 <div id="rulesModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'rulesModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
@@ -488,7 +487,7 @@
             bulk_desc: "Collez les noms. Les symboles sont ignorés.", fish_species_title: "Espèces & Multiplicateurs", add_species: "+ Espèce", start_event: "Démarrer", next_btn: "Suivant", next_stage: "Étape Suivante",
             hub_title: "Hub du Tournoi", edit_setup: "← Config", manage_part: "Participants", add_new: "+ Ajouter", leaderboard: "Classement", mode_pts: "Par Points",
             mode_cm: "Par Centimètres", save_event: "Enregistrer", finish_event: "Terminer", modal_add_title: "Ajouter Participant", close: "Annuler", add: "Ajouter",
-            add_remove_fish: "Ajouter/Retirer Prise", species_sel: "Espèce", size_cm: "Mesure", save: "Enregistrer", add_fish_btn: "+ Ajouter Prise", edit_rules: "Règles",
+            add_remove_fish: "Ajouter/Retirer Prise", species_sel: "Espèce", size_cm: "Taille (cm)", save: "Enregistrer", add_fish_btn: "+ Ajouter Prise", edit_rules: "Règles",
             add_rule: "+ Nouvelle Règle", done: "Terminé", rule_from: "De", rule_to: "À", rule_mult: "Multiplicateur", download_chart: "PDF", download_season_pdf: "PDF de la Saison",
             season_results: "Résultats de la Saison", current_catches: "Prises Actuelles", no_catches: "Aucune prise.", too_small_title: "Poisson trop petit", 
             too_small_desc: "Le poisson est trop petit selon les règles.", ok: "OK", ignore: "Ignorer", angler_of_year: "Pêcheur de l'Année", edit_name: "Modifier le nom", 
@@ -505,7 +504,7 @@
             bulk_desc: "Incolla i nomi. I simboli vengono rimossi.", fish_species_title: "Specie & Moltiplicatori", add_species: "+ Specie", start_event: "Inizia Evento", next_btn: "Avanti", next_stage: "Prossima Fase",
             hub_title: "Hub del Torneo", edit_setup: "← Config", manage_part: "Partecipanti", add_new: "+ Aggiungi", leaderboard: "Classifica", mode_pts: "Per Punti",
             mode_cm: "Per Centimetri", save_event: "Salva Evento", finish_event: "Termina Evento", modal_add_title: "Aggiungi Partecipante", close: "Annulla", add: "Aggiungi",
-            add_remove_fish: "Aggiungi/Rimuovi Pesce", species_sel: "Specie", size_cm: "Misura", save: "Salva", add_fish_btn: "+ Aggiungi Pesce", edit_rules: "Regole",
+            add_remove_fish: "Aggiungi/Rimuovi Pesce", species_sel: "Specie", size_cm: "Misura (cm)", save: "Salva", add_fish_btn: "+ Aggiungi Pesce", edit_rules: "Regole",
             add_rule: "+ Nuova Regola", done: "Fatto", rule_from: "Da", rule_to: "A", rule_mult: "Moltiplicatore", download_chart: "PDF", download_season_pdf: "PDF Stagione",
             season_results: "Risultati Stagione", current_catches: "Catture Attuali", no_catches: "Nessuna cattura.", too_small_title: "Pesce troppo piccolo", 
             too_small_desc: "Il pesce è troppo piccolo secondo le regole.", ok: "OK", ignore: "Ignora", angler_of_year: "Pescatore dell'Anno", edit_name: "Modifica Nome", 
@@ -651,6 +650,18 @@
             });
     }
 
+    function generateEliminationStage(pList) {
+        let matches = [];
+        for(let i=0; i<pList.length; i+=2) {
+            if (i+1 < pList.length) {
+                matches.push({ p1: pList[i], p2: pList[i+1], p1Catches: 0, p2Catches: 0 });
+            } else {
+                matches.push({ p1: pList[i], p2: 'bye', p1Catches: 0, p2Catches: 0 });
+            }
+        }
+        return { matches: matches };
+    }
+
     function setMode(mode) {
         if (currentEvent && currentEvent.isStarted) return; 
         confMode = mode;
@@ -667,8 +678,8 @@
         if (evDetails.mode === 'areatrout') {
             processed = evDetails.participants.map(p => {
                 let totalPts = 0; let totalFish = 0; let victories = 0; let maxSingleMatch = 0;
-                (evDetails.areaRounds || []).forEach(round => {
-                    let match = round.find(m => m.p1 === p.id || m.p2 === p.id);
+                (evDetails.areaRounds || []).forEach(roundObj => {
+                    let match = roundObj.matches.find(m => m.p1 === p.id || m.p2 === p.id);
                     if (match) {
                         let myCatches = match.p1 === p.id ? match.p1Catches : match.p2Catches;
                         let oppCatches = match.p1 === p.id ? match.p2Catches : match.p1Catches;
@@ -1124,16 +1135,9 @@
             });
             
             if (currentEvent.mode === 'areatrout') {
-                let initialMatches = [];
-                let pList = currentEvent.participants.map(x => x.id);
-                for (let i = 0; i < pList.length; i += 2) {
-                    if (i + 1 < pList.length) {
-                        initialMatches.push({ p1: pList[i], p2: pList[i+1], p1Catches: 0, p2Catches: 0 });
-                    } else {
-                        initialMatches.push({ p1: pList[i], p2: 'bye', p1Catches: 0, p2Catches: 0 });
-                    }
-                }
-                currentEvent.areaRounds = [initialMatches];
+                let pIds = currentEvent.participants.map(p => p.id);
+                pIds = pIds.sort(() => Math.random() - 0.5); 
+                currentEvent.areaRounds = [ generateEliminationStage(pIds) ];
                 currentEvent.currentStage = 0;
             }
             
@@ -1169,7 +1173,7 @@
     function nextAreaStage() {
         if(currentEvent.status === 'finished') return;
         
-        let currentMatches = currentEvent.areaRounds[currentEvent.currentStage];
+        let currentMatches = currentEvent.areaRounds[currentEvent.currentStage].matches;
         let winners = [];
         
         currentMatches.forEach(m => {
@@ -1184,16 +1188,7 @@
 
         if (winners.length <= 1) return; 
 
-        let nextMatches = [];
-        for (let i = 0; i < winners.length; i += 2) {
-            if (i + 1 < winners.length) {
-                nextMatches.push({ p1: winners[i], p2: winners[i+1], p1Catches: 0, p2Catches: 0 });
-            } else {
-                nextMatches.push({ p1: winners[i], p2: 'bye', p1Catches: 0, p2Catches: 0 });
-            }
-        }
-
-        currentEvent.areaRounds.push(nextMatches);
+        currentEvent.areaRounds.push(generateEliminationStage(winners));
         currentEvent.currentStage++;
         activeAreaRound = currentEvent.currentStage;
         
@@ -1308,7 +1303,7 @@
 
     function updateAreaMatch(rIdx, mIdx, playerKey, delta) {
         if(currentEvent.status === 'finished') return;
-        let match = currentEvent.areaRounds[rIdx][mIdx];
+        let match = currentEvent.areaRounds[rIdx].matches[mIdx];
         match[playerKey + 'Catches'] = Math.max(0, match[playerKey + 'Catches'] + delta);
         
         saveCurrentEvent(false);
@@ -1325,11 +1320,12 @@
 
         let tabsHtml = '';
         for(let i = 0; i <= currStage; i++) {
-            tabsHtml += `<button class="${activeAreaRound === i ? 'primary-dark' : 'secondary'}" onclick="activeAreaRound=${i}; renderAreaHub();" style="flex-shrink:0; padding: 6px 12px; border-radius: 8px; box-shadow:none;">Stage ${i+1}</button>`;
+            let stageName = (currentEvent.areaRounds[i].matches.length === 1 && currentEvent.areaRounds.length > 1 && i === currentEvent.areaRounds.length - 1) ? 'Final' : `Stage ${i+1}`;
+            tabsHtml += `<button class="${activeAreaRound === i ? 'primary-dark' : 'secondary'}" onclick="activeAreaRound=${i}; renderAreaHub();" style="flex-shrink:0; padding: 6px 12px; border-radius: 8px; box-shadow:none;">${stageName}</button>`;
         }
         document.getElementById("areaRoundsTabs").innerHTML = tabsHtml;
 
-        let matchesHtml = currentEvent.areaRounds[activeAreaRound].map((m, mIdx) => {
+        let matchesHtml = currentEvent.areaRounds[activeAreaRound].matches.map((m, mIdx) => {
             if (m.p1 === 'bye' || m.p2 === 'bye') return ''; 
             
             let p1 = currentEvent.participants.find(p => p.id === m.p1);
@@ -1374,8 +1370,8 @@
     function renderAreaLeaderboard() {
         let processed = currentEvent.participants.map(p => {
             let totalPts = 0; let totalFish = 0; let victories = 0; let maxSingleMatch = 0;
-            (currentEvent.areaRounds || []).forEach(round => {
-                let match = round.find(m => m.p1 === p.id || m.p2 === p.id);
+            (currentEvent.areaRounds || []).forEach(roundObj => {
+                let match = roundObj.matches.find(m => m.p1 === p.id || m.p2 === p.id);
                 if (match) {
                     let myCatches = match.p1 === p.id ? match.p1Catches : match.p2Catches;
                     let oppCatches = match.p1 === p.id ? match.p2Catches : match.p1Catches;
@@ -1431,7 +1427,7 @@
             document.getElementById("rankingModeWrapper").style.display = 'none';
 
             let currStage = currentEvent.currentStage || 0;
-            let isFinalStage = currentEvent.areaRounds[currStage].length === 1;
+            let isFinalStage = currentEvent.areaRounds[currStage].matches.length === 1;
 
             if (isFinished) {
                 actionBtnHtml = `<button disabled class="danger" style="flex: 1; padding:12px;">Event Finished</button>`;
@@ -1583,8 +1579,8 @@
         if (ev.mode === 'areatrout') {
             let processed = ev.participants.map(p => {
                 let totalPts = 0; let totalFish = 0; let victories = 0; let maxSingleMatch = 0;
-                (ev.areaRounds || []).forEach(round => {
-                    let match = round.find(m => m.p1 === p.id || m.p2 === p.id);
+                (ev.areaRounds || []).forEach(roundObj => {
+                    let match = roundObj.matches.find(m => m.p1 === p.id || m.p2 === p.id);
                     if (match) {
                         let myCatches = match.p1 === p.id ? match.p1Catches : match.p2Catches;
                         let oppCatches = match.p1 === p.id ? match.p2Catches : match.p1Catches;
@@ -1694,10 +1690,10 @@
             let status = e.details.status || 'finished';
             let mode = e.details.mode || 'standard';
             return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished' && mode === dashMode;
-        });
+        }); 
 
         if (rankedFinishedEvents.length === 0) {
-            alert("No finished ranked tournaments found for this season.");
+            alert("No ranked tournaments found for this season.");
             return;
         }
 
@@ -1755,6 +1751,7 @@
         let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
     }
     
+    // INITIALIZATION
     changeLanguage(document.getElementById("langSelect").value);
 </script>
 </body>
