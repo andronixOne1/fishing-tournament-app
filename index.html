@@ -231,7 +231,8 @@
             
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
-                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
+                <!-- Disabled Overlay Box -->
+                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
                     <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
                 </div>
             </div>
@@ -351,24 +352,18 @@
     <div class="modal-card">
         <div class="modal-indicator"></div>
         <h3 data-i18n="add_remove_fish" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Add / Remove Fish</h3>
-        
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
                 <label data-i18n="species_sel">Species</label>
                 <div id="modalSpeciesTabs" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
             </div>
-            
             <div class="form-group">
                 <label data-i18n="size_cm">Size (cm)</label>
                 <input type="number" id="modalFishSize" placeholder="Enter size" inputmode="decimal">
             </div>
-            
             <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_fish_btn">+ Add Fish</button>
-
-            <!-- Live Catches List in Modal -->
             <div id="modalCurrentCatches" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
-
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
             <button class="secondary full-width" onclick="closeFishModal()" data-i18n="done" style="box-shadow: none;">Done</button>
         </div>
@@ -527,7 +522,7 @@
             bulk_desc: "Namen einfügen. Symbole werden entfernt.", fish_species_title: "Arten & Multiplikatoren", add_species: "+ Art", start_event: "Event starten", next_btn: "Weiter", next_stage: "Nächste Stufe",
             hub_title: "Turnier-Hub", edit_setup: "← Setup", manage_part: "Teilnehmer", add_new: "+ Neu", leaderboard: "Bestenliste", mode_pts: "Nach Punkten",
             mode_cm: "Nach Zentimetern", save_event: "Event speichern", finish_event: "Event beenden", modal_add_title: "Teilnehmer hinzufügen", close: "Abbrechen", add: "Hinzufügen",
-            add_remove_fish: "Fisch Hinzufügen/Entfernen", species_sel: "Art", size_cm: "Größe", save: "Speichern", add_fish_btn: "+ Fisch Hinzufügen", edit_rules: "Regeln",
+            add_remove_fish: "Fisch Hinzufügen/Entfernen", species_sel: "Art", size_cm: "Größe (cm)", save: "Speichern", add_fish_btn: "+ Fisch Hinzufügen", edit_rules: "Regeln",
             add_rule: "+ Neue Regel", done: "Fertig", rule_from: "Von", rule_to: "Bis", rule_mult: "Multiplikator", download_chart: "PDF", download_season_pdf: "Saison-PDF",
             season_results: "Saisonergebnisse", current_catches: "Aktuelle Fänge", no_catches: "Keine Fänge.", too_small_title: "Fisch zu klein", 
             too_small_desc: "Der Fisch ist nach den Regeln zu klein.", ok: "OK", ignore: "Ignorieren", angler_of_year: "Angler des Jahres", edit_name: "Name bearbeiten", 
@@ -578,6 +573,7 @@
         
         let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
         
+        document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.add("hidden");
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.add("hidden");
@@ -653,26 +649,6 @@
                     }
                 }
             });
-    }
-
-    function generateRoundRobin(participants) {
-        let p = [...participants];
-        if (p.length % 2 !== 0) p.push({ id: 'bye', name: 'BYE' });
-        let n = p.length;
-        let rounds = [];
-        for (let r = 0; r < n - 1; r++) {
-            let matches = [];
-            for (let i = 0; i < n / 2; i++) {
-                let p1 = p[i];
-                let p2 = p[n - 1 - i];
-                if (p1.id !== 'bye' && p2.id !== 'bye') {
-                    matches.push({ p1: p1.id, p2: p2.id, p1Catches: 0, p2Catches: 0 });
-                }
-            }
-            rounds.push(matches);
-            p.splice(1, 0, p.pop());
-        }
-        return rounds;
     }
 
     function setMode(mode) {
@@ -848,7 +824,8 @@
 
         let filteredEvents = loadedEvents.filter(e => {
             let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
-            return eYear === String(selectedYear);
+            let mode = e.details.mode || 'standard';
+            return eYear === String(selectedYear) && mode === dashMode;
         });
         
         let sortMode = document.getElementById("myEventsSort") ? document.getElementById("myEventsSort").value : "newest";
@@ -1147,7 +1124,16 @@
             });
             
             if (currentEvent.mode === 'areatrout') {
-                currentEvent.areaRounds = generateRoundRobin(currentEvent.participants);
+                let initialMatches = [];
+                let pList = currentEvent.participants.map(x => x.id);
+                for (let i = 0; i < pList.length; i += 2) {
+                    if (i + 1 < pList.length) {
+                        initialMatches.push({ p1: pList[i], p2: pList[i+1], p1Catches: 0, p2Catches: 0 });
+                    } else {
+                        initialMatches.push({ p1: pList[i], p2: 'bye', p1Catches: 0, p2Catches: 0 });
+                    }
+                }
+                currentEvent.areaRounds = [initialMatches];
                 currentEvent.currentStage = 0;
             }
             
@@ -1181,12 +1167,38 @@
     }
 
     function nextAreaStage() {
-        if (currentEvent.currentStage < currentEvent.areaRounds.length - 1) {
-            currentEvent.currentStage++;
-            activeAreaRound = currentEvent.currentStage;
-            saveCurrentEvent(false);
-            renderHubUI();
+        if(currentEvent.status === 'finished') return;
+        
+        let currentMatches = currentEvent.areaRounds[currentEvent.currentStage];
+        let winners = [];
+        
+        currentMatches.forEach(m => {
+            if (m.p1 === 'bye') winners.push(m.p2);
+            else if (m.p2 === 'bye') winners.push(m.p1);
+            else {
+                if (m.p1Catches > m.p2Catches) winners.push(m.p1);
+                else if (m.p2Catches > m.p1Catches) winners.push(m.p2);
+                else winners.push(m.p1); 
+            }
+        });
+
+        if (winners.length <= 1) return; 
+
+        let nextMatches = [];
+        for (let i = 0; i < winners.length; i += 2) {
+            if (i + 1 < winners.length) {
+                nextMatches.push({ p1: winners[i], p2: winners[i+1], p1Catches: 0, p2Catches: 0 });
+            } else {
+                nextMatches.push({ p1: winners[i], p2: 'bye', p1Catches: 0, p2Catches: 0 });
+            }
         }
+
+        currentEvent.areaRounds.push(nextMatches);
+        currentEvent.currentStage++;
+        activeAreaRound = currentEvent.currentStage;
+        
+        saveCurrentEvent(false);
+        renderHubUI();
     }
 
     function openAddParticipantModal() {
@@ -1298,6 +1310,8 @@
         if(currentEvent.status === 'finished') return;
         let match = currentEvent.areaRounds[rIdx][mIdx];
         match[playerKey + 'Catches'] = Math.max(0, match[playerKey + 'Catches'] + delta);
+        
+        saveCurrentEvent(false);
         renderAreaHub();
         renderAreaLeaderboard();
     }
@@ -1416,12 +1430,12 @@
             document.getElementById("areaLeaderboardWrap").classList.remove("hidden");
             document.getElementById("rankingModeWrapper").style.display = 'none';
 
-            let totalStages = currentEvent.areaRounds ? currentEvent.areaRounds.length : 1;
             let currStage = currentEvent.currentStage || 0;
+            let isFinalStage = currentEvent.areaRounds[currStage].length === 1;
 
             if (isFinished) {
                 actionBtnHtml = `<button disabled class="danger" style="flex: 1; padding:12px;">Event Finished</button>`;
-            } else if (currStage < totalStages - 1) {
+            } else if (!isFinalStage) {
                 actionBtnHtml = `<button onclick="nextAreaStage()" class="primary-dark" style="flex: 1; padding:12px;" data-i18n="next_stage">Next Stage</button>`;
             } else {
                 actionBtnHtml = `<button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 1; padding:12px;" data-i18n="finish_event">Finish Event</button>`;
