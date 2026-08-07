@@ -229,6 +229,7 @@
             
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
+                <!-- Disabled Overlay Box -->
                 <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
                     <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
                 </div>
@@ -431,7 +432,7 @@
             finish_warning: "If you finish the event now you will not be able to change anything anymore and the event will be officially finished.",
             status_finished: "Finished", status_ongoing: "Ongoing", place: "Place", name: "Name", points: "Points", total_cm: "Total", biggest_fish: "Biggest Fish", details: "Details", generated_on: "Generated on", 
             tournament_results: "Tournament Results", rank_pts_best5: "Rank Pts (Best 5)", tournaments_played: "Tournaments Played", all_placements: "All Placements", sort_newest: "Newest First", sort_oldest: "Oldest First", sort_az: "Name A-Z",
-            game_mode: "Game Mode", mode_standard: "Standard", mode_area: "Area Trout", matches: "Matches", match_pts: "Match Pts", victories: "Wins", total_fish: "Total Fish"
+            game_mode: "Game Mode", mode_standard: "Standard", mode_area: "Area Trout", matches: "Matches", match_pts: "Match Pts", victories: "Wins", total_fish: "Total Fish", sector: "Sector"
         },
         ka: {
             login_title: "შესვლა / რეგისტრაცია", login_desc: "შეიყვანეთ ნებისმიერი სახელი და პაროლი.", username: "მომხმარებელი", password: "პაროლი", login_btn: "შესვლა / რეგისტრაცია",
@@ -448,7 +449,7 @@
             finish_warning: "თუ ახლა დაასრულებთ ტურნირს, ვეღარაფერს შეცვლით და ტურნირი ოფიციალურად დასრულდება.",
             status_finished: "დასრულებულია", status_ongoing: "მიმდინარე", place: "ადგილი", name: "სახელი", points: "ქულა", total_cm: "ჯამი", biggest_fish: "ყველაზე დიდი", details: "დეტალები", generated_on: "გენერირებულია",
             tournament_results: "ტურნირის შედეგები", rank_pts_best5: "სარეიტინგო ქულა (საუკ. 5)", tournaments_played: "ჩატარებული ტურნირები", all_placements: "ყველა პოზიცია", sort_newest: "ახლები ჯერ", sort_oldest: "ძველები ჯერ", sort_az: "სახელი ა-ჰ",
-            game_mode: "თამაშის რეჟიმი", mode_standard: "სტანდარტული", mode_area: "Area Trout", matches: "მატჩები", match_pts: "მატჩის ქულები", victories: "მოგება", total_fish: "ჯამური თევზი"
+            game_mode: "თამაშის რეჟიმი", mode_standard: "სტანდარტული", mode_area: "Area Trout", matches: "მატჩები", match_pts: "მატჩის ქულები", victories: "მოგება", total_fish: "ჯამური თევზი", sector: "სექტორი"
         },
         uk: {
             login_title: "Вхід / Реєстрація", login_desc: "Введіть будь-яке ім'я та пароль.", username: "Користувач", password: "Пароль", login_btn: "Вхід / Реєстрація",
@@ -465,7 +466,7 @@
             finish_warning: "Якщо ви завершите подію зараз, ви більше не зможете нічого змінити.",
             status_finished: "Завершено", status_ongoing: "Триває", place: "Місце", name: "Ім'я", points: "Очки", total_cm: "Всього", biggest_fish: "Найбільша риба", details: "Деталі", generated_on: "Згенеровано",
             tournament_results: "Результати турніру", rank_pts_best5: "Ранг. очок (Кращі 5)", tournaments_played: "Зіграно турнірів", all_placements: "Всі місця", sort_newest: "Спочатку нові", sort_oldest: "Спочатку старі", sort_az: "Ім'я А-Я",
-            game_mode: "Режим гри", mode_standard: "Стандартний", mode_area: "Area Trout", matches: "Матчі", match_pts: "Очки матчу", victories: "Перемоги", total_fish: "Всього риб"
+            game_mode: "Режим гри", mode_standard: "Стандартний", mode_area: "Area Trout", matches: "Матчі", match_pts: "Очки матчу", victories: "Перемоги", total_fish: "Всього риб", sector: "Сектор"
         },
         ru: {
             login_title: "Вход / Регистрация", login_desc: "Введите любые имя и пароль.", username: "Имя пользователя", password: "Пароль", login_btn: "Вход / Регистрация",
@@ -482,7 +483,7 @@
             finish_warning: "Если вы завершите турнир сейчас, вы больше не сможете ничего изменить.",
             status_finished: "Завершен", status_ongoing: "Идет", place: "Место", name: "Имя", points: "Очки", total_cm: "Всего", biggest_fish: "Самая большая", details: "Детали", generated_on: "Сгенерировано",
             tournament_results: "Результаты турнира", rank_pts_best5: "Ранг. очков (Топ 5)", tournaments_played: "Сыграно турниров", all_placements: "Все места", sort_newest: "Сначала новые", sort_oldest: "Сначала старые", sort_az: "Имя А-Я",
-            game_mode: "Режим игры", mode_standard: "Стандартный", mode_area: "Area Trout", matches: "Матчи", match_pts: "Очки матча", victories: "Победы", total_fish: "Всего рыб"
+            game_mode: "Режим игры", mode_standard: "Стандартный", mode_area: "Area Trout", matches: "Матчи", match_pts: "Очки матча", victories: "Победы", total_fish: "Всего рыб", sector: "Сектор"
         },
         fr: {
             login_title: "Connexion / Inscription", login_desc: "Entrez un nom d'utilisateur et un mot de passe.", username: "Utilisateur", password: "Mot de passe", login_btn: "Connexion / Inscription",
@@ -499,7 +500,7 @@
             finish_warning: "Si vous terminez l'événement maintenant, vous ne pourrez plus rien modifier.",
             status_finished: "Terminé", status_ongoing: "En cours", place: "Place", name: "Nom", points: "Points", total_cm: "Total", biggest_fish: "Plus gros", details: "Détails", generated_on: "Généré le",
             tournament_results: "Résultats du Tournoi", rank_pts_best5: "Pts Class. (Top 5)", tournaments_played: "Tournois joués", all_placements: "Tous les classements", sort_newest: "Plus récents", sort_oldest: "Plus anciens", sort_az: "Nom A-Z",
-            game_mode: "Mode de Jeu", mode_standard: "Standard", mode_area: "Area Trout", matches: "Matchs", match_pts: "Pts Match", victories: "Victoires", total_fish: "Total Poissons"
+            game_mode: "Mode de Jeu", mode_standard: "Standard", mode_area: "Area Trout", matches: "Matchs", match_pts: "Pts Match", victories: "Victoires", total_fish: "Total Poissons", sector: "Secteur"
         },
         it: {
             login_title: "Accesso / Registrazione", login_desc: "Inserisci utente e password.", username: "Utente", password: "Password", login_btn: "Accedi / Registrati",
@@ -516,7 +517,7 @@
             finish_warning: "Se termini l'evento ora, non potrai più modificare nulla.",
             status_finished: "Finito", status_ongoing: "In corso", place: "Posto", name: "Nome", points: "Punti", total_cm: "Totale", biggest_fish: "Pesce più grande", details: "Dettagli", generated_on: "Generato il",
             tournament_results: "Risultati del Torneo", rank_pts_best5: "Pti Class. (Migliori 5)", tournaments_played: "Tornei giocati", all_placements: "Tutti i piazzamenti", sort_newest: "Più recenti", sort_oldest: "Più vecchi", sort_az: "Nome A-Z",
-            game_mode: "Modalità di Gioco", mode_standard: "Standard", mode_area: "Area Trout", matches: "Partite", match_pts: "Pti Partita", victories: "Vittorie", total_fish: "Totale Pesci"
+            game_mode: "Modalità di Gioco", mode_standard: "Standard", mode_area: "Area Trout", matches: "Partite", match_pts: "Pti Partita", victories: "Vittorie", total_fish: "Totale Pesci", sector: "Settore"
         },
         de: {
             login_title: "Anmeldung / Registrierung", login_desc: "Benutzername und Passwort eingeben.", username: "Benutzer", password: "Passwort", login_btn: "Anmelden / Registrieren",
@@ -533,7 +534,7 @@
             finish_warning: "Wenn Sie das Event jetzt beenden, können Sie nichts mehr ändern.",
             status_finished: "Beendet", status_ongoing: "Laufend", place: "Platz", name: "Name", points: "Punkte", total_cm: "Gesamt", biggest_fish: "Größter Fisch", details: "Details", generated_on: "Erstellt am",
             tournament_results: "Turnierergebnisse", rank_pts_best5: "Rang-Pkt (Top 5)", tournaments_played: "Gespielte Turniere", all_placements: "Alle Platzierungen", sort_newest: "Neueste zuerst", sort_oldest: "Älteste zuerst", sort_az: "Name A-Z",
-            game_mode: "Spielmodus", mode_standard: "Standard", mode_area: "Area Trout", matches: "Spiele", match_pts: "Spiel-Pkt", victories: "Siege", total_fish: "Gesamtfisch"
+            game_mode: "Spielmodus", mode_standard: "Standard", mode_area: "Area Trout", matches: "Spiele", match_pts: "Spiel-Pkt", victories: "Siege", total_fish: "Gesamtfisch", sector: "Sektor"
         }
     };
 
@@ -654,7 +655,7 @@
             });
     }
 
-    function generateEliminationStage(pList) {
+    function generateEliminationStage(pList, previousRounds = []) {
         let matches = [];
         for(let i=0; i<pList.length; i+=2) {
             if (i+1 < pList.length) {
@@ -663,6 +664,51 @@
                 matches.push({ p1: pList[i], p2: 'bye', p1Catches: 0, p2Catches: 0 });
             }
         }
+        
+        let usedSectors = {};
+        previousRounds.forEach(round => {
+            round.matches.forEach(m => {
+                if (m.sector && m.sector !== '-') {
+                    if (m.p1 && m.p1 !== 'bye') { usedSectors[m.p1] = usedSectors[m.p1] || []; usedSectors[m.p1].push(m.sector); }
+                    if (m.p2 && m.p2 !== 'bye') { usedSectors[m.p2] = usedSectors[m.p2] || []; usedSectors[m.p2].push(m.sector); }
+                }
+            });
+        });
+
+        let realMatchesCount = matches.filter(m => m.p1 !== 'bye' && m.p2 !== 'bye').length;
+        let availableSectors = Array.from({length: Math.max(realMatchesCount, 20)}, (_, i) => i + 1);
+        availableSectors.sort(() => Math.random() - 0.5);
+
+        let assignedSectorsThisRound = [];
+
+        matches.forEach(m => {
+            if (m.p1 === 'bye' || m.p2 === 'bye') {
+                m.sector = '-';
+                return;
+            }
+            
+            let p1Used = usedSectors[m.p1] || [];
+            let p2Used = usedSectors[m.p2] || [];
+
+            let foundIdx = availableSectors.findIndex(s => !p1Used.includes(s) && !p2Used.includes(s) && !assignedSectorsThisRound.includes(s));
+            
+            if (foundIdx !== -1) {
+                m.sector = availableSectors[foundIdx];
+                assignedSectorsThisRound.push(m.sector);
+                availableSectors.splice(foundIdx, 1);
+            } else {
+                let newSector = 1;
+                while (true) {
+                    if (!p1Used.includes(newSector) && !p2Used.includes(newSector) && !assignedSectorsThisRound.includes(newSector)) {
+                        m.sector = newSector;
+                        assignedSectorsThisRound.push(m.sector);
+                        break;
+                    }
+                    newSector++;
+                }
+            }
+        });
+
         return { matches: matches };
     }
 
@@ -1162,6 +1208,7 @@
         window.scrollTo(0, 0);
         
         history.pushState({view: 'hubSection'}, "");
+        saveCurrentEvent(false);
         renderHubUI();
     }
 
@@ -1199,7 +1246,7 @@
 
         if (winners.length <= 1) return; 
 
-        currentEvent.areaRounds.push(generateEliminationStage(winners));
+        currentEvent.areaRounds.push(generateEliminationStage(winners, currentEvent.areaRounds));
         currentEvent.currentStage++;
         activeAreaRound = currentEvent.currentStage;
         
@@ -1380,16 +1427,21 @@
                 </div>
             ` : `<span style="font-size:20px; font-weight:bold;">${m.p2Catches}</span>`;
 
+            let sectorBadge = m.sector !== '-' ? `<div style="text-align:center; margin-bottom:12px;"><span class="badge" style="background:#e0e7ff; color:var(--primary-dark); font-size:13px; padding:4px 12px; box-shadow:none;">${t('sector')} ${m.sector}</span></div>` : '';
+
             return `
-            <div class="flex flex-between" style="background: rgba(255,255,255,0.4); padding:12px; border-radius:12px; margin-bottom:8px; border: 1px solid var(--border);">
-                <div class="flex" style="flex: 1; flex-direction: column; align-items: flex-start; gap: 8px;">
-                    <div class="flex" style="font-weight:700;">${p1.name}</div>
-                    ${p1ScoreUi}
-                </div>
-                <div style="padding:0 12px; font-weight:bold; color:var(--text-muted); opacity: 0.5;">VS</div>
-                <div class="flex" style="flex: 1; flex-direction: column; align-items: flex-end; gap: 8px;">
-                    <div class="flex" style="font-weight:700;">${p2.name}</div>
-                    ${p2ScoreUi}
+            <div class="card" style="background: rgba(255,255,255,0.4); padding:16px; border-radius:16px; margin-bottom:12px; border: 2px solid var(--border);">
+                ${sectorBadge}
+                <div class="flex flex-between">
+                    <div class="flex" style="flex: 1; flex-direction: column; align-items: flex-start; gap: 8px;">
+                        <div class="flex" style="font-weight:700;">${p1.name}</div>
+                        ${p1ScoreUi}
+                    </div>
+                    <div style="padding:0 12px; font-weight:900; font-size:18px; color:var(--text-muted); opacity: 0.3;">VS</div>
+                    <div class="flex" style="flex: 1; flex-direction: column; align-items: flex-end; gap: 8px;">
+                        <div class="flex" style="font-weight:700;">${p2.name}</div>
+                        ${p2ScoreUi}
+                    </div>
                 </div>
             </div>
             `;
@@ -1782,6 +1834,7 @@
         let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
     }
     
+    // INITIALIZATION
     changeLanguage(document.getElementById("langSelect").value);
 </script>
 </body>
