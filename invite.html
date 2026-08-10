@@ -30,7 +30,7 @@
             overflow-x: hidden;
         }
 
-        /* Mobile-Friendly GIF Containers */
+        /* Mobile-Friendly GIF Containers (Fixed links) */
         .gif-wrapper {
             display: flex;
             justify-content: center;
@@ -42,7 +42,7 @@
         }
 
         .header-gifs {
-            margin-bottom: -15px; /* Overlaps the card slightly for a cute effect */
+            margin-bottom: -15px; 
         }
 
         .footer-gifs {
@@ -84,17 +84,52 @@
             font-weight: 900;
             text-align: center;
             color: var(--primary-color);
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             margin-top: 5px;
             line-height: 1.4;
+        }
+
+        /* Toggle Switch for Solo/Couple */
+        .toggle-container {
+            display: flex;
+            background-color: #f0f8ff;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 2px solid #d4f0ff;
+            margin-bottom: 20px;
+        }
+
+        .toggle-container label {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            color: #888;
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .toggle-container input[type="radio"] {
+            display: none;
+        }
+
+        .toggle-container input[type="radio"]:checked + span {
+            color: var(--primary-color);
+        }
+        
+        .toggle-container label:has(input[type="radio"]:checked) {
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(110, 181, 255, 0.2);
         }
 
         h3 {
             font-size: 16px;
             font-weight: 900;
-            margin-top: 25px;
+            margin-top: 20px;
             margin-bottom: 12px;
-            color: #ffc233; /* Darker yellow for text contrast */
+            color: #ffc233;
             padding-bottom: 5px;
             border-bottom: 2px dashed #ffeda3;
         }
@@ -111,7 +146,7 @@
             border: 2px solid #e6f4ff;
             background-color: #f7fcff;
             border-radius: 15px;
-            font-size: 16px; /* 16px prevents iOS zoom on focus */
+            font-size: 16px;
             font-family: inherit;
             box-sizing: border-box;
             outline: none;
@@ -126,6 +161,10 @@
 
         input::placeholder {
             color: #a3d4ff;
+        }
+
+        #guest2_section {
+            transition: all 0.3s ease;
         }
 
         /* Hotel Info Banner */
@@ -261,10 +300,10 @@
 </head>
 <body>
 
-    <!-- Header GIFs -->
+    <!-- Header GIFs (Reliable Tenor links) -->
     <div class="gif-wrapper header-gifs">
-        <img src="https://media.giphy.com/media/26FPCXdkvDbKBbgOI/giphy.gif" alt="Cute Birthday Cat">
-        <img src="https://media.giphy.com/media/3o6ZsW4XzMcebhkU2k/giphy.gif" alt="Birthday Cake">
+        <img src="https://media.tenor.com/2RoLBx_H4eMAAAAi/peach-cat.gif" alt="Cute Cat">
+        <img src="https://media.tenor.com/b-rR_T0H0G8AAAAi/happy-birthday.gif" alt="Birthday">
     </div>
 
     <!-- Main Container -->
@@ -272,16 +311,31 @@
         <h1>მოწვეული ხარ ანდროს დაბადების დღის გაგულავებაზე! სგსგ გილოცავ 🥳🐱</h1>
 
         <form id="inviteForm">
+            
+            <!-- Solo / Couple Toggle -->
+            <div class="toggle-container">
+                <label>
+                    <input type="radio" name="guestType" value="solo" onchange="toggleGuestMode()">
+                    <span>მარტო 👤</span>
+                </label>
+                <label>
+                    <input type="radio" name="guestType" value="couple" onchange="toggleGuestMode()" checked>
+                    <span>წყვილი 👥</span>
+                </label>
+            </div>
+
             <h3>🌸 პირველი სტუმარი</h3>
             <div class="input-group">
                 <input type="text" id="g1_name" placeholder="სახელი" required>
                 <input type="text" id="g1_surname" placeholder="გვარი" required>
             </div>
 
-            <h3>🎀 მეორე სტუმარი</h3>
-            <div class="input-group">
-                <input type="text" id="g2_name" placeholder="სახელი">
-                <input type="text" id="g2_surname" placeholder="გვარი">
+            <div id="guest2_section">
+                <h3>🎀 მეორე სტუმარი</h3>
+                <div class="input-group">
+                    <input type="text" id="g2_name" placeholder="სახელი">
+                    <input type="text" id="g2_surname" placeholder="გვარი">
+                </div>
             </div>
 
             <div class="hotel-banner">
@@ -297,7 +351,7 @@
                         <h4>28 ოქტ – 31 ოქტ (3 ღამე)</h4>
                         <p>🛫 <b>გაფრენა:</b> 06:50 (Pegasus)</p>
                         <p>🛬 <b>დაბრუნება:</b> 22:45 (SunExpress, პირდაპირი)</p>
-                        <p class="price">ჯამი: ~2,800 ₾ (20კგ ბარგით)</p>
+                        <p class="price" id="price_option1">ჯამი: ~2,800 ₾ (20კგ ბარგით)</p>
                     </div>
                 </label>
 
@@ -307,7 +361,7 @@
                         <h4>28 ოქტ – 1 ნოემ (4 ღამე)</h4>
                         <p>🛫 <b>გაფრენა:</b> 06:50 (Pegasus)</p>
                         <p>🛬 <b>დაბრუნება:</b> 21:25 (AJet, 1 გადაჯდომა)</p>
-                        <p class="price">ჯამი: ~3,150 ₾ (20კგ ბარგით)</p>
+                        <p class="price" id="price_option2">ჯამი: ~3,150 ₾ (20კგ ბარგით)</p>
                     </div>
                 </label>
             </div>
@@ -318,17 +372,41 @@
 
     <!-- Footer GIFs -->
     <div class="gif-wrapper footer-gifs">
-        <img src="https://media.giphy.com/media/VbK4E1s8p0FhG/giphy.gif" alt="Waving Cat">
-        <img src="https://media.giphy.com/media/13HBDT4QSTpveU/giphy.gif" alt="Dancing Cat">
+        <img src="https://media.tenor.com/fOszG4B1YNEAAAAi/mochi-peach-cat.gif" alt="Mochi Cat">
+        <img src="https://media.tenor.com/H1X1Jm_tM9kAAAAi/cat-dance.gif" alt="Dancing Cat">
     </div>
 
     <script>
+        // Toggle Logic for Solo/Couple mode
+        function toggleGuestMode() {
+            const guestType = document.querySelector('input[name="guestType"]:checked').value;
+            const guest2Section = document.getElementById('guest2_section');
+            const price1 = document.getElementById('price_option1');
+            const price2 = document.getElementById('price_option2');
+
+            if (guestType === 'solo') {
+                guest2Section.style.display = 'none';
+                // Reset guest 2 fields so they don't get sent accidentally
+                document.getElementById('g2_name').value = '';
+                document.getElementById('g2_surname').value = '';
+                // Prices updated for 1 flight ticket + baggage (Hotel room stays full price)
+                price1.innerText = 'ჯამი: ~2,050 ₾ (20კგ ბარგით)';
+                price2.innerText = 'ჯამი: ~2,400 ₾ (20კგ ბარგით)';
+            } else {
+                guest2Section.style.display = 'block';
+                // Prices reverted for 2 flight tickets + 2 baggages
+                price1.innerText = 'ჯამი: ~2,800 ₾ (20კგ ბარგით)';
+                price2.innerText = 'ჯამი: ~3,150 ₾ (20კგ ბარგით)';
+            }
+        }
+
         // Telegram Bot integration
         const BOT_TOKEN = "8903520484:AAFb70VAHr3hlzG0D4tAj6nHja_fXp3Um7g"; 
         const CHAT_ID = "1506934904"; 
 
         async function sendData() {
             const btn = document.getElementById('submitBtn');
+            const guestType = document.querySelector('input[name="guestType"]:checked').value;
             const g1Name = document.getElementById('g1_name').value.trim();
             const g1Surname = document.getElementById('g1_surname').value.trim();
             const g2Name = document.getElementById('g2_name').value.trim();
@@ -336,6 +414,11 @@
             
             if (!g1Name || !g1Surname) {
                 alert('გთხოვთ, შეავსოთ პირველი სტუმრის სახელი და გვარი. 😿');
+                return;
+            }
+
+            if (guestType === 'couple' && (!g2Name || !g2Surname)) {
+                alert('გთხოვთ, შეავსოთ მეორე სტუმრის მონაცემები, ან აირჩიოთ "მარტო". 🎀');
                 return;
             }
 
@@ -350,10 +433,13 @@
             btn.innerText = "იგზავნება... ⏳";
 
             let messageBody = `🎉 ახალი დასტური ტურზე!\n\n`;
+            messageBody += `🧳 ფორმატი: ${guestType === 'solo' ? 'მარტო მიდის' : 'წყვილი მოდის'}\n`;
             messageBody += `👤 პირველი სტუმარი: ${g1Name} ${g1Surname}\n`;
-            if (g2Name || g2Surname) {
+            
+            if (guestType === 'couple') {
                 messageBody += `👥 მეორე სტუმარი: ${g2Name} ${g2Surname}\n`;
             }
+            
             messageBody += `🗓 არჩეული ვარიანტი: ${selectedOption.value}`;
 
             const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
