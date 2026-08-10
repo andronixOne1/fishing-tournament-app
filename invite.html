@@ -8,12 +8,65 @@
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
 
         :root {
-            --primary-color: #6eb5ff; /* Sky Blue */
-            --secondary-color: #ffda75; /* Pastel Yellow Accent */
-            --bg-gradient: linear-gradient(135deg, #fff9d2 0%, #d4f0ff 100%); /* Yellow to Blue */
+            /* Happy / Couple Theme (Default) */
+            --primary-color: #6eb5ff; 
+            --secondary-color: #ffda75; 
+            --bg-gradient: linear-gradient(135deg, #fff9d2 0%, #d4f0ff 100%); 
             --card-bg: rgba(255, 255, 255, 0.98);
             --text-color: #555555;
-            --border-radius: 25px;
+            --heading-color: #6eb5ff;
+            --subheading-color: #ffc233;
+            --border-dash: #ffeda3;
+            --input-bg: #f7fcff;
+            --input-border: #e6f4ff;
+            --input-text: #333333;
+            --banner-bg: #fffde6;
+            --banner-border: #fff3a3;
+            --banner-text: #d69e00;
+            --card-inner-bg: #ffffff;
+            --card-border: #f0f0f0;
+            --card-heading: #444444;
+            --card-text: #666666;
+            --card-checked-bg: #f2faff;
+            --card-checked-shadow: rgba(110, 181, 255, 0.25);
+            --toggle-bg: #f0f8ff;
+            --toggle-border: #d4f0ff;
+            --toggle-text: #888888;
+            --toggle-checked-bg: #ffffff;
+            --btn-bg: #6eb5ff;
+            --btn-hover: #5baaff;
+            --btn-text: #ffffff;
+        }
+
+        /* Sad / Solo Theme */
+        body.solo-theme {
+            --primary-color: #888888;
+            --secondary-color: #555555;
+            --bg-gradient: linear-gradient(135deg, #1c1c1c 0%, #2d2d2d 100%);
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --text-color: #aaaaaa;
+            --heading-color: #aaaaaa;
+            --subheading-color: #777777;
+            --border-dash: #444444;
+            --input-bg: #2a2a2a;
+            --input-border: #444444;
+            --input-text: #eeeeee;
+            --banner-bg: #222222;
+            --banner-border: #444444;
+            --banner-text: #888888;
+            --card-inner-bg: #222222;
+            --card-border: #444444;
+            --card-heading: #dddddd;
+            --card-text: #999999;
+            --card-checked-bg: #3a3a3a;
+            --card-checked-shadow: rgba(0, 0, 0, 0.5);
+            --toggle-bg: #1a1a1a;
+            --toggle-border: #333333;
+            --toggle-text: #555555;
+            --toggle-checked-bg: #444444;
+            --btn-bg: #444444;
+            --btn-hover: #555555;
+            --btn-text: #cccccc;
         }
 
         body {
@@ -28,9 +81,9 @@
             align-items: center;
             min-height: 100vh;
             overflow-x: hidden;
+            transition: background 0.6s ease;
         }
 
-        /* Mobile-Friendly GIF Containers (Fixed links) */
         .gif-wrapper {
             display: flex;
             justify-content: center;
@@ -41,19 +94,15 @@
             z-index: 10;
         }
 
-        .header-gifs {
-            margin-bottom: -15px; 
-        }
-
-        .footer-gifs {
-            margin-top: -15px;
-        }
+        .header-gifs { margin-bottom: -15px; }
+        .footer-gifs { margin-top: -15px; }
 
         .gif-wrapper img {
             width: 85px;
             height: 85px;
             object-fit: contain;
             animation: float 4s ease-in-out infinite;
+            transition: opacity 0.3s ease; /* smooth transition when swapping src */
         }
 
         .gif-wrapper img:nth-child(even) {
@@ -72,31 +121,33 @@
             width: 100%;
             padding: 30px 20px;
             border-radius: var(--border-radius);
-            box-shadow: 0 10px 30px rgba(110, 181, 255, 0.2);
-            border: 3px solid #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border: 3px solid var(--card-inner-bg);
             position: relative;
             z-index: 20;
             box-sizing: border-box;
+            transition: all 0.6s ease;
         }
 
         h1 {
             font-size: 20px;
             font-weight: 900;
             text-align: center;
-            color: var(--primary-color);
+            color: var(--heading-color);
             margin-bottom: 20px;
             margin-top: 5px;
             line-height: 1.4;
+            transition: color 0.6s ease;
         }
 
-        /* Toggle Switch for Solo/Couple */
         .toggle-container {
             display: flex;
-            background-color: #f0f8ff;
+            background-color: var(--toggle-bg);
             border-radius: 20px;
             overflow: hidden;
-            border: 2px solid #d4f0ff;
+            border: 2px solid var(--toggle-border);
             margin-bottom: 20px;
+            transition: all 0.6s ease;
         }
 
         .toggle-container label {
@@ -106,7 +157,7 @@
             font-size: 16px;
             font-weight: 900;
             cursor: pointer;
-            color: #888;
+            color: var(--toggle-text);
             transition: all 0.3s ease;
             -webkit-tap-highlight-color: transparent;
         }
@@ -120,8 +171,8 @@
         }
         
         .toggle-container label:has(input[type="radio"]:checked) {
-            background-color: #ffffff;
-            box-shadow: 0 2px 8px rgba(110, 181, 255, 0.2);
+            background-color: var(--toggle-checked-bg);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         h3 {
@@ -129,9 +180,10 @@
             font-weight: 900;
             margin-top: 20px;
             margin-bottom: 12px;
-            color: #ffc233;
+            color: var(--subheading-color);
             padding-bottom: 5px;
-            border-bottom: 2px dashed #ffeda3;
+            border-bottom: 2px dashed var(--border-dash);
+            transition: all 0.6s ease;
         }
 
         .input-group {
@@ -143,8 +195,9 @@
         input[type="text"] {
             width: 100%;
             padding: 14px;
-            border: 2px solid #e6f4ff;
-            background-color: #f7fcff;
+            border: 2px solid var(--input-border);
+            background-color: var(--input-bg);
+            color: var(--input-text);
             border-radius: 15px;
             font-size: 16px;
             font-family: inherit;
@@ -155,38 +208,42 @@
 
         input[type="text"]:focus {
             border-color: var(--primary-color);
-            background-color: #ffffff;
-            box-shadow: 0 0 8px rgba(110, 181, 255, 0.3);
+            background-color: var(--card-inner-bg);
         }
 
         input::placeholder {
-            color: #a3d4ff;
+            color: #888;
         }
 
         #guest2_section {
-            transition: all 0.3s ease;
+            transition: opacity 0.4s ease, max-height 0.4s ease;
+            max-height: 200px;
+            opacity: 1;
+            overflow: hidden;
         }
 
-        /* Hotel Info Banner */
+        #guest2_section.hidden {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
+        }
+
         .hotel-banner {
-            background-color: #fffde6;
-            border: 2px solid #fff3a3;
+            background-color: var(--banner-bg);
+            border: 2px solid var(--banner-border);
             border-radius: 15px;
             padding: 15px;
             text-align: center;
             margin: 25px 0;
-            transition: transform 0.2s;
-        }
-
-        .hotel-banner:hover {
-            transform: scale(1.02);
+            transition: all 0.6s ease;
         }
 
         .hotel-banner p {
             margin: 0 0 8px 0;
             font-size: 14px;
             font-weight: 700;
-            color: #d69e00;
+            color: var(--banner-text);
+            transition: color 0.6s ease;
         }
 
         .hotel-banner a {
@@ -195,9 +252,9 @@
             text-decoration: none;
             font-weight: 900;
             font-size: 18px;
+            transition: color 0.6s ease;
         }
 
-        /* Card Styles */
         .cards-container {
             display: flex;
             flex-direction: column;
@@ -215,10 +272,10 @@
         }
 
         .card {
-            border: 2px solid #f0f0f0;
+            border: 2px solid var(--card-border);
             border-radius: 18px;
             padding: 18px;
-            background: #ffffff;
+            background: var(--card-inner-bg);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -226,29 +283,23 @@
 
         .card-label input[type="radio"]:checked + .card {
             border-color: var(--primary-color);
-            background-color: #f2faff;
-            box-shadow: 0 5px 15px rgba(110, 181, 255, 0.25);
-        }
-
-        .card-label input[type="radio"]:checked + .card::after {
-            content: '✨';
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 20px;
+            background-color: var(--card-checked-bg);
+            box-shadow: 0 5px 15px var(--card-checked-shadow);
         }
 
         .card h4 {
             margin: 0 0 10px 0;
             font-size: 17px;
             font-weight: 900;
-            color: #444;
+            color: var(--card-heading);
+            transition: color 0.6s ease;
         }
 
         .card p {
             margin: 6px 0;
             font-size: 14px;
-            color: #666;
+            color: var(--card-text);
+            transition: color 0.6s ease;
         }
 
         .price {
@@ -256,17 +307,18 @@
             font-weight: 900;
             color: var(--primary-color) !important;
             margin-top: 12px !important;
-            background: #ffffff;
+            background: var(--card-inner-bg);
             padding: 5px 10px;
             border-radius: 8px;
             display: inline-block;
             border: 1px dashed var(--primary-color);
+            transition: all 0.6s ease;
         }
 
         .submit-btn {
             width: 100%;
-            background: var(--primary-color);
-            color: white;
+            background: var(--btn-bg);
+            color: var(--btn-text);
             border: none;
             padding: 18px;
             font-size: 18px;
@@ -275,44 +327,35 @@
             border-radius: 20px;
             margin-top: 30px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 8px 20px rgba(110, 181, 255, 0.4);
+            transition: all 0.3s ease;
         }
 
         .submit-btn:hover:not(:disabled) {
             transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 12px 25px rgba(110, 181, 255, 0.5);
-            background: #5baaff;
-        }
-        
-        .submit-btn:active:not(:disabled) {
-            transform: translateY(2px);
+            background: var(--btn-hover);
         }
         
         .submit-btn:disabled {
-            background: #e0e0e0;
-            box-shadow: none;
+            background: #444;
+            color: #777;
             cursor: not-allowed;
-            color: #999;
             transform: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- Header GIFs (Reliable Tenor links) -->
+    <!-- Header GIFs -->
     <div class="gif-wrapper header-gifs">
-        <img src="https://media.tenor.com/2RoLBx_H4eMAAAAi/peach-cat.gif" alt="Cute Cat">
-        <img src="https://media.tenor.com/b-rR_T0H0G8AAAAi/happy-birthday.gif" alt="Birthday">
+        <img id="gif1" src="https://i.giphy.com/media/26AHONQ79FdWZhAIw/giphy.gif" alt="Cat 1">
+        <img id="gif2" src="https://i.giphy.com/media/3o6ZsW4XzMcebhkU2k/giphy.gif" alt="Cat 2">
     </div>
 
-    <!-- Main Container -->
     <div class="container">
-        <h1>მოწვეული ხარ ანდროს დაბადების დღის გაგულავებაზე! სგსგ გილოცავ 🥳🐱</h1>
+        <h1 id="main_title">მოწვეული ხარ ანდროს დაბადების დღის გაგულავებაზე! სგსგ გილოცავ 🥳🐱</h1>
 
         <form id="inviteForm">
             
-            <!-- Solo / Couple Toggle -->
             <div class="toggle-container">
                 <label>
                     <input type="radio" name="guestType" value="solo" onchange="toggleGuestMode()">
@@ -324,7 +367,7 @@
                 </label>
             </div>
 
-            <h3>🌸 პირველი სტუმარი</h3>
+            <h3 id="h3_1">🌸 პირველი სტუმარი</h3>
             <div class="input-group">
                 <input type="text" id="g1_name" placeholder="სახელი" required>
                 <input type="text" id="g1_surname" placeholder="გვარი" required>
@@ -372,31 +415,80 @@
 
     <!-- Footer GIFs -->
     <div class="gif-wrapper footer-gifs">
-        <img src="https://media.tenor.com/fOszG4B1YNEAAAAi/mochi-peach-cat.gif" alt="Mochi Cat">
-        <img src="https://media.tenor.com/H1X1Jm_tM9kAAAAi/cat-dance.gif" alt="Dancing Cat">
+        <img id="gif3" src="https://i.giphy.com/media/13HBDT4QSTpveU/giphy.gif" alt="Cat 3">
+        <img id="gif4" src="https://i.giphy.com/media/l4pTfx2qLszoacZRS/giphy.gif" alt="Cat 4">
     </div>
 
     <script>
-        // Toggle Logic for Solo/Couple mode
+        // URLs for Happy Mode
+        const happyGifs = [
+            "https://i.giphy.com/media/26AHONQ79FdWZhAIw/giphy.gif",
+            "https://i.giphy.com/media/3o6ZsW4XzMcebhkU2k/giphy.gif",
+            "https://i.giphy.com/media/13HBDT4QSTpveU/giphy.gif",
+            "https://i.giphy.com/media/l4pTfx2qLszoacZRS/giphy.gif"
+        ];
+
+        // URLs for Sad Mode
+        const sadGifs = [
+            "https://i.giphy.com/media/qQdL532ZANbjy/giphy.gif",
+            "https://i.giphy.com/media/L95W4wv8nnb9K/giphy.gif",
+            "https://i.giphy.com/media/3o6fJ2J2Ct3zcv1u7K/giphy.gif",
+            "https://i.giphy.com/media/Y4z9olnoVl5QI/giphy.gif"
+        ];
+
         function toggleGuestMode() {
             const guestType = document.querySelector('input[name="guestType"]:checked').value;
+            const isSolo = (guestType === 'solo');
+            
+            const body = document.body;
             const guest2Section = document.getElementById('guest2_section');
             const price1 = document.getElementById('price_option1');
             const price2 = document.getElementById('price_option2');
+            const mainTitle = document.getElementById('main_title');
+            const h3_1 = document.getElementById('h3_1');
+            const submitBtn = document.getElementById('submitBtn');
 
-            if (guestType === 'solo') {
-                guest2Section.style.display = 'none';
-                // Reset guest 2 fields so they don't get sent accidentally
+            const gif1 = document.getElementById('gif1');
+            const gif2 = document.getElementById('gif2');
+            const gif3 = document.getElementById('gif3');
+            const gif4 = document.getElementById('gif4');
+
+            if (isSolo) {
+                // Apply Dark/Sad Theme
+                body.classList.add('solo-theme');
+                guest2Section.classList.add('hidden');
+                
                 document.getElementById('g2_name').value = '';
                 document.getElementById('g2_surname').value = '';
-                // Prices updated for 1 flight ticket + baggage (Hotel room stays full price)
+                
                 price1.innerText = 'ჯამი: ~2,050 ₾ (20კგ ბარგით)';
                 price2.innerText = 'ჯამი: ~2,400 ₾ (20კგ ბარგით)';
+                
+                mainTitle.innerText = 'მარტო მიდიხარ? რატომ... 😿🌧️';
+                h3_1.innerText = 'მარტოსული სტუმარი 🥀';
+                submitBtn.innerText = 'მარტო წავალ... 🌧️';
+
+                gif1.src = sadGifs[0];
+                gif2.src = sadGifs[1];
+                gif3.src = sadGifs[2];
+                gif4.src = sadGifs[3];
+
             } else {
-                guest2Section.style.display = 'block';
-                // Prices reverted for 2 flight tickets + 2 baggages
+                // Revert to Happy/Couple Theme
+                body.classList.remove('solo-theme');
+                guest2Section.classList.remove('hidden');
+                
                 price1.innerText = 'ჯამი: ~2,800 ₾ (20კგ ბარგით)';
                 price2.innerText = 'ჯამი: ~3,150 ₾ (20კგ ბარგით)';
+                
+                mainTitle.innerText = 'მოწვეული ხარ ანდროს დაბადების დღის გაგულავებაზე! სგსგ გილოცავ 🥳🐱';
+                h3_1.innerText = '🌸 პირველი სტუმარი';
+                submitBtn.innerText = 'წავედით 🐾';
+
+                gif1.src = happyGifs[0];
+                gif2.src = happyGifs[1];
+                gif3.src = happyGifs[2];
+                gif4.src = happyGifs[3];
             }
         }
 
@@ -407,36 +499,36 @@
         async function sendData() {
             const btn = document.getElementById('submitBtn');
             const guestType = document.querySelector('input[name="guestType"]:checked').value;
+            const isSolo = (guestType === 'solo');
             const g1Name = document.getElementById('g1_name').value.trim();
             const g1Surname = document.getElementById('g1_surname').value.trim();
             const g2Name = document.getElementById('g2_name').value.trim();
             const g2Surname = document.getElementById('g2_surname').value.trim();
             
             if (!g1Name || !g1Surname) {
-                alert('გთხოვთ, შეავსოთ პირველი სტუმრის სახელი და გვარი. 😿');
+                alert(isSolo ? 'გთხოვთ, შეავსოთ თქვენი მონაცემები... მარტოც რომ იყოთ 🌧️' : 'გთხოვთ, შეავსოთ პირველი სტუმრის სახელი და გვარი. 😿');
                 return;
             }
 
-            if (guestType === 'couple' && (!g2Name || !g2Surname)) {
+            if (!isSolo && (!g2Name || !g2Surname)) {
                 alert('გთხოვთ, შეავსოთ მეორე სტუმრის მონაცემები, ან აირჩიოთ "მარტო". 🎀');
                 return;
             }
 
             const selectedOption = document.querySelector('input[name="itinerary"]:checked');
             if (!selectedOption) {
-                alert('გთხოვთ, აირჩიოთ სასურველი ვარიანტი. 🎀');
+                alert(isSolo ? 'გთხოვთ, აირჩიოთ ვარიანტი მაინც... 🥀' : 'გთხოვთ, აირჩიოთ სასურველი ვარიანტი. 🎀');
                 return;
             }
 
-            // Disable button to prevent double clicks and show loading state
             btn.disabled = true;
-            btn.innerText = "იგზავნება... ⏳";
+            btn.innerText = isSolo ? "მიგზავნის... ⏳" : "იგზავნება... ⏳";
 
-            let messageBody = `🎉 ახალი დასტური ტურზე!\n\n`;
-            messageBody += `🧳 ფორმატი: ${guestType === 'solo' ? 'მარტო მიდის' : 'წყვილი მოდის'}\n`;
-            messageBody += `👤 პირველი სტუმარი: ${g1Name} ${g1Surname}\n`;
+            let messageBody = isSolo ? `🌧️ ახალი დასტური (მარტო მოდის)...\n\n` : `🎉 ახალი დასტური ტურზე!\n\n`;
+            messageBody += `🧳 ფორმატი: ${isSolo ? 'მარტო მიდის' : 'წყვილი მოდის'}\n`;
+            messageBody += `👤 ${isSolo ? 'მარტოსული' : 'პირველი სტუმარი'}: ${g1Name} ${g1Surname}\n`;
             
-            if (guestType === 'couple') {
+            if (!isSolo) {
                 messageBody += `👥 მეორე სტუმარი: ${g2Name} ${g2Surname}\n`;
             }
             
@@ -455,18 +547,17 @@
                 });
 
                 if (response.ok) {
-                    alert('მონაცემები წარმატებით გაიგზავნა! შევხვდებით ანტალიაში 🏖️🐾');
-                    // Change button to "მადლობა" and leave it disabled
-                    btn.innerText = "მადლობა 💖";
+                    alert(isSolo ? 'გაიგზავნა... შევხვდებით ანტალიაში 🌧️' : 'მონაცემები წარმატებით გაიგზავნა! შევხვდებით ანტალიაში 🏖️🐾');
+                    btn.innerText = isSolo ? "მადლობა 🥀" : "მადლობა 💖";
                     btn.disabled = true;
                 } else {
                     alert('დაფიქსირდა შეცდომა. გთხოვთ სცადოთ მოგვიანებით. 😿');
-                    btn.innerText = "წავედით 🐾";
+                    btn.innerText = isSolo ? "მარტო წავალ... 🌧️" : "წავედით 🐾";
                     btn.disabled = false;
                 }
             } catch (error) {
                 alert('კავშირის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტი. 🔌');
-                btn.innerText = "წავედით 🐾";
+                btn.innerText = isSolo ? "მარტო წავალ... 🌧️" : "წავედით 🐾";
                 btn.disabled = false;
             }
         }
