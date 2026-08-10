@@ -3,37 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ანდროს დაბადების დღე</title>
+    <title>ანდროს დაბადების დღე 🎂</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+
         :root {
-            --primary-color: #007BFF;
-            --bg-color: #f4f7f6;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --border-radius: 12px;
+            --primary-color: #ff85a2;
+            --secondary-color: #85c4ff;
+            --bg-gradient: linear-gradient(135deg, #ffe6ea 0%, #e6f7ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #555555;
+            --border-radius: 25px;
         }
 
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-color);
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg-gradient);
             color: var(--text-color);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Keep floating gifs inside */
+        }
+
+        /* Floating Background Gifs */
+        .floating-gif {
+            position: fixed;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.85;
+        }
+
+        .gif-1 {
+            top: 5%;
+            left: 2%;
+            width: 120px;
+            animation: floatUpDown 6s ease-in-out infinite;
+        }
+
+        .gif-2 {
+            bottom: 5%;
+            right: 2%;
+            width: 140px;
+            animation: floatUpDown 8s ease-in-out infinite reverse;
+        }
+
+        .gif-3 {
+            top: 10%;
+            right: 5%;
+            width: 100px;
+            animation: floatLeftRight 7s ease-in-out infinite;
+        }
+
+        .gif-4 {
+            bottom: 10%;
+            left: 5%;
+            width: 110px;
+            animation: floatLeftRight 9s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatUpDown {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        @keyframes floatLeftRight {
+            0%, 100% { transform: translateX(0) scale(1); }
+            50% { transform: translateX(-20px) scale(1.05); }
         }
 
         .container {
             background-color: var(--card-bg);
-            max-width: 400px;
+            max-width: 420px;
             width: 100%;
-            padding: 25px;
+            padding: 35px 25px;
             border-radius: var(--border-radius);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(255, 133, 162, 0.2);
+            border: 3px solid #fff;
+            position: relative;
+            z-index: 10;
         }
 
         h1 {
-            font-size: 20px;
+            font-size: 22px;
+            font-weight: 900;
             text-align: center;
             color: var(--primary-color);
             margin-bottom: 25px;
@@ -42,59 +98,71 @@
 
         h3 {
             font-size: 16px;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            color: #555;
-            border-bottom: 1px solid #eee;
+            font-weight: 700;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            color: var(--secondary-color);
             padding-bottom: 5px;
+            border-bottom: 2px dashed #ffcce6;
         }
 
         .input-group {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 15px;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            padding: 14px;
+            border: 2px solid #ffebf0;
+            background-color: #fffafb;
+            border-radius: 15px;
             font-size: 14px;
+            font-family: inherit;
             box-sizing: border-box;
             outline: none;
+            transition: all 0.3s ease;
         }
 
         input[type="text"]:focus {
             border-color: var(--primary-color);
+            background-color: #fff;
+            box-shadow: 0 0 8px rgba(255, 133, 162, 0.3);
+        }
+
+        input::placeholder {
+            color: #b3b3b3;
         }
 
         /* Hotel Info Banner */
         .hotel-banner {
-            background-color: #eef5ff;
-            border: 1px solid #cce0ff;
-            border-radius: var(--border-radius);
+            background-color: #e6f7ff;
+            border: 2px solid #b3e0ff;
+            border-radius: 15px;
             padding: 15px;
             text-align: center;
-            margin: 20px 0;
+            margin: 25px 0;
+            transition: transform 0.2s;
+        }
+
+        .hotel-banner:hover {
+            transform: scale(1.02);
         }
 
         .hotel-banner p {
             margin: 0 0 8px 0;
             font-size: 14px;
-            color: #444;
+            font-weight: 700;
+            color: #4a90e2;
         }
 
         .hotel-banner a {
             display: inline-block;
-            color: var(--primary-color);
+            color: var(--secondary-color);
             text-decoration: none;
-            font-weight: bold;
-            font-size: 16px;
-        }
-        
-        .hotel-banner a:hover {
-            text-decoration: underline;
+            font-weight: 900;
+            font-size: 18px;
         }
 
         /* Card Styles */
@@ -114,74 +182,107 @@
         }
 
         .card {
-            border: 2px solid #e0e0e0;
-            border-radius: var(--border-radius);
-            padding: 15px;
-            transition: all 0.2s ease;
+            border: 2px solid #f0f0f0;
+            border-radius: 18px;
+            padding: 18px;
+            background: #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         .card-label input[type="radio"]:checked + .card {
             border-color: var(--primary-color);
-            background-color: #f0f7ff;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+            background-color: #fff0f3;
+            box-shadow: 0 5px 15px rgba(255, 133, 162, 0.2);
+        }
+
+        .card-label input[type="radio"]:checked + .card::after {
+            content: '✨';
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 20px;
         }
 
         .card h4 {
             margin: 0 0 10px 0;
-            font-size: 16px;
-            color: #222;
+            font-size: 17px;
+            font-weight: 900;
+            color: #333;
         }
 
         .card p {
-            margin: 5px 0;
-            font-size: 13px;
+            margin: 6px 0;
+            font-size: 14px;
             color: #666;
         }
 
         .price {
-            font-size: 15px !important;
-            font-weight: bold;
-            color: #222 !important;
-            margin-top: 10px !important;
+            font-size: 16px !important;
+            font-weight: 900;
+            color: var(--primary-color) !important;
+            margin-top: 12px !important;
+            background: #fff;
+            padding: 5px 10px;
+            border-radius: 8px;
+            display: inline-block;
+            border: 1px dashed var(--primary-color);
         }
 
         .submit-btn {
             width: 100%;
-            background-color: var(--primary-color);
+            background: linear-gradient(45deg, var(--primary-color), #ff9eb5);
             color: white;
             border: none;
-            padding: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            margin-top: 25px;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 900;
+            font-family: inherit;
+            border-radius: 20px;
+            margin-top: 30px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 20px rgba(255, 133, 162, 0.4);
         }
 
-        .submit-btn:hover {
-            background-color: #0056b3;
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 25px rgba(255, 133, 162, 0.5);
+        }
+        
+        .submit-btn:active:not(:disabled) {
+            transform: translateY(2px);
         }
         
         .submit-btn:disabled {
-            background-color: #cccccc;
+            background: #e0e0e0;
+            box-shadow: none;
             cursor: not-allowed;
+            color: #999;
+            transform: none;
         }
     </style>
 </head>
 <body>
 
+    <!-- Cute Floating Transparent Stickers -->
+    <img src="https://media.giphy.com/media/26FPCXdkvDbKBbgOI/giphy.gif" class="floating-gif gif-1" alt="Cute Birthday Cat">
+    <img src="https://media.giphy.com/media/3o6ZsW4XzMcebhkU2k/giphy.gif" class="floating-gif gif-2" alt="Birthday Cake">
+    <img src="https://media.giphy.com/media/VbK4E1s8p0FhG/giphy.gif" class="floating-gif gif-3" alt="Waving Cat">
+    <img src="https://media.giphy.com/media/13HBDT4QSTpveU/giphy.gif" class="floating-gif gif-4" alt="Dancing Cat">
+
     <div class="container">
-        <h1>მოწვეული ხარ ანდროს დაბადების დღის გაგულავებაზე, სგსგ გილოცავ 🎉</h1>
+        <h1>მოწვეული ხარ ანდროს დაბადების დღის გაგულავებაზე! სგსგ გილოცავ 🥳🐱</h1>
 
         <form id="inviteForm">
-            <h3>პირველი სტუმარი</h3>
+            <h3>🌸 პირველი სტუმარი</h3>
             <div class="input-group">
                 <input type="text" id="g1_name" placeholder="სახელი" required>
                 <input type="text" id="g1_surname" placeholder="გვარი" required>
             </div>
 
-            <h3>მეორე სტუმარი</h3>
+            <h3>🎀 მეორე სტუმარი</h3>
             <div class="input-group">
                 <input type="text" id="g2_name" placeholder="სახელი">
                 <input type="text" id="g2_surname" placeholder="გვარი">
@@ -189,10 +290,10 @@
 
             <div class="hotel-banner">
                 <p>🏨 ჩვენი ლოკაცია ანტალიაში:</p>
-                <a href="https://www.google.com/travel/search?q=FALCON+HOTEL+Antalya" target="_blank">Falcon Hotel, Antalya</a>
+                <a href="https://www.google.com/travel/search?q=FALCON+HOTEL+Antalya" target="_blank">🌟 Falcon Hotel, Antalya</a>
             </div>
 
-            <h3>აირჩიეთ თქვენი ვარიანტი:</h3>
+            <h3>✈️ აირჩიეთ თქვენი ვარიანტი:</h3>
             <div class="cards-container">
                 <label class="card-label">
                     <input type="radio" name="itinerary" value="28 ოქტ - 31 ოქტ (3 ღამე)" required>
@@ -215,7 +316,7 @@
                 </label>
             </div>
 
-            <button type="button" class="submit-btn" id="submitBtn" onclick="sendData()">წავედით</button>
+            <button type="button" class="submit-btn" id="submitBtn" onclick="sendData()">წავედით 🐾</button>
         </form>
     </div>
 
@@ -232,19 +333,19 @@
             const g2Surname = document.getElementById('g2_surname').value.trim();
             
             if (!g1Name || !g1Surname) {
-                alert('გთხოვთ, შეავსოთ პირველი სტუმრის სახელი და გვარი.');
+                alert('გთხოვთ, შეავსოთ პირველი სტუმრის სახელი და გვარი. 😿');
                 return;
             }
 
             const selectedOption = document.querySelector('input[name="itinerary"]:checked');
             if (!selectedOption) {
-                alert('გთხოვთ, აირჩიოთ სასურველი ვარიანტი.');
+                alert('გთხოვთ, აირჩიოთ სასურველი ვარიანტი. 🎀');
                 return;
             }
 
-            // Disable button to prevent double clicks
+            // Disable button to prevent double clicks and show loading state
             btn.disabled = true;
-            btn.innerText = "იგზავნება...";
+            btn.innerText = "იგზავნება... ⏳";
 
             let messageBody = `🎉 ახალი დასტური ტურზე!\n\n`;
             messageBody += `👤 პირველი სტუმარი: ${g1Name} ${g1Surname}\n`;
@@ -266,17 +367,19 @@
                 });
 
                 if (response.ok) {
-                    alert('მონაცემები წარმატებით გაიგზავნა! შევხვდებით ანტალიაში 🏖️');
-                    document.getElementById('inviteForm').reset(); // Clear form
+                    alert('მონაცემები წარმატებით გაიგზავნა! შევხვდებით ანტალიაში 🏖️🐾');
+                    // Change button to "მადლობა" and leave it disabled
+                    btn.innerText = "მადლობა 💖";
+                    btn.disabled = true;
                 } else {
-                    alert('დაფიქსირდა შეცდომა. გთხოვთ სცადოთ მოგვიანებით.');
+                    alert('დაფიქსირდა შეცდომა. გთხოვთ სცადოთ მოგვიანებით. 😿');
+                    btn.innerText = "წავედით 🐾";
+                    btn.disabled = false;
                 }
             } catch (error) {
-                alert('კავშირის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტი.');
-            } finally {
-                // Re-enable button
+                alert('კავშირის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტი. 🔌');
+                btn.innerText = "წავედით 🐾";
                 btn.disabled = false;
-                btn.innerText = "წავედით";
             }
         }
     </script>
