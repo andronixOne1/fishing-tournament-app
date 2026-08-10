@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ანდროს დაბადების დღე</title>
+    <style>
+        :root {
+            --primary-color: #007BFF;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            max-width: 400px;
+            width: 100%;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 20px;
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        h3 {
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }
+
+        /* Card Styles */
+        .cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .card-label {
+            cursor: pointer;
+        }
+
+        .card-label input[type="radio"] {
+            display: none;
+        }
+
+        .card {
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .card-label input[type="radio"]:checked + .card {
+            border-color: var(--primary-color);
+            background-color: #f0f7ff;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+        }
+
+        .card h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #222;
+        }
+
+        .card p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .card a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .price {
+            font-size: 15px !important;
+            font-weight: bold;
+            color: #222 !important;
+            margin-top: 10px !important;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-top: 25px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>მოწვეული ხარ ანდროს დაბადების დღის გაგულავებაზე, სგსგ გილოცავ 🎉</h1>
+
+        <form id="inviteForm">
+            <h3>პირველი სტუმარი</h3>
+            <div class="input-group">
+                <input type="text" id="g1_name" placeholder="სახელი" required>
+                <input type="text" id="g1_surname" placeholder="გვარი" required>
+            </div>
+
+            <h3>მეორე სტუმარი (არასავალდებულო)</h3>
+            <div class="input-group">
+                <input type="text" id="g2_name" placeholder="სახელი">
+                <input type="text" id="g2_surname" placeholder="გვარი">
+            </div>
+
+            <h3>აირჩიეთ თქვენი ვარიანტი:</h3>
+            <div class="cards-container">
+                <!-- Option 1 Card -->
+                <label class="card-label">
+                    <input type="radio" name="itinerary" value="28 ოქტ - 31 ოქტ (3 ღამე)" required>
+                    <div class="card">
+                        <h4>28 ოქტ – 31 ოქტ (3 ღამე)</h4>
+                        <p>🛫 <b>გაფრენა:</b> 06:50 (Pegasus)</p>
+                        <p>🛬 <b>დაბრუნება:</b> 22:45 (SunExpress, პირდაპირი)</p>
+                        <p>🏨 <a href="https://www.google.com/travel/search?q=FALCON+HOTEL+Antalya" target="_blank">სასტუმრო Falcon Hotel</a></p>
+                        <p class="price">ჯამი: ~2,800 ₾ (20კგ ბარგით)</p>
+                    </div>
+                </label>
+
+                <!-- Option 2 Card -->
+                <label class="card-label">
+                    <input type="radio" name="itinerary" value="28 ოქტ - 1 ნოემ (4 ღამე)">
+                    <div class="card">
+                        <h4>28 ოქტ – 1 ნოემ (4 ღამე)</h4>
+                        <p>🛫 <b>გაფრენა:</b> 06:50 (Pegasus)</p>
+                        <p>🛬 <b>დაბრუნება:</b> 21:25 (AJet, 1 გადაჯდომა)</p>
+                        <p>🏨 <a href="https://www.google.com/travel/search?q=FALCON+HOTEL+Antalya" target="_blank">სასტუმრო Falcon Hotel</a></p>
+                        <p class="price">ჯამი: ~3,150 ₾ (20კგ ბარგით)</p>
+                    </div>
+                </label>
+            </div>
+
+            <button type="button" class="submit-btn" onclick="sendEmail()">წავედით</button>
+        </form>
+    </div>
+
+    <script>
+        function sendEmail() {
+            // Get form inputs
+            const g1Name = document.getElementById('g1_name').value.trim();
+            const g1Surname = document.getElementById('g1_surname').value.trim();
+            const g2Name = document.getElementById('g2_name').value.trim();
+            const g2Surname = document.getElementById('g2_surname').value.trim();
+            
+            // Validate first guest
+            if (!g1Name || !g1Surname) {
+                alert('გთხოვთ, შეავსოთ პირველი სტუმრის სახელი და გვარი.');
+                return;
+            }
+
+            // Get selected option
+            const selectedOption = document.querySelector('input[name="itinerary"]:checked');
+            if (!selectedOption) {
+                alert('გთხოვთ, აირჩიოთ სასურველი ვარიანტი.');
+                return;
+            }
+
+            // Construct email body
+            let emailBody = `გამარჯობა,\n\nჩვენ მოვდივართ ანდროს დაბადების დღეზე!\n\n`;
+            emailBody += `პირველი სტუმარი: ${g1Name} ${g1Surname}\n`;
+            
+            if (g2Name || g2Surname) {
+                emailBody += `მეორე სტუმარი: ${g2Name} ${g2Surname}\n`;
+            }
+
+            emailBody += `\nარჩეული ვარიანტი: ${selectedOption.value}\n`;
+            emailBody += `\nშევხვდებით ანტალიაში!`;
+
+            // Prepare mailto protocol
+            const targetEmail = "andronix1@gmail.com";
+            const subject = encodeURIComponent("ანტალიის ტური - დასტური");
+            const body = encodeURIComponent(emailBody);
+
+            // Trigger email client
+            window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
+        }
+    </script>
+</body>
+</html>
