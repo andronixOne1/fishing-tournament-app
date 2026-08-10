@@ -69,6 +69,34 @@
             border-color: var(--primary-color);
         }
 
+        /* Hotel Info Banner */
+        .hotel-banner {
+            background-color: #eef5ff;
+            border: 1px solid #cce0ff;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .hotel-banner p {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .hotel-banner a {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .hotel-banner a:hover {
+            text-decoration: underline;
+        }
+
         /* Card Styles */
         .cards-container {
             display: flex;
@@ -110,12 +138,6 @@
             color: #666;
         }
 
-        .card a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: bold;
-        }
-
         .price {
             font-size: 15px !important;
             font-weight: bold;
@@ -140,6 +162,11 @@
         .submit-btn:hover {
             background-color: #0056b3;
         }
+        
+        .submit-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -154,82 +181,103 @@
                 <input type="text" id="g1_surname" placeholder="გვარი" required>
             </div>
 
-            <h3>მეორე სტუმარი (არასავალდებულო)</h3>
+            <h3>მეორე სტუმარი</h3>
             <div class="input-group">
                 <input type="text" id="g2_name" placeholder="სახელი">
                 <input type="text" id="g2_surname" placeholder="გვარი">
             </div>
 
+            <div class="hotel-banner">
+                <p>🏨 ჩვენი ლოკაცია ანტალიაში:</p>
+                <a href="https://www.google.com/travel/search?q=FALCON+HOTEL+Antalya" target="_blank">Falcon Hotel, Antalya</a>
+            </div>
+
             <h3>აირჩიეთ თქვენი ვარიანტი:</h3>
             <div class="cards-container">
-                <!-- Option 1 Card -->
                 <label class="card-label">
                     <input type="radio" name="itinerary" value="28 ოქტ - 31 ოქტ (3 ღამე)" required>
                     <div class="card">
                         <h4>28 ოქტ – 31 ოქტ (3 ღამე)</h4>
                         <p>🛫 <b>გაფრენა:</b> 06:50 (Pegasus)</p>
                         <p>🛬 <b>დაბრუნება:</b> 22:45 (SunExpress, პირდაპირი)</p>
-                        <p>🏨 <a href="https://www.google.com/travel/search?q=FALCON+HOTEL+Antalya" target="_blank">სასტუმრო Falcon Hotel</a></p>
                         <p class="price">ჯამი: ~2,800 ₾ (20კგ ბარგით)</p>
                     </div>
                 </label>
 
-                <!-- Option 2 Card -->
                 <label class="card-label">
                     <input type="radio" name="itinerary" value="28 ოქტ - 1 ნოემ (4 ღამე)">
                     <div class="card">
                         <h4>28 ოქტ – 1 ნოემ (4 ღამე)</h4>
                         <p>🛫 <b>გაფრენა:</b> 06:50 (Pegasus)</p>
                         <p>🛬 <b>დაბრუნება:</b> 21:25 (AJet, 1 გადაჯდომა)</p>
-                        <p>🏨 <a href="https://www.google.com/travel/search?q=FALCON+HOTEL+Antalya" target="_blank">სასტუმრო Falcon Hotel</a></p>
                         <p class="price">ჯამი: ~3,150 ₾ (20კგ ბარგით)</p>
                     </div>
                 </label>
             </div>
 
-            <button type="button" class="submit-btn" onclick="sendEmail()">წავედით</button>
+            <button type="button" class="submit-btn" id="submitBtn" onclick="sendData()">წავედით</button>
         </form>
     </div>
 
     <script>
-        function sendEmail() {
-            // Get form inputs
+        // Telegram Bot integration
+        const BOT_TOKEN = "8903520484:AAFb70VAHr3hlzG0D4tAj6nHja_fXp3Um7g"; 
+        const CHAT_ID = "1506934904"; 
+
+        async function sendData() {
+            const btn = document.getElementById('submitBtn');
             const g1Name = document.getElementById('g1_name').value.trim();
             const g1Surname = document.getElementById('g1_surname').value.trim();
             const g2Name = document.getElementById('g2_name').value.trim();
             const g2Surname = document.getElementById('g2_surname').value.trim();
             
-            // Validate first guest
             if (!g1Name || !g1Surname) {
                 alert('გთხოვთ, შეავსოთ პირველი სტუმრის სახელი და გვარი.');
                 return;
             }
 
-            // Get selected option
             const selectedOption = document.querySelector('input[name="itinerary"]:checked');
             if (!selectedOption) {
                 alert('გთხოვთ, აირჩიოთ სასურველი ვარიანტი.');
                 return;
             }
 
-            // Construct email body
-            let emailBody = `გამარჯობა,\n\nჩვენ მოვდივართ ანდროს დაბადების დღეზე!\n\n`;
-            emailBody += `პირველი სტუმარი: ${g1Name} ${g1Surname}\n`;
-            
+            // Disable button to prevent double clicks
+            btn.disabled = true;
+            btn.innerText = "იგზავნება...";
+
+            let messageBody = `🎉 ახალი დასტური ტურზე!\n\n`;
+            messageBody += `👤 პირველი სტუმარი: ${g1Name} ${g1Surname}\n`;
             if (g2Name || g2Surname) {
-                emailBody += `მეორე სტუმარი: ${g2Name} ${g2Surname}\n`;
+                messageBody += `👥 მეორე სტუმარი: ${g2Name} ${g2Surname}\n`;
             }
+            messageBody += `🗓 არჩეული ვარიანტი: ${selectedOption.value}`;
 
-            emailBody += `\nარჩეული ვარიანტი: ${selectedOption.value}\n`;
-            emailBody += `\nშევხვდებით ანტალიაში!`;
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 
-            // Prepare mailto protocol
-            const targetEmail = "andronix1@gmail.com";
-            const subject = encodeURIComponent("ანტალიის ტური - დასტური");
-            const body = encodeURIComponent(emailBody);
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CHAT_ID,
+                        text: messageBody
+                    })
+                });
 
-            // Trigger email client
-            window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
+                if (response.ok) {
+                    alert('მონაცემები წარმატებით გაიგზავნა! შევხვდებით ანტალიაში 🏖️');
+                    document.getElementById('inviteForm').reset(); // Clear form
+                } else {
+                    alert('დაფიქსირდა შეცდომა. გთხოვთ სცადოთ მოგვიანებით.');
+                }
+            } catch (error) {
+                alert('კავშირის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტი.');
+            } finally {
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerText = "წავედით";
+            }
         }
     </script>
 </body>
