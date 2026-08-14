@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lureboard</title>
+    <title>Lureboard Hub</title>
     
     <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -14,7 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-    <!-- Link to your new CSS file -->
+    <!-- Link to Shared CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -26,11 +26,11 @@
                 <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
                 <circle cx="12" cy="3" r="1.5"/>
             </svg>
-            <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard</div>
+            <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard Hub</div>
         </div>
         
         <div class="flex" style="gap: 8px;">
-            <button id="headerHomeBtn" class="secondary icon-btn" onclick="showDashboard()" data-i18n="home" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Home</button>
+            <button id="headerClientAreaBtn" class="secondary icon-btn" onclick="openLogin()" data-i18n="client_area" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Client Area</button>
             <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
             <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
                 <option value="en">🇬🇧</option>
@@ -46,96 +46,129 @@
 
 <div class="container">
     <!-- LOGIN SCREEN -->
-    <div id="loginSection">
+    <div id="loginSection" class="hidden">
         <div class="card" style="margin-top: 20px; padding: 32px 24px;">
             <h2 data-i18n="login_title" style="text-align: center; margin-bottom: 8px;">Login / Register</h2>
             <p data-i18n="login_desc" style="text-align: center; color: var(--text-muted); margin-bottom: 32px; font-size: 14px;">Enter any username and password.</p>
-            
-            <div class="form-group">
-                <label data-i18n="username">Username</label>
-                <input type="text" id="usernameInput" placeholder="Username">
-            </div>
-            <div class="form-group">
-                <label data-i18n="password">Password</label>
-                <input type="password" id="passwordInput" placeholder="Password">
-            </div>
-            
+            <div class="form-group"><label data-i18n="username">Username</label><input type="text" id="usernameInput" placeholder="Username"></div>
+            <div class="form-group"><label data-i18n="password">Password</label><input type="password" id="passwordInput" placeholder="Password"></div>
             <button onclick="handleLoginRegister()" data-i18n="login_btn" style="margin-top: 16px;">Login / Register</button>
-            <p id="accountLimitMsg" style="font-size: 13px; color: var(--danger); text-align: center; margin-top: 16px;"></p>
         </div>
     </div>
 
     <!-- MAIN DASHBOARD -->
-    <div id="dashboardSection" class="hidden">
+    <div id="dashboardSection">
         
-        <div class="flex flex-between" style="margin-bottom: 20px;">
-            <div id="yearFilterContainer" style="display: none;">
-                <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border:none;"></select>
-            </div>
-            <div>
+        <div id="dashTabs" class="dash-tabs hidden">
+            <div id="tabBtnPublic" class="dash-tab active" data-i18n="public_hub" onclick="switchDashboardTab('public')">Public Hub</div>
+            <div id="tabBtnMy" class="dash-tab" data-i18n="my_events" onclick="switchDashboardTab('my')">My Events</div>
+        </div>
+
+        <!-- MY EVENTS TAB -->
+        <div id="myEventsView" class="hidden">
+            <div class="flex flex-between" style="margin-bottom: 20px;">
+                <div id="yearFilterContainer" style="display: none;">
+                    <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"></select>
+                </div>
                 <select id="myEventsSort" onchange="processDashboard()" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
                     <option value="newest" data-i18n="sort_newest">Newest First</option>
                     <option value="oldest" data-i18n="sort_oldest">Oldest First</option>
                     <option value="az" data-i18n="sort_az">Name A-Z</option>
                 </select>
             </div>
+            
+            <div id="aotyContainer" style="margin-bottom: 24px;" class="hidden"></div>
+            
+            <button onclick="openEventEditor()" data-i18n="create_event" style="margin-bottom: 24px; padding: 18px;">+ Create New Event</button>
+            <div id="eventsList"></div>
         </div>
 
-        <!-- AOTY Podium Container -->
-        <div id="aotyContainer" style="margin-bottom: 24px;" class="hidden"></div>
-
-        <div class="flex flex-between" style="margin-bottom: 16px;">
-            <div>
-                <h2 data-i18n="your_events" style="margin: 0; font-size: 24px;">Your Events</h2>
-            </div>
+        <!-- PUBLIC HUB TAB -->
+        <div id="publicHubView">
+            <div id="publicEventsList"></div>
         </div>
-        
-        <button onclick="openEventEditor()" data-i18n="create_event" style="margin-bottom: 24px; padding: 18px;">+ Create New Event</button>
-        
-        <div id="eventsList"></div>
     </div>
 
     <!-- STEP 1: EVENT SETUP -->
     <div id="setupSection" class="hidden">
         <div class="flex flex-between" style="margin-bottom: 20px;">
-            <h2 id="setupTitle" data-i18n="step1_title" style="margin: 0; font-size: 24px;">Step 1: Setup</h2>
+            <h2 id="setupTitle" data-i18n="step1_title" style="margin: 0; font-size: 24px;">Setup: General</h2>
             <button class="secondary icon-btn" onclick="showDashboard()" data-i18n="back">← Back</button>
         </div>
 
+        <!-- Basic Info -->
         <div class="card">
-            <h3 data-i18n="tourn_name">1. Tournament Name</h3>
-            <input type="text" id="eventNameInput" placeholder="Weekend Championship">
-        </div>
-
-        <div class="card flex flex-between" style="align-items: center; padding: 20px 16px;">
-            <div>
-                <h3 data-i18n="ranked_tourn" style="margin:0;">Ranked Tournament</h3>
-                <p data-i18n="ranked_desc" style="font-size:12px; color:var(--text-muted); margin:4px 0 0 0;">Include in Yearly Leaderboard (Max 7/year)</p>
+            <div class="form-group">
+                <label data-i18n="tourn_name">Tournament Name</label>
+                <input type="text" id="eventNameInput" placeholder="Weekend Championship">
             </div>
-            <label class="switch">
-                <input type="checkbox" id="isRankedToggle" checked>
-                <span class="slider"></span>
-            </label>
+            <div class="form-group">
+                <label data-i18n="thumbnail_img">Thumbnail / Header Image</label>
+                <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
+                <img id="thumbnailPreview" class="thumb-preview">
+            </div>
+            <div class="form-group">
+                <label data-i18n="desc_rules">Description & Rules</label>
+                <textarea id="eventDescInput" placeholder="Enter tournament rules and description here..."></textarea>
+            </div>
         </div>
 
+        <!-- Toggles -->
+        <div class="card">
+            <div class="flex flex-between" style="padding: 10px 0;">
+                <div><h3 data-i18n="public_hub" style="margin:0;">Public Hub</h3><p data-i18n="public_desc" style="font-size:12px; color:var(--text-muted); margin:0;">Make visible to everyone</p></div>
+                <label class="switch"><input type="checkbox" id="isPublicToggle"><span class="slider"></span></label>
+            </div>
+            <div class="flex flex-between" style="padding: 10px 0; border-top: 1px solid var(--border);">
+                <div><h3 data-i18n="ranked_tourn" style="margin:0;">Ranked Tournament</h3><p data-i18n="ranked_desc" style="font-size:12px; color:var(--text-muted); margin:0;">Include in Yearly Leaderboard (Max 7/year)</p></div>
+                <label class="switch"><input type="checkbox" id="isRankedToggle" checked><span class="slider"></span></label>
+            </div>
+        </div>
+
+        <!-- Format Rules -->
+        <div class="card">
+            <h3 data-i18n="tourn_format" style="margin-bottom:16px;">Tournament Format</h3>
+            <div class="form-group">
+                <label data-i18n="meas_unit">Measurement Unit</label>
+                <div class="flex" style="gap:8px;">
+                    <button id="unitBtnMetric" class="primary-dark" onclick="setUnit('metric')" style="flex:1;">Metric</button>
+                    <button id="unitBtnImperial" class="secondary" onclick="setUnit('imperial')" style="flex:1;">Imperial</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="score_meth">Scoring Method</label>
+                <div class="flex" style="gap:8px;">
+                    <button id="measureBtnSize" class="primary-dark" onclick="setMeasure('size')" style="flex:1;">Size/Pts</button>
+                    <button id="measureBtnWeight" class="secondary" onclick="setMeasure('weight')" style="flex:1;">Weight</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="catch_lim">Catch Limits</label>
+                <div class="flex" style="gap:8px;">
+                    <button id="limitBtnAll" class="primary-dark" onclick="setLimit('all')" style="flex:1;" data-i18n="lim_all">All Fish</button>
+                    <button id="limitBtnTop5" class="secondary" onclick="setLimit('top5')" style="flex:1;" data-i18n="lim_top5">Top 5</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Participants -->
         <div class="card">
             <div class="flex flex-between">
-                <h3 data-i18n="bulk_part" style="margin:0;">2. Participants List</h3>
+                <h3 data-i18n="bulk_part" style="margin:0;">Participants List</h3>
                 <span id="participantCountStatus" class="badge">0</span>
             </div>
             <p data-i18n="bulk_desc" style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names. Symbols/brackets are auto-removed.</p>
-            
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
-                <!-- Disabled Overlay Box -->
-                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
+                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
                     <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
                 </div>
             </div>
         </div>
 
+        <!-- Species -->
         <div class="card">
-            <h3 data-i18n="fish_species_title">3. Species & Multipliers</h3>
+            <h3 data-i18n="fish_species_title">Species & Multipliers</h3>
             <div class="tier-grid" style="background: transparent; border: none; padding: 0;">
                 <input type="text" id="speciesName" placeholder="Species (Perch)">
                 <input type="text" id="speciesAbbr" placeholder="Abbr (pr)">
@@ -144,7 +177,7 @@
             <div id="speciesConfigContainer" style="margin-top: 24px;"></div>
         </div>
 
-        <!-- Sticky Bottom Bar for Step 1 -->
+        <!-- Sticky Bottom Bar -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex">
                 <button onclick="goToEventHub()" class="primary-dark" data-i18n="next_btn" style="padding: 16px;">Next</button>
@@ -174,23 +207,21 @@
         <div class="card">
             <h3 data-i18n="leaderboard">Leaderboard</h3>
             <div id="leaderboardTopSummary" style="margin-bottom: 16px; background: rgba(253, 224, 71, 0.2); border: 1px solid #fde047; padding: 16px; border-radius: var(--card-radius);"></div>
-            
             <div class="form-group">
                 <select id="rankingMode" onchange="renderLeaderboard()">
                     <option value="points" data-i18n="mode_pts">Rank by Points</option>
-                    <option value="cm" data-i18n="mode_cm">Rank by Centimeters</option>
+                    <option value="measure" data-i18n="mode_cm">Rank by Size/Weight</option>
                 </select>
             </div>
-            
             <div class="table-container">
                 <div id="leaderboardContainer"></div>
             </div>
         </div>
 
-        <!-- Sticky Bottom Bar for Step 2 -->
+        <!-- Sticky Bottom Bar -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div class="flex" style="gap: 12px; width: 100%; align-items: center;">
-                <a href="javascript:void(0)" onclick="downloadChart()" data-i18n="download_chart" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
+                <a href="javascript:void(0)" onclick="downloadChart()" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
                 <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" data-i18n="finish_event" style="flex: 1; padding:12px;">Finish Event</button>
                 <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_event" style="flex: 1; padding:12px;">Save Event</button>
             </div>
@@ -200,6 +231,7 @@
 
 <!-- ================= MODALS ================= -->
 
+<!-- RULES MODAL -->
 <div id="rulesModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'rulesModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
@@ -212,6 +244,7 @@
     </div>
 </div>
 
+<!-- ADD PARTICIPANT MODAL -->
 <div id="participantModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'participantModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
@@ -226,28 +259,32 @@
     </div>
 </div>
 
+<!-- FISH MODAL -->
 <div id="fishModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'fishModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
         <h3 data-i18n="add_remove_fish" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Add / Remove Catch</h3>
+        
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
                 <label data-i18n="species_sel">Species</label>
                 <div id="modalSpeciesTabs" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
             </div>
             <div class="form-group">
-                <label data-i18n="size_cm">Size (cm)</label>
-                <input type="number" id="modalFishSize" placeholder="Enter size" inputmode="decimal">
+                <label id="modalFishSizeLabel" data-i18n="size_cm">Measurement</label>
+                <input type="number" id="modalFishSize" placeholder="Enter value" inputmode="decimal">
             </div>
             <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_fish_btn">+ Add Catch</button>
             <div id="modalCurrentCatches" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
+
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
             <button class="secondary full-width" onclick="closeFishModal()" data-i18n="done" style="box-shadow: none;">Done</button>
         </div>
     </div>
 </div>
 
+<!-- PENALTY MODAL -->
 <div id="penaltyModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'penaltyModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
@@ -270,6 +307,7 @@
     </div>
 </div>
 
+<!-- SMALL FISH WARNING MODAL -->
 <div id="smallFishWarningModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'smallFishWarningModal')" style="align-items: center; z-index: 1050;">
     <div class="card" style="width: 90%; max-width: 340px; text-align: center; padding: 28px 24px; margin-bottom: 0; display: block; border-radius: 24px;">
         <h3 data-i18n="too_small_title" style="color: var(--danger); margin-bottom: 12px; font-size: 20px;">Fish Too Small</h3>
@@ -281,8 +319,45 @@
     </div>
 </div>
 
-<!-- Link to your new Javascript file -->
-<script src="app.js"></script>
+<!-- PUBLIC EVENT VIEW MODAL -->
+<div id="publicEventModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'publicEventModal')" style="align-items: flex-end;">
+    <div class="modal-card" style="height: 90vh; padding:0; background:var(--bg);">
+        <div style="background:var(--card-bg); padding:16px; text-align:center; position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); border-radius: 32px 32px 0 0;">
+            <div class="modal-indicator"></div>
+            <h3 id="pubTitle" style="margin:0; font-size: 20px;">Event Title</h3>
+            <p id="pubHost" style="margin:4px 0 0 0; font-size:13px; color:var(--text-muted);">Hosted by ...</p>
+        </div>
+        <div style="padding: 16px; overflow-y: auto;">
+            <img id="pubThumb" class="event-hub-thumb hidden">
+            <div id="pubDesc" style="font-size:14px; color:var(--text-muted); margin-bottom:16px; white-space:pre-wrap;"></div>
+            
+            <div class="card" style="padding:12px;">
+                <h3 style="margin-bottom:8px;" data-i18n="edit_rules">Rules</h3>
+                <div id="pubRules" style="font-size:13px;"></div>
+            </div>
+
+            <div class="card" style="padding:0;">
+                <div style="padding:12px 16px; border-bottom:1px solid var(--border);">
+                    <h3 data-i18n="leaderboard" style="margin:0;">Leaderboard</h3>
+                </div>
+                <div class="table-container" style="margin:0;">
+                    <div id="pubLeaderboard"></div>
+                </div>
+            </div>
+            
+            <div class="card" style="padding:12px;">
+                <h3 style="margin-bottom:8px;" data-i18n="part_detailed">Participants Detailed</h3>
+                <div id="pubParticipantsDetail" style="font-size:13px;"></div>
+            </div>
+        </div>
+        <div style="padding:16px; background:var(--card-bg); border-top:1px solid var(--border);">
+            <button class="secondary" onclick="closePublicEventModal()" data-i18n="close" style="box-shadow:none;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- LINK TO LOGIC SCRIPT -->
+<script src="hub.js"></script>
 
 </body>
 </html>
