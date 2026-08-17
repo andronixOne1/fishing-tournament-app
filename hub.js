@@ -62,9 +62,9 @@ const translations = {
         meas_unit: "Measurement Unit", score_meth: "Scoring Method", catch_lim: "Catch Limits", lim_all: "All Fish", lim_top5: "Top 5 Counted",
         penalties: "Penalties", pts_deduct: "Points to Deduct", reason_desc: "Reason / Description", add_penalty: "+ Add Penalty", part_detailed: "Participants",
         participate_btn: "Participate", join_event: "Join Event", leave_event: "Leave Event", pay_fee: "Pay Participation Fee (50 🪙)", fee_paid: "Fee Paid ✔️",
-        for_me: "For Me", for_friend: "For a Friend", friend_name: "Friend's Full Name", friend_dob: "Friend's DOB", show_all: "Show Full Leaderboard", hide_all: "Hide Full Leaderboard"
+        for_me: "For Me", for_friend: "For a Friend", friend_name: "Friend's Full Name", friend_dob: "Friend's DOB", show_all: "Show Full Leaderboard", hide_all: "Hide Full Leaderboard", home: "Home"
     },
-    ka: { login_title: "შესვლა", go_register: "რეგისტრაცია", public_hub: "საჯარო ჰაბი", client_area: "კლიენტის სივრცე" }
+    ka: { login_title: "შესვლა", go_register: "რეგისტრაცია", public_hub: "საჯარო ჰაბი", client_area: "კლიენტის სივრცე", status_announced: "გამოცხადდა" }
 };
 
 function changeLanguage(lang) {
@@ -81,12 +81,16 @@ function changeLanguage(lang) {
     if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
     if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
     if(!document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
-    if(!document.getElementById("dashboardSection").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
+    if(!document.getElementById("myEventsView").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
     if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
     if(!document.getElementById("publicHubView").classList.contains("hidden")) renderPublicHub();
 }
 
 function t(key) { return translations[currentLang] ? (translations[currentLang][key] || translations['en'][key] || key) : key; }
+
+function getMyName() {
+    return (loggedInUserData && loggedInUserData.fullName) ? loggedInUserData.fullName : loggedInUser;
+}
 
 function handleOverlayClick(e, modalId) {
     if (e.target.id === modalId) {
@@ -145,6 +149,7 @@ function showPublicHub() {
     document.getElementById("publicHubView").classList.remove("hidden");
     
     history.pushState({view: 'dashboardSection', sub: 'public'}, "");
+    renderPublicHub();
 }
 
 function showMyEvents() {
@@ -165,6 +170,45 @@ function showMyEvents() {
 function handleClientAreaClick() {
     if (loggedInUser) showMyEvents();
     else openLogin();
+}
+
+function goToParticipate() {
+    if(!loggedInUser) {
+        alert("You must be logged in to participate.");
+        closePublicEventModal();
+        openLogin();
+        return;
+    }
+    
+    closePublicEventModal();
+    document.getElementById("dashboardSection").classList.add("hidden");
+    
+    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+    if(evData) {
+        document.getElementById("partEventTitle").innerText = "Join " + evData.name;
+        
+        document.getElementById("partMyName").value = getMyName();
+        document.getElementById("partMyDob").value = (loggedInUserData && loggedInUserData.dob) ? loggedInUserData.dob : "";
+        
+        let isAlreadyJoined = (evData.details.participants||[]).some(p => p.registeredBy === loggedInUser || p.name === getMyName());
+        
+        document.getElementById("btnJoinEvent").disabled = true;
+        document.getElementById("btnJoinEvent").classList.remove("hidden");
+        document.getElementById("btnPayFee").innerText = t("pay_fee");
+        document.getElementById("btnPayFee").disabled = false;
+        document.getElementById("btnPayFee").className = "warning";
+        
+        if(isAlreadyJoined) {
+            document.getElementById("btnLeaveEvent").classList.remove("hidden");
+        } else {
+            document.getElementById("btnLeaveEvent").classList.add("hidden");
+        }
+
+        switchPartTab('me');
+        document.getElementById("participateSection").classList.remove("hidden");
+        window.scrollTo(0,0);
+        history.pushState({view: 'participateSection'}, "");
+    }
 }
 
 // AUTHENTICATION
@@ -204,7 +248,7 @@ function handleRegister() {
         }
     }).catch(err => {
         console.error(err);
-        alert("Database connection error.");
+        alert("Registration Error: " + err.message);
     });
 }
 
@@ -222,7 +266,7 @@ function handleLogin() {
         }
     }).catch(err => {
         console.error(err);
-        alert("Database connection error.");
+        alert("Login Error: " + err.message);
     });
 }
 
@@ -230,20 +274,17 @@ function loginSuccess(user, data) {
     loggedInUser = user;
     loggedInUserData = data;
     
-    document.getElementById("loginSection").classList.add("hidden");
-    document.getElementById("registerSection").classList.add("hidden");
-    document.getElementById("dashboardSection").classList.remove("hidden");
-    
     document.getElementById("headerClientAreaBtn").classList.add("hidden");
     document.getElementById("headerLogoutBtn").classList.remove("hidden");
     
-    if (data.role !== 'organization') document.getElementById("btnCreateEvent").style.display = "none";
-    else document.getElementById("btnCreateEvent").style.display = "flex";
+    // Protect older accounts that were created before roles existed
+    if (data.role === 'participant') {
+        document.getElementById("btnCreateEvent").style.display = "none";
+    } else {
+        document.getElementById("btnCreateEvent").style.display = "flex";
+    }
 
-    document.getElementById("dashTabs").classList.remove("hidden");
-    switchDashboardTab('my');
-    
-    history.replaceState({view: 'dashboardSection', sub: 'my'}, ""); 
+    showMyEvents();
     subscribeToEventsRealtime();
 }
 
@@ -252,20 +293,10 @@ function handleLogout() {
     loggedInUser = "";
     loggedInUserData = null;
     
-    document.getElementById("setupSection").classList.add("hidden");
-    document.getElementById("hubSection").classList.add("hidden");
-    document.getElementById("loginSection").classList.add("hidden");
-    document.getElementById("registerSection").classList.add("hidden");
-    document.getElementById("participateSection").classList.add("hidden");
-    
-    document.getElementById("dashboardSection").classList.remove("hidden");
     document.getElementById("headerClientAreaBtn").classList.remove("hidden");
     document.getElementById("headerLogoutBtn").classList.add("hidden");
     
-    document.getElementById("dashTabs").classList.add("hidden");
-    switchDashboardTab('public');
-    
-    history.replaceState({view: 'dashboardSection', sub: 'public'}, "");
+    showPublicHub();
     subscribeToEventsRealtime(); 
 }
 
@@ -286,12 +317,21 @@ function subscribeToEventsRealtime() {
         
         snapshot.forEach(doc => { 
             let data = { id: doc.id, ...doc.data() };
-            if (loggedInUser && data.username === loggedInUser) loadedEvents.push(data);
-            if (data.details && data.details.isPublic) allPublicEvents.push(data);
+            
+            if (loggedInUser && data.username === loggedInUser) {
+                loadedEvents.push(data);
+            }
+            
+            let isPub = data.details && data.details.isPublic;
+            if (isPub === true || isPub === "true" || isPub === undefined) {
+                allPublicEvents.push(data);
+            }
         });
         
         if (loggedInUser) processDashboard();
-        renderPublicHub();
+        if (!document.getElementById("publicHubView").classList.contains("hidden")) {
+            renderPublicHub();
+        }
 
         if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) {
             let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
@@ -300,23 +340,10 @@ function subscribeToEventsRealtime() {
                 renderHubUI();
             }
         }
+    }, error => {
+        console.error("Firebase Read Error: ", error);
+        alert("Database connection failed. Please ensure your Firebase security rules allow reading.");
     });
-}
-
-function switchDashboardTab(tab) {
-    document.getElementById("tabBtnPublic").classList.remove("active");
-    document.getElementById("tabBtnMy").classList.remove("active");
-    document.getElementById("publicHubView").classList.add("hidden");
-    document.getElementById("myEventsView").classList.add("hidden");
-
-    if(tab === 'public') {
-        document.getElementById("tabBtnPublic").classList.add("active");
-        document.getElementById("publicHubView").classList.remove("hidden");
-    } else {
-        document.getElementById("tabBtnMy").classList.add("active");
-        document.getElementById("myEventsView").classList.remove("hidden");
-        processDashboard();
-    }
 }
 
 function getEvTime(ev) { return parseInt(ev.id.replace('ev_', '')) || 0; }
@@ -366,6 +393,7 @@ function renderPublicHub() {
     });
     container.innerHTML = html;
 }
+
 // AOTY Logic
 function getEventPlacements(evDetails) {
     let processed = (evDetails.participants || []).map(p => {
@@ -494,6 +522,8 @@ function processDashboard() {
     
     renderEventsList(sortedEvents);
 }
+
+function changeYear(y) { selectedYear = y; processDashboard(); }
 
 function renderEventsList(filteredEvents) {
     let container = document.getElementById("eventsList");
@@ -635,7 +665,6 @@ function openEventEditor(eventObj = null) {
         setMeasure('size');
         setLimit('all');
     }
-    
     updateParticipantCountStatus();
     refreshSetupUI();
 }
@@ -1058,7 +1087,6 @@ function renderHubUI() {
 
     container.innerHTML = filteredHtml || `<div style="text-align:center; padding:20px; color:var(--text-muted);">No matching participants found.</div>`;
 
-    // Setup action buttons for Hub
     let actionBtnHtml = '';
     if (isAnnounced) {
         actionBtnHtml = `<button onclick="startEventNow()" class="success" style="flex: 1; padding:12px;" data-i18n="start_event">Start Event</button>`;
@@ -1079,6 +1107,7 @@ function renderHubUI() {
 
 function renderLeaderboard() {
     let mode = document.getElementById("rankingMode").value;
+    let container = document.getElementById("leaderboardContainer");
     let topSummaryContainer = document.getElementById("leaderboardTopSummary"); 
     
     let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
@@ -1147,7 +1176,6 @@ function saveCurrentEvent(redirect = true) {
     .catch(err => { console.error("Save error:", err); alert("Failed to save event to cloud."); });
 }
 
-// PUBLIC MODAL & PARTICIPATION LOGIC
 function openPublicEvent(eventId) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
@@ -1183,7 +1211,6 @@ function openPublicEvent(eventId) {
         return `<div style="padding:8px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
     }).join('');
 
-    // Display logic based on Status
     isLeaderboardExpanded = false;
     let st = ev.status || 'finished';
     
@@ -1198,7 +1225,7 @@ function openPublicEvent(eventId) {
         document.getElementById("pubPartCard").classList.add("hidden");
         document.getElementById("pubParticipateBtn").classList.add("hidden");
         renderPublicLeaderboardList(ev);
-    } else { // Finished
+    } else {
         document.getElementById("pubRulesCard").classList.remove("hidden");
         document.getElementById("pubLeaderboardCard").classList.remove("hidden");
         document.getElementById("pubPartCard").classList.add("hidden");
@@ -1242,7 +1269,7 @@ function renderPublicLeaderboardList(ev) {
         return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
     });
 
-    processed.sort((a, b) => b.totalPts - a.totalPts); // Sort purely by points for public simplified view
+    processed.sort((a, b) => b.totalPts - a.totalPts); 
 
     let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
 
@@ -1264,7 +1291,6 @@ function renderPublicLeaderboardList(ev) {
     document.getElementById("btnToggleLeaderboard").style.display = processed.length > 3 ? "inline-block" : "none";
 }
 
-// PARTICIPATION PAGE LOGIC
 function goToParticipate() {
     if(!loggedInUser) {
         alert("You must be logged in to participate.");
@@ -1278,12 +1304,10 @@ function goToParticipate() {
     let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
     document.getElementById("partEventTitle").innerText = "Join " + evData.name;
     
-    // Auto fill 'Me' form
-    document.getElementById("partMyName").value = loggedInUserData.fullName || loggedInUser;
-    document.getElementById("partMyDob").value = loggedInUserData.dob || "";
+    document.getElementById("partMyName").value = getMyName();
+    document.getElementById("partMyDob").value = (loggedInUserData && loggedInUserData.dob) ? loggedInUserData.dob : "";
     
-    // Check if user is already participating
-    let isAlreadyJoined = (evData.details.participants||[]).some(p => p.registeredBy === loggedInUser || p.name === (loggedInUserData.fullName || loggedInUser));
+    let isAlreadyJoined = (evData.details.participants||[]).some(p => p.registeredBy === loggedInUser || p.name === getMyName());
     
     document.getElementById("btnJoinEvent").disabled = true;
     document.getElementById("btnJoinEvent").classList.remove("hidden");
@@ -1318,7 +1342,6 @@ function switchPartTab(type) {
         document.getElementById("partFriendForm").classList.remove("hidden");
     }
     
-    // Reset payment flow on tab switch to prevent carrying over
     document.getElementById("btnJoinEvent").disabled = true;
     document.getElementById("btnPayFee").innerText = t("pay_fee");
     document.getElementById("btnPayFee").disabled = false;
@@ -1341,7 +1364,7 @@ function confirmParticipation() {
     let ev = evData.details;
     if(!ev.participants) ev.participants = [];
     
-    let pName = isForMe ? (loggedInUserData.fullName || loggedInUser) : document.getElementById("partFriendName").value.trim();
+    let pName = isForMe ? getMyName() : document.getElementById("partFriendName").value.trim();
     if(!pName) { alert("Please provide a name."); return; }
 
     ev.participants.push({
@@ -1363,10 +1386,8 @@ function leaveEvent() {
     if(confirm("Are you sure you want to leave this event?")) {
         let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
         let ev = evData.details;
-        let myName = loggedInUserData.fullName || loggedInUser;
         
-        // Filter out the participant that matches the user's name
-        ev.participants = (ev.participants||[]).filter(p => p.name !== myName && p.registeredBy !== loggedInUser);
+        ev.participants = (ev.participants||[]).filter(p => p.name !== getMyName() && p.registeredBy !== loggedInUser);
         
         db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
             alert("You have left the event.");
@@ -1376,7 +1397,6 @@ function leaveEvent() {
     }
 }
 
-// PDF EXPORT
 function downloadChart(eventId = null) {
     let ev = currentEvent;
     if (eventId) { let found = loadedEvents.find(e => e.id === eventId); if (found) ev = found.details; }
@@ -1449,13 +1469,10 @@ function downloadChart(eventId = null) {
 }
 
 function downloadSeasonChart() {
-    let dashMode = "standard"; 
-
     let rankedFinishedEvents = loadedEvents.filter(e => {
         let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
         let status = e.details.status || 'finished';
-        let mode = e.details.mode || 'standard';
-        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished' && mode === dashMode;
+        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
     });
 
     if (rankedFinishedEvents.length === 0) {
@@ -1525,11 +1542,9 @@ function downloadSeasonChart() {
 // INITIALIZATION
 changeLanguage(document.getElementById("langSelect").value);
 
-// Default load to Public Hub
 document.getElementById("loginSection").classList.add("hidden");
 document.getElementById("registerSection").classList.add("hidden");
 document.getElementById("dashboardSection").classList.remove("hidden");
-document.getElementById("dashTabs").classList.add("hidden");
 document.getElementById("myEventsView").classList.add("hidden");
 document.getElementById("publicHubView").classList.remove("hidden");
 
