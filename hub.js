@@ -38,11 +38,12 @@ let currentParticipationEventId = null;
 let isForMe = true;
 let isLeaderboardExpanded = false;
 let regRoleSelect = 'participant';
+let tempProfileAvatarBase64 = "";
 
 const translations = {
     en: {
         login_title: "Login", login_desc: "Enter your credentials.", username: "Username", password: "Password", login_btn: "Login",
-        register_title: "Register", full_name: "Full Name (Name & Surname)", dob: "Date of Birth", role_part: "Participant", role_org: "Organization",
+        register_title: "Register", full_name: "Full Name", dob: "Date of Birth", role_part: "Participant", role_org: "Organization",
         register_btn: "Create Account", go_register: "Don't have an account? Register", go_login: "Already have an account? Login",
         your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back", client_area: "Client Area", public_hub: "Public Hub", my_events: "My Events",
         tourn_name: "Tournament Name", ranked_tourn: "Ranked Tournament", ranked_desc: "Include in Yearly Leaderboard (Max 7/year)", bulk_part: "Participants List",
@@ -62,9 +63,13 @@ const translations = {
         meas_unit: "Measurement Unit", score_meth: "Scoring Method", catch_lim: "Catch Limits", lim_all: "All Fish", lim_top5: "Top 5 Counted",
         penalties: "Penalties", pts_deduct: "Points to Deduct", reason_desc: "Reason / Description", add_penalty: "+ Add Penalty", part_detailed: "Participants",
         participate_btn: "Participate", join_event: "Join Event", leave_event: "Leave Event", pay_fee: "Pay Participation Fee (50 🪙)", fee_paid: "Fee Paid ✔️",
-        for_me: "For Me", for_friend: "For a Friend", friend_name: "Friend's Full Name", friend_dob: "Friend's DOB", show_all: "Show Full Leaderboard", hide_all: "Hide Full Leaderboard", home: "Home"
+        for_me: "For Me", for_friend: "For a Friend", friend_name: "Friend's Full Name", friend_dob: "Friend's DOB", show_all: "Show Full Leaderboard", hide_all: "Hide Full Leaderboard",
+        profile: "Profile", events: "Events", save_profile: "Save Profile", change_picture: "Change Picture"
     },
-    ka: { login_title: "შესვლა", go_register: "რეგისტრაცია", public_hub: "საჯარო ჰაბი", client_area: "კლიენტის სივრცე", status_announced: "გამოცხადდა" }
+    ka: { 
+        login_title: "შესვლა", go_register: "რეგისტრაცია", public_hub: "საჯარო ჰაბი", client_area: "კლიენტის სივრცე", status_announced: "გამოცხადდა",
+        profile: "პროფილი", events: "ტურნირები", save_profile: "შენახვა", change_picture: "სურათის შეცვლა"
+    }
 };
 
 function changeLanguage(lang) {
@@ -112,27 +117,28 @@ function parseParticipants(rawText) {
 
 window.addEventListener("popstate", (event) => {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
-    let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
+    let view = (event.state && event.state.view) ? event.state.view : "publicHubView";
     
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("registerSection").classList.add("hidden");
-    document.getElementById("dashboardSection").classList.add("hidden");
     document.getElementById("setupSection").classList.add("hidden");
     document.getElementById("hubSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
+    document.getElementById("profileSection").classList.add("hidden");
+    document.getElementById("publicHubView").classList.add("hidden");
     
-    let target = document.getElementById(view);
-    if(target) target.classList.remove("hidden");
-    
-    if (view === 'dashboardSection') {
-        if (event.state && event.state.sub === 'my') {
-            document.getElementById("publicHubView").classList.add("hidden");
-            document.getElementById("myEventsView").classList.remove("hidden");
+    if (view === 'profileSection') {
+        document.getElementById("profileSection").classList.remove("hidden");
+        if (event.state && event.state.sub === 'events') {
+            switchProfileTab('events');
         } else {
-            document.getElementById("myEventsView").classList.add("hidden");
-            document.getElementById("publicHubView").classList.remove("hidden");
+            switchProfileTab('profile');
         }
+    } else {
+        let target = document.getElementById(view);
+        if(target) target.classList.remove("hidden");
     }
+    
     window.scrollTo(0, 0);
 });
 
@@ -143,72 +149,107 @@ function showPublicHub() {
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("registerSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
+    document.getElementById("profileSection").classList.add("hidden");
     
-    document.getElementById("dashboardSection").classList.remove("hidden");
-    document.getElementById("myEventsView").classList.add("hidden");
     document.getElementById("publicHubView").classList.remove("hidden");
     
-    history.pushState({view: 'dashboardSection', sub: 'public'}, "");
+    history.pushState({view: 'publicHubView'}, "");
     renderPublicHub();
 }
 
-function showMyEvents() {
+function showProfilePage() {
     document.getElementById("setupSection").classList.add("hidden");
     document.getElementById("hubSection").classList.add("hidden");
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("registerSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
-    
-    document.getElementById("dashboardSection").classList.remove("hidden");
     document.getElementById("publicHubView").classList.add("hidden");
-    document.getElementById("myEventsView").classList.remove("hidden");
     
-    history.pushState({view: 'dashboardSection', sub: 'my'}, "");
-    processDashboard();
+    document.getElementById("profileSection").classList.remove("hidden");
+    
+    if (loggedInUserData && loggedInUserData.role === 'organization') {
+        document.getElementById("tabMyEvents").style.display = "block";
+        document.getElementById("btnCreateEvent").style.display = "flex";
+    } else {
+        document.getElementById("tabMyEvents").style.display = "none";
+        document.getElementById("btnCreateEvent").style.display = "none";
+    }
+
+    document.getElementById("profUsername").value = loggedInUser;
+    document.getElementById("profFullName").value = loggedInUserData.fullName || "";
+    document.getElementById("profDob").value = loggedInUserData.dob || "";
+    document.getElementById("profPassword").value = "";
+    document.getElementById("profileAvatarPreview").src = loggedInUserData.avatar || "https://via.placeholder.com/100";
+    tempProfileAvatarBase64 = "";
+
+    switchProfileTab('profile');
+    history.pushState({view: 'profileSection', sub: 'profile'}, "");
+}
+
+function switchProfileTab(tab) {
+    document.getElementById("tabProfile").classList.remove("active");
+    document.getElementById("tabMyEvents").classList.remove("active");
+    document.getElementById("profileView").classList.add("hidden");
+    document.getElementById("myEventsView").classList.add("hidden");
+
+    if (tab === 'events') {
+        document.getElementById("tabMyEvents").classList.add("active");
+        document.getElementById("myEventsView").classList.remove("hidden");
+        processDashboard(); 
+        history.replaceState({view: 'profileSection', sub: 'events'}, "");
+    } else {
+        document.getElementById("tabProfile").classList.add("active");
+        document.getElementById("profileView").classList.remove("hidden");
+        history.replaceState({view: 'profileSection', sub: 'profile'}, "");
+    }
+}
+
+// PROFILE AVATAR LOGIC
+function handleProfileAvatarUpload(e) {
+    let file = e.target.files[0];
+    if(!file) return;
+    let reader = new FileReader();
+    reader.onload = function(event) {
+        let img = new Image();
+        img.onload = function() {
+            let canvas = document.createElement('canvas');
+            let ctx = canvas.getContext('2d');
+            let maxW = 300; 
+            let scale = img.width > maxW ? maxW / img.width : 1;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            tempProfileAvatarBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            document.getElementById('profileAvatarPreview').src = tempProfileAvatarBase64;
+        }
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveProfile() {
+    let newName = document.getElementById("profFullName").value.trim();
+    let newDob = document.getElementById("profDob").value;
+    let newPass = document.getElementById("profPassword").value.trim();
+    
+    let updateData = { fullName: newName, dob: newDob };
+    if (newPass) updateData.password = newPass;
+    if (tempProfileAvatarBase64) updateData.avatar = tempProfileAvatarBase64;
+
+    db.collection("users").doc(loggedInUser).update(updateData).then(() => {
+        loggedInUserData = { ...loggedInUserData, ...updateData };
+        document.getElementById("headerAvatar").src = loggedInUserData.avatar || "https://via.placeholder.com/40";
+        document.getElementById("profPassword").value = "";
+        alert("Profile saved successfully!");
+    }).catch(err => {
+        console.error("Error updating profile: ", err);
+        alert("Failed to save profile. Ensure database connection is stable.");
+    });
 }
 
 function handleClientAreaClick() {
-    if (loggedInUser) showMyEvents();
+    if (loggedInUser) showProfilePage();
     else openLogin();
-}
-
-function goToParticipate() {
-    if(!loggedInUser) {
-        alert("You must be logged in to participate.");
-        closePublicEventModal();
-        openLogin();
-        return;
-    }
-    
-    closePublicEventModal();
-    document.getElementById("dashboardSection").classList.add("hidden");
-    
-    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
-    if(evData) {
-        document.getElementById("partEventTitle").innerText = "Join " + evData.name;
-        
-        document.getElementById("partMyName").value = getMyName();
-        document.getElementById("partMyDob").value = (loggedInUserData && loggedInUserData.dob) ? loggedInUserData.dob : "";
-        
-        let isAlreadyJoined = (evData.details.participants||[]).some(p => p.registeredBy === loggedInUser || p.name === getMyName());
-        
-        document.getElementById("btnJoinEvent").disabled = true;
-        document.getElementById("btnJoinEvent").classList.remove("hidden");
-        document.getElementById("btnPayFee").innerText = t("pay_fee");
-        document.getElementById("btnPayFee").disabled = false;
-        document.getElementById("btnPayFee").className = "warning";
-        
-        if(isAlreadyJoined) {
-            document.getElementById("btnLeaveEvent").classList.remove("hidden");
-        } else {
-            document.getElementById("btnLeaveEvent").classList.add("hidden");
-        }
-
-        switchPartTab('me');
-        document.getElementById("participateSection").classList.remove("hidden");
-        window.scrollTo(0,0);
-        history.pushState({view: 'participateSection'}, "");
-    }
 }
 
 // AUTHENTICATION
@@ -274,17 +315,14 @@ function loginSuccess(user, data) {
     loggedInUser = user;
     loggedInUserData = data;
     
-    document.getElementById("headerClientAreaBtn").classList.add("hidden");
+    document.getElementById("headerLoginBtn").classList.add("hidden");
     document.getElementById("headerLogoutBtn").classList.remove("hidden");
     
-    // Protect older accounts that were created before roles existed
-    if (data.role === 'participant') {
-        document.getElementById("btnCreateEvent").style.display = "none";
-    } else {
-        document.getElementById("btnCreateEvent").style.display = "flex";
-    }
+    let avatarEl = document.getElementById("headerAvatar");
+    avatarEl.style.display = "block";
+    avatarEl.src = data.avatar || "https://via.placeholder.com/40";
 
-    showMyEvents();
+    showProfilePage();
     subscribeToEventsRealtime();
 }
 
@@ -293,7 +331,8 @@ function handleLogout() {
     loggedInUser = "";
     loggedInUserData = null;
     
-    document.getElementById("headerClientAreaBtn").classList.remove("hidden");
+    document.getElementById("headerLoginBtn").classList.remove("hidden");
+    document.getElementById("headerAvatar").style.display = "none";
     document.getElementById("headerLogoutBtn").classList.add("hidden");
     
     showPublicHub();
@@ -301,13 +340,15 @@ function handleLogout() {
 }
 
 function openLogin() {
-    document.getElementById("dashboardSection").classList.add("hidden");
+    document.getElementById("publicHubView").classList.add("hidden");
+    document.getElementById("profileSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
     document.getElementById("loginSection").classList.remove("hidden");
     window.scrollTo(0, 0);
     history.pushState({view: 'loginSection'}, "");
 }
 
+// EVENTS SUBSCRIPTION & DASHBOARD
 function subscribeToEventsRealtime() {
     if (unsubscribeEventsListener) unsubscribeEventsListener();
     
@@ -323,12 +364,14 @@ function subscribeToEventsRealtime() {
             }
             
             let isPub = data.details && data.details.isPublic;
-            if (isPub === true || isPub === "true" || isPub === undefined) {
+            if (isPub === true || isPub === "true") {
                 allPublicEvents.push(data);
             }
         });
         
-        if (loggedInUser) processDashboard();
+        if (loggedInUser && !document.getElementById("myEventsView").classList.contains("hidden")) {
+            processDashboard();
+        }
         if (!document.getElementById("publicHubView").classList.contains("hidden")) {
             renderPublicHub();
         }
@@ -605,7 +648,7 @@ function handleThumbnailUpload(e) {
 }
 
 function openEventEditor(eventObj = null) {
-    document.getElementById("dashboardSection").classList.add("hidden");
+    document.getElementById("profileSection").classList.add("hidden");
     document.getElementById("setupSection").classList.remove("hidden");
     window.scrollTo(0, 0);
     history.pushState({view: 'setupSection'}, "");
@@ -617,6 +660,7 @@ function openEventEditor(eventObj = null) {
         document.getElementById("eventDescInput").value = currentEvent.description || "";
         document.getElementById("isPublicToggle").checked = currentEvent.isPublic === true;
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
+        document.getElementById("eventStatusSelect").value = currentEvent.status || "ongoing";
         
         if(currentEvent.thumbnail) {
             document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
@@ -657,6 +701,7 @@ function openEventEditor(eventObj = null) {
         document.getElementById("eventDescInput").value = "";
         document.getElementById("isPublicToggle").checked = false;
         document.getElementById("isRankedToggle").checked = true;
+        document.getElementById("eventStatusSelect").value = "announced";
         document.getElementById("eventThumbnailInput").value = "";
         document.getElementById('thumbnailPreview').style.display = 'none';
         document.getElementById("bulkParticipantsInput").value = "";
@@ -804,6 +849,7 @@ function goToEventHub() {
     currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
     currentEvent.description = document.getElementById("eventDescInput").value.trim();
     currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
+    currentEvent.status = document.getElementById("eventStatusSelect").value;
     let wantsRanked = document.getElementById("isRankedToggle").checked;
     
     let thumbSrc = document.getElementById('thumbnailPreview').src;
@@ -1107,7 +1153,6 @@ function renderHubUI() {
 
 function renderLeaderboard() {
     let mode = document.getElementById("rankingMode").value;
-    let container = document.getElementById("leaderboardContainer");
     let topSummaryContainer = document.getElementById("leaderboardTopSummary"); 
     
     let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
@@ -1172,229 +1217,12 @@ function saveCurrentEvent(redirect = true) {
     const eventPayload = { username: loggedInUser, name: currentEvent.name, details: currentEvent, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
     localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
 
-    db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { if(redirect) showMyEvents(); })
-    .catch(err => { console.error("Save error:", err); alert("Failed to save event to cloud."); });
-}
-
-function openPublicEvent(eventId) {
-    let evData = allPublicEvents.find(e => e.id === eventId);
-    if(!evData) return;
-    let ev = evData.details;
-    currentParticipationEventId = eventId;
-
-    document.getElementById("pubTitle").innerText = evData.name;
-    document.getElementById("pubHost").innerText = `Hosted by ${evData.username} | ${ev.date || ''}`;
-    
-    if(ev.thumbnail) {
-        document.getElementById("pubThumb").src = ev.thumbnail;
-        document.getElementById("pubThumb").classList.remove("hidden");
-    } else {
-        document.getElementById("pubThumb").classList.add("hidden");
-    }
-
-    document.getElementById("pubDesc").innerText = ev.description || "No description provided.";
-    
-    let limitTxt = ev.limitType === 'top5' ? "Top 5 Counted" : "All Fish Counted";
-    let measureTxt = ev.measureType === 'weight' ? "Weighted" : "Size/Points";
-    let rulesHtml = `<div style="margin-bottom:12px;"><b>Format:</b> ${measureTxt} | ${limitTxt}</div>`;
-    
-    rulesHtml += (ev.species||[]).map(s => {
-        let trs = s.tiers.map(t => `${t.from}-${t.to} (${parseFloat(t.multiplier||1).toFixed(1)}x)`).join(', ');
-        return `<div><b>${s.name} (${s.abbr.toUpperCase()}):</b> ${trs}</div>`;
-    }).join('');
-    document.getElementById("pubRules").innerHTML = rulesHtml;
-
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
-    document.getElementById("pubParticipantsDetail").innerHTML = (ev.participants||[]).map((p, i) => {
-        let catches = (p.catches||[]).length > 0 ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') : 'None';
-        let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger);">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
-        return `<div style="padding:8px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
-    }).join('');
-
-    isLeaderboardExpanded = false;
-    let st = ev.status || 'finished';
-    
-    if (st === 'announced') {
-        document.getElementById("pubRulesCard").classList.remove("hidden");
-        document.getElementById("pubLeaderboardCard").classList.add("hidden");
-        document.getElementById("pubPartCard").classList.remove("hidden");
-        document.getElementById("pubParticipateBtn").classList.remove("hidden");
-    } else if (st === 'ongoing') {
-        document.getElementById("pubRulesCard").classList.remove("hidden");
-        document.getElementById("pubLeaderboardCard").classList.remove("hidden");
-        document.getElementById("pubPartCard").classList.add("hidden");
-        document.getElementById("pubParticipateBtn").classList.add("hidden");
-        renderPublicLeaderboardList(ev);
-    } else {
-        document.getElementById("pubRulesCard").classList.remove("hidden");
-        document.getElementById("pubLeaderboardCard").classList.remove("hidden");
-        document.getElementById("pubPartCard").classList.add("hidden");
-        document.getElementById("pubParticipateBtn").classList.add("hidden");
-        renderPublicLeaderboardList(ev);
-    }
-
-    document.getElementById("publicEventModal").classList.remove("hidden");
-}
-
-function closePublicEventModal() { 
-    document.getElementById("publicEventModal").classList.add("hidden"); 
-    currentParticipationEventId = null;
-}
-
-function toggleFullLeaderboard() {
-    isLeaderboardExpanded = !isLeaderboardExpanded;
-    document.getElementById("btnToggleLeaderboard").innerText = isLeaderboardExpanded ? t('hide_all') : t('show_all');
-    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
-    if(evData) renderPublicLeaderboardList(evData.details);
-}
-
-function renderPublicLeaderboardList(ev) {
-    if(!ev) return;
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
-
-    let processed = (ev.participants||[]).map(p => {
-        let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
-        let countedCatches = ev.limitType === 'top5' ? [...(p.catches||[])].sort((a,b) => b.size - a.size).slice(0,5) : (p.catches||[]);
-
-        countedCatches.forEach(c => {
-            totalMeasure += c.size;
-            if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
-            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
-        });
-        
-        let penPts = 0;
-        if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
-        totalPts -= penPts;
-
-        return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
+    db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
+        if(redirect) showMyEvents(); 
+    }).catch(err => { 
+        console.error("Save error:", err); 
+        alert("Failed to save event to cloud. Check internet connection."); 
     });
-
-    processed.sort((a, b) => b.totalPts - a.totalPts); 
-
-    let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
-
-    let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>Max</th></tr>`;
-    toShow.forEach((p, idx) => {
-        let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
-        let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
-        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
-        html += `<tr>
-            <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
-            <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
-            <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
-            <td>${maxDisplay}</td>
-        </tr>`;
-    });
-    html += `</table>`;
-    
-    document.getElementById("pubLeaderboard").innerHTML = html;
-    document.getElementById("btnToggleLeaderboard").style.display = processed.length > 3 ? "inline-block" : "none";
-}
-
-function goToParticipate() {
-    if(!loggedInUser) {
-        alert("You must be logged in to participate.");
-        closePublicEventModal();
-        openLogin();
-        return;
-    }
-    closePublicEventModal();
-    document.getElementById("dashboardSection").classList.add("hidden");
-    
-    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
-    document.getElementById("partEventTitle").innerText = "Join " + evData.name;
-    
-    document.getElementById("partMyName").value = getMyName();
-    document.getElementById("partMyDob").value = (loggedInUserData && loggedInUserData.dob) ? loggedInUserData.dob : "";
-    
-    let isAlreadyJoined = (evData.details.participants||[]).some(p => p.registeredBy === loggedInUser || p.name === getMyName());
-    
-    document.getElementById("btnJoinEvent").disabled = true;
-    document.getElementById("btnJoinEvent").classList.remove("hidden");
-    document.getElementById("btnPayFee").innerText = t("pay_fee");
-    document.getElementById("btnPayFee").disabled = false;
-    document.getElementById("btnPayFee").className = "warning";
-    
-    if(isAlreadyJoined) {
-        document.getElementById("btnLeaveEvent").classList.remove("hidden");
-    } else {
-        document.getElementById("btnLeaveEvent").classList.add("hidden");
-    }
-
-    switchPartTab('me');
-    document.getElementById("participateSection").classList.remove("hidden");
-    window.scrollTo(0,0);
-    history.pushState({view: 'participateSection'}, "");
-}
-
-function switchPartTab(type) {
-    isForMe = (type === 'me');
-    document.getElementById("tabForMe").classList.remove("active");
-    document.getElementById("tabForFriend").classList.remove("active");
-    document.getElementById("partMeForm").classList.add("hidden");
-    document.getElementById("partFriendForm").classList.add("hidden");
-    
-    if(isForMe) {
-        document.getElementById("tabForMe").classList.add("active");
-        document.getElementById("partMeForm").classList.remove("hidden");
-    } else {
-        document.getElementById("tabForFriend").classList.add("active");
-        document.getElementById("partFriendForm").classList.remove("hidden");
-    }
-    
-    document.getElementById("btnJoinEvent").disabled = true;
-    document.getElementById("btnPayFee").innerText = t("pay_fee");
-    document.getElementById("btnPayFee").disabled = false;
-    document.getElementById("btnPayFee").className = "warning";
-}
-
-function processPayment() {
-    let btn = document.getElementById("btnPayFee");
-    btn.innerText = "Processing...";
-    btn.disabled = true;
-    setTimeout(() => {
-        btn.innerText = t("fee_paid");
-        btn.className = "success";
-        document.getElementById("btnJoinEvent").disabled = false;
-    }, 1000);
-}
-
-function confirmParticipation() {
-    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
-    let ev = evData.details;
-    if(!ev.participants) ev.participants = [];
-    
-    let pName = isForMe ? getMyName() : document.getElementById("partFriendName").value.trim();
-    if(!pName) { alert("Please provide a name."); return; }
-
-    ev.participants.push({
-        id: 'p_' + Math.random().toString(36).substr(2, 9),
-        name: pName,
-        catches: [],
-        penalties: [],
-        registeredBy: loggedInUser
-    });
-
-    db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
-        alert("Successfully joined the event!");
-        document.getElementById("participateSection").classList.add("hidden");
-        showPublicHub();
-    });
-}
-
-function leaveEvent() {
-    if(confirm("Are you sure you want to leave this event?")) {
-        let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
-        let ev = evData.details;
-        
-        ev.participants = (ev.participants||[]).filter(p => p.name !== getMyName() && p.registeredBy !== loggedInUser);
-        
-        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
-            alert("You have left the event.");
-            document.getElementById("participateSection").classList.add("hidden");
-            showPublicHub();
-        });
-    }
 }
 
 function downloadChart(eventId = null) {
