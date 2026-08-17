@@ -121,6 +121,7 @@ window.addEventListener("popstate", (event) => {
     
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("registerSection").classList.add("hidden");
+    document.getElementById("dashboardSection").classList.add("hidden");
     document.getElementById("setupSection").classList.add("hidden");
     document.getElementById("hubSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
@@ -167,7 +168,7 @@ function showProfilePage() {
     
     document.getElementById("profileSection").classList.remove("hidden");
     
-    if (loggedInUserData && loggedInUserData.role === 'organization') {
+    if (loggedInUserData && (loggedInUserData.role === 'organization' || !loggedInUserData.role)) {
         document.getElementById("tabMyEvents").style.display = "block";
         document.getElementById("btnCreateEvent").style.display = "flex";
     } else {
@@ -359,12 +360,14 @@ function subscribeToEventsRealtime() {
         snapshot.forEach(doc => { 
             let data = { id: doc.id, ...doc.data() };
             
+            // Populate My Events
             if (loggedInUser && data.username === loggedInUser) {
                 loadedEvents.push(data);
             }
             
-            let isPub = data.details && data.details.isPublic;
-            if (isPub === true || isPub === "true") {
+            // Populate Public Hub (Ensures legacy/older events without explicit 'isPublic' flag default to showing)
+            let isPub = data.details ? data.details.isPublic : undefined;
+            if (isPub !== false && isPub !== "false") {
                 allPublicEvents.push(data);
             }
         });
@@ -372,12 +375,13 @@ function subscribeToEventsRealtime() {
         if (loggedInUser && !document.getElementById("myEventsView").classList.contains("hidden")) {
             processDashboard();
         }
+        
         if (!document.getElementById("publicHubView").classList.contains("hidden")) {
             renderPublicHub();
         }
 
         if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) {
-            let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
+            let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id) || allPublicEvents.find(e => e.id === currentEvent.id);
             if (activeUpdated) {
                 currentEvent = activeUpdated.details;
                 renderHubUI();
@@ -385,7 +389,7 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
-        alert("Database connection failed. Please ensure your Firebase security rules allow reading.");
+        alert("Cannot load events from Firebase. Check your database security rules.");
     });
 }
 
@@ -1153,6 +1157,7 @@ function renderHubUI() {
 
 function renderLeaderboard() {
     let mode = document.getElementById("rankingMode").value;
+    let container = document.getElementById("leaderboardContainer");
     let topSummaryContainer = document.getElementById("leaderboardTopSummary"); 
     
     let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
@@ -1374,7 +1379,9 @@ document.getElementById("loginSection").classList.add("hidden");
 document.getElementById("registerSection").classList.add("hidden");
 document.getElementById("dashboardSection").classList.remove("hidden");
 document.getElementById("myEventsView").classList.add("hidden");
+document.getElementById("profileSection").classList.add("hidden");
+document.getElementById("participateSection").classList.add("hidden");
 document.getElementById("publicHubView").classList.remove("hidden");
 
-history.replaceState({view: 'dashboardSection', sub: 'public'}, "");
+history.replaceState({view: 'publicHubView'}, "");
 subscribeToEventsRealtime();
