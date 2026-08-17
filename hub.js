@@ -86,7 +86,9 @@ function changeLanguage(lang) {
     if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
     if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
     if(!document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
-    if(!document.getElementById("myEventsView").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
+    if(!document.getElementById("profileSection").classList.contains("hidden")) {
+        if(!document.getElementById("myEventsView").classList.contains("hidden")) processDashboard();
+    }
     if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
     if(!document.getElementById("publicHubView").classList.contains("hidden")) renderPublicHub();
 }
@@ -121,7 +123,6 @@ window.addEventListener("popstate", (event) => {
     
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("registerSection").classList.add("hidden");
-    document.getElementById("dashboardSection").classList.add("hidden");
     document.getElementById("setupSection").classList.add("hidden");
     document.getElementById("hubSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
@@ -316,7 +317,7 @@ function loginSuccess(user, data) {
     loggedInUser = user;
     loggedInUserData = data;
     
-    document.getElementById("headerLoginBtn").classList.add("hidden");
+    document.getElementById("headerClientAreaBtn").classList.add("hidden");
     document.getElementById("headerLogoutBtn").classList.remove("hidden");
     
     let avatarEl = document.getElementById("headerAvatar");
@@ -332,7 +333,7 @@ function handleLogout() {
     loggedInUser = "";
     loggedInUserData = null;
     
-    document.getElementById("headerLoginBtn").classList.remove("hidden");
+    document.getElementById("headerClientAreaBtn").classList.remove("hidden");
     document.getElementById("headerAvatar").style.display = "none";
     document.getElementById("headerLogoutBtn").classList.add("hidden");
     
@@ -341,9 +342,13 @@ function handleLogout() {
 }
 
 function openLogin() {
+    document.getElementById("setupSection").classList.add("hidden");
+    document.getElementById("hubSection").classList.add("hidden");
     document.getElementById("publicHubView").classList.add("hidden");
     document.getElementById("profileSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
+    document.getElementById("registerSection").classList.add("hidden");
+    
     document.getElementById("loginSection").classList.remove("hidden");
     window.scrollTo(0, 0);
     history.pushState({view: 'loginSection'}, "");
@@ -360,14 +365,13 @@ function subscribeToEventsRealtime() {
         snapshot.forEach(doc => { 
             let data = { id: doc.id, ...doc.data() };
             
-            // Populate My Events
             if (loggedInUser && data.username === loggedInUser) {
                 loadedEvents.push(data);
             }
             
-            // Populate Public Hub (Ensures legacy/older events without explicit 'isPublic' flag default to showing)
-            let isPub = data.details ? data.details.isPublic : undefined;
-            if (isPub !== false && isPub !== "false") {
+            // Strictly check for boolean true or string "true"
+            let isPub = data.details && data.details.isPublic;
+            if (isPub === true || isPub === "true") {
                 allPublicEvents.push(data);
             }
         });
@@ -389,7 +393,6 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
-        alert("Cannot load events from Firebase. Check your database security rules.");
     });
 }
 
@@ -570,8 +573,6 @@ function processDashboard() {
     renderEventsList(sortedEvents);
 }
 
-function changeYear(y) { selectedYear = y; processDashboard(); }
-
 function renderEventsList(filteredEvents) {
     let container = document.getElementById("eventsList");
     if (filteredEvents.length === 0) {
@@ -664,7 +665,6 @@ function openEventEditor(eventObj = null) {
         document.getElementById("eventDescInput").value = currentEvent.description || "";
         document.getElementById("isPublicToggle").checked = currentEvent.isPublic === true;
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
-        document.getElementById("eventStatusSelect").value = currentEvent.status || "ongoing";
         
         if(currentEvent.thumbnail) {
             document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
@@ -705,7 +705,6 @@ function openEventEditor(eventObj = null) {
         document.getElementById("eventDescInput").value = "";
         document.getElementById("isPublicToggle").checked = false;
         document.getElementById("isRankedToggle").checked = true;
-        document.getElementById("eventStatusSelect").value = "announced";
         document.getElementById("eventThumbnailInput").value = "";
         document.getElementById('thumbnailPreview').style.display = 'none';
         document.getElementById("bulkParticipantsInput").value = "";
@@ -853,7 +852,6 @@ function goToEventHub() {
     currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
     currentEvent.description = document.getElementById("eventDescInput").value.trim();
     currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
-    currentEvent.status = document.getElementById("eventStatusSelect").value;
     let wantsRanked = document.getElementById("isRankedToggle").checked;
     
     let thumbSrc = document.getElementById('thumbnailPreview').src;
@@ -1157,7 +1155,6 @@ function renderHubUI() {
 
 function renderLeaderboard() {
     let mode = document.getElementById("rankingMode").value;
-    let container = document.getElementById("leaderboardContainer");
     let topSummaryContainer = document.getElementById("leaderboardTopSummary"); 
     
     let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
