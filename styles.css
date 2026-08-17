@@ -84,3 +84,26 @@ tr:last-child td { border-bottom: none; }
 .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(224, 231, 255, 0.5); padding: 12px; border-radius: var(--card-radius); margin-bottom: 12px; border: none; }
 .tier-grid input, .tier-grid select { padding: 12px; font-size: 14px; }
 .tier-grid .full-width { grid-column: span 2; }
+/* Thumbnail & Image Sizing Limits */
+.thumb-preview { 
+    width: 100%; 
+    height: 150px; 
+    object-fit: cover; 
+    border-radius: 12px; 
+    margin-top: 10px; 
+    display: none; 
+}
+
+.event-hub-thumb { 
+    width: 100%; 
+    height: 140px; 
+    object-fit: cover; 
+    border-radius: 16px; 
+    margin-bottom: 12px; 
+    background: #e2e8f0; 
+}
+
+/* Global fallback to prevent any image from overflowing the screen */
+img {
+    max-width: 100%;
+}
