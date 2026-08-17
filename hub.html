@@ -18,6 +18,7 @@
 
     <!-- TOP HEADER -->
     <div class="header-bar">
+        <!-- Logo acts as Home Button -->
         <div class="flex" style="gap: 8px; cursor: pointer;" onclick="showPublicHub()">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
                 <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
@@ -26,10 +27,7 @@
             <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard Hub</div>
         </div>
         
-        <div class="flex" style="gap: 8px;">
-            <button id="headerHomeBtn" class="secondary icon-btn" onclick="showPublicHub()" data-i18n="home" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Home</button>
-            <button id="headerClientAreaBtn" class="secondary icon-btn" onclick="handleClientAreaClick()" data-i18n="client_area" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Client Area</button>
-            <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
+        <div class="flex" style="gap: 12px; align-items: center;">
             <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
                 <option value="en">🇬🇧 EN</option>
                 <option value="ka">🇬🇪 KA</option>
@@ -39,6 +37,9 @@
                 <option value="it">🇮🇹 IT</option>
                 <option value="de">🇩🇪 DE</option>
             </select>
+            <button id="headerLoginBtn" class="secondary icon-btn" onclick="openLogin()" data-i18n="login_btn" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Login / Register</button>
+            <img id="headerAvatar" src="https://via.placeholder.com/40" style="width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: none; object-fit: cover; border: 2px solid rgba(255,255,255,0.8);" onclick="showProfilePage()">
+            <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor; margin: 0;">Logout</button>
         </div>
     </div>
 
@@ -79,10 +80,48 @@
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
-    <div id="dashboardSection">
+    <!-- PUBLIC HUB VIEW (Main Page) -->
+    <div id="publicHubView">
+        <h2 data-i18n="public_hub" style="margin-top: 8px;">Public Hub</h2>
+        <div id="publicEventsList"></div>
+    </div>
 
-        <!-- MY EVENTS VIEW (Client Area) -->
+    <!-- PROFILE & MY EVENTS SECTION -->
+    <div id="profileSection" class="hidden">
+        <div class="dash-tabs" style="margin-bottom: 20px;">
+            <div id="tabProfile" class="dash-tab active" data-i18n="profile" onclick="switchProfileTab('profile')">Profile</div>
+            <div id="tabMyEvents" class="dash-tab" data-i18n="events" onclick="switchProfileTab('events')">Events</div>
+        </div>
+
+        <!-- PROFILE TAB -->
+        <div id="profileView">
+            <div class="card">
+                <div class="text-center" style="margin-bottom: 24px;">
+                    <img id="profileAvatarPreview" src="https://via.placeholder.com/100" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 12px; display: inline-block;">
+                    <input type="file" id="profileAvatarInput" accept="image/*" onchange="handleProfileAvatarUpload(event)" style="display: none;">
+                    <button class="secondary icon-btn" onclick="document.getElementById('profileAvatarInput').click()" data-i18n="change_picture" style="display: block; margin: 0 auto; box-shadow: none;">Change Picture</button>
+                </div>
+                <div class="form-group">
+                    <label>Username (Read Only)</label>
+                    <input type="text" id="profUsername" disabled style="opacity: 0.7;">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="full_name">Full Name</label>
+                    <input type="text" id="profFullName">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="dob">Date of Birth</label>
+                    <input type="date" id="profDob">
+                </div>
+                <div class="form-group">
+                    <label>New Password (leave blank to keep current)</label>
+                    <input type="password" id="profPassword" placeholder="***">
+                </div>
+                <button onclick="saveProfile()" class="primary-dark mt-2" data-i18n="save_profile">Save Profile</button>
+            </div>
+        </div>
+
+        <!-- EVENTS TAB -->
         <div id="myEventsView" class="hidden">
             <div class="flex flex-between" style="margin-bottom: 20px;">
                 <div id="yearFilterContainer" style="display: none;">
@@ -99,11 +138,6 @@
             
             <button id="btnCreateEvent" onclick="openEventEditor()" data-i18n="create_event" style="margin-bottom: 24px; padding: 18px;">+ Create New Event</button>
             <div id="eventsList"></div>
-        </div>
-
-        <!-- PUBLIC HUB VIEW -->
-        <div id="publicHubView">
-            <div id="publicEventsList"></div>
         </div>
     </div>
 
@@ -152,14 +186,13 @@
 
         <button id="btnJoinEvent" class="success" disabled onclick="confirmParticipation()" data-i18n="join_event" style="margin-bottom: 16px; padding: 18px;">Join Event</button>
         <button id="btnLeaveEvent" class="danger hidden" onclick="leaveEvent()" data-i18n="leave_event" style="padding: 18px;">Leave Event</button>
-
     </div>
 
     <!-- STEP 1: EVENT SETUP -->
     <div id="setupSection" class="hidden">
         <div class="flex flex-between" style="margin-bottom: 20px;">
             <h2 id="setupTitle" data-i18n="step1_title" style="margin: 0; font-size: 24px;">Setup: General</h2>
-            <button class="secondary icon-btn" onclick="showMyEvents()" data-i18n="back">← Back</button>
+            <button class="secondary icon-btn" onclick="showProfilePage()" data-i18n="back">← Back</button>
         </div>
 
         <div class="card">
@@ -167,7 +200,6 @@
                 <label data-i18n="tourn_name">Tournament Name</label>
                 <input type="text" id="eventNameInput" placeholder="Weekend Championship">
             </div>
-
             <div class="form-group">
                 <label data-i18n="thumbnail_img">Thumbnail / Header Image</label>
                 <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
@@ -319,7 +351,6 @@
     <div class="modal-card">
         <div class="modal-indicator"></div>
         <h3 data-i18n="add_remove_fish" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Add / Remove Catch</h3>
-        
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
                 <label data-i18n="species_sel">Species</label>
@@ -332,7 +363,6 @@
             <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_fish_btn">+ Add Catch</button>
             <div id="modalCurrentCatches" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
-
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
             <button class="secondary full-width" onclick="closeFishModal()" data-i18n="done" style="box-shadow: none;">Done</button>
         </div>
@@ -343,7 +373,6 @@
     <div class="modal-card">
         <div class="modal-indicator"></div>
         <h3 style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;" data-i18n="penalties">Penalties</h3>
-        
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
                 <label data-i18n="pts_deduct">Points to Deduct</label>
@@ -356,7 +385,6 @@
             <button onclick="confirmAddPenalty()" class="danger" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_penalty">+ Add Penalty</button>
             <div id="modalCurrentPenalties" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
-
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
             <button class="secondary full-width" onclick="closePenaltyModal()" data-i18n="done" style="box-shadow: none;">Done</button>
         </div>
