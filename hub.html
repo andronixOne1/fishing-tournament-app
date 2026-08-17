@@ -31,13 +31,13 @@
             <button id="headerClientAreaBtn" class="secondary icon-btn" onclick="handleClientAreaClick()" data-i18n="client_area" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Client Area</button>
             <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
             <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
-                <option value="en">🇬🇧</option>
-                <option value="ka">🇬🇪</option>
-                <option value="uk">🇺🇦</option>
-                <option value="ru">🇷🇺</option>
-                <option value="fr">🇫🇷</option>
-                <option value="it">🇮🇹</option>
-                <option value="de">🇩🇪</option>
+                <option value="en">🇬🇧 EN</option>
+                <option value="ka">🇬🇪 KA</option>
+                <option value="uk">🇺🇦 UK</option>
+                <option value="ru">🇷🇺 RU</option>
+                <option value="fr">🇫🇷 FR</option>
+                <option value="it">🇮🇹 IT</option>
+                <option value="de">🇩🇪 DE</option>
             </select>
         </div>
     </div>
@@ -82,7 +82,7 @@
     <!-- MAIN DASHBOARD -->
     <div id="dashboardSection">
 
-        <!-- MY EVENTS TAB -->
+        <!-- MY EVENTS VIEW (Client Area) -->
         <div id="myEventsView" class="hidden">
             <div class="flex flex-between" style="margin-bottom: 20px;">
                 <div id="yearFilterContainer" style="display: none;">
@@ -101,9 +101,8 @@
             <div id="eventsList"></div>
         </div>
 
-        <!-- PUBLIC HUB TAB -->
+        <!-- PUBLIC HUB VIEW -->
         <div id="publicHubView">
-            <h2 data-i18n="public_hub" style="margin-top: 8px;">Public Hub</h2>
             <div id="publicEventsList"></div>
         </div>
     </div>
@@ -168,7 +167,7 @@
                 <label data-i18n="tourn_name">Tournament Name</label>
                 <input type="text" id="eventNameInput" placeholder="Weekend Championship">
             </div>
-            
+
             <div class="form-group">
                 <label data-i18n="thumbnail_img">Thumbnail / Header Image</label>
                 <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
@@ -224,7 +223,7 @@
             <p data-i18n="bulk_desc" style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names. Symbols/brackets are auto-removed.</p>
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
-                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
+                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
                     <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
                 </div>
             </div>
@@ -382,7 +381,7 @@
             <h3 id="pubTitle" style="margin:0; font-size: 20px;">Event Title</h3>
             <p id="pubHost" style="margin:4px 0 0 0; font-size:13px; color:var(--text-muted);">Hosted by ...</p>
         </div>
-        <div style="padding: 16px; overflow-y: auto;">
+        <div style="padding: 16px; overflow-y: auto; padding-bottom: 80px;">
             <img id="pubThumb" class="event-hub-thumb hidden">
             <div id="pubDesc" style="font-size:14px; color:var(--text-muted); margin-bottom:16px; white-space:pre-wrap;"></div>
             
@@ -408,7 +407,7 @@
                 <div id="pubParticipantsDetail" style="font-size:13px;"></div>
             </div>
         </div>
-        <div style="padding:16px; background:var(--card-bg); border-top:1px solid var(--border); display:flex; gap:12px; justify-content:space-between;">
+        <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding:16px; background:var(--card-bg); border-top:1px solid var(--border); display:flex; gap:12px; justify-content:space-between; backdrop-filter: blur(16px); padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <button class="secondary" onclick="closePublicEventModal()" data-i18n="close" style="box-shadow:none; flex:1;">Close</button>
             <button id="pubParticipateBtn" class="primary-dark hidden" onclick="goToParticipate()" data-i18n="participate_btn" style="box-shadow:none; margin:0; flex:1;">Participate</button>
         </div>
