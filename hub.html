@@ -18,7 +18,7 @@
 
     <!-- TOP HEADER -->
     <div class="header-bar">
-        <div class="flex" style="gap: 8px; cursor: pointer;" onclick="showDashboard()">
+        <div class="flex" style="gap: 8px; cursor: pointer;" onclick="showPublicHub()">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
                 <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
                 <circle cx="12" cy="3" r="1.5"/>
@@ -27,16 +27,17 @@
         </div>
         
         <div class="flex" style="gap: 8px;">
-            <button id="headerClientAreaBtn" class="secondary icon-btn" onclick="openLogin()" data-i18n="client_area" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Client Area</button>
+            <button id="headerHomeBtn" class="secondary icon-btn" onclick="showPublicHub()" data-i18n="home" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Home</button>
+            <button id="headerClientAreaBtn" class="secondary icon-btn" onclick="handleClientAreaClick()" data-i18n="client_area" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Client Area</button>
             <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
             <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
-                <option value="en">🇬🇧 EN</option>
-                <option value="ka">🇬🇪 KA</option>
-                <option value="uk">🇺🇦 UK</option>
-                <option value="ru">🇷🇺 RU</option>
-                <option value="fr">🇫🇷 FR</option>
-                <option value="it">🇮🇹 IT</option>
-                <option value="de">🇩🇪 DE</option>
+                <option value="en">🇬🇧</option>
+                <option value="ka">🇬🇪</option>
+                <option value="uk">🇺🇦</option>
+                <option value="ru">🇷🇺</option>
+                <option value="fr">🇫🇷</option>
+                <option value="it">🇮🇹</option>
+                <option value="de">🇩🇪</option>
             </select>
         </div>
     </div>
@@ -80,10 +81,6 @@
 
     <!-- MAIN DASHBOARD -->
     <div id="dashboardSection">
-        <div id="dashTabs" class="dash-tabs hidden">
-            <div id="tabBtnPublic" class="dash-tab active" data-i18n="public_hub" onclick="switchDashboardTab('public')">Public Hub</div>
-            <div id="tabBtnMy" class="dash-tab" data-i18n="my_events" onclick="switchDashboardTab('my')">My Events</div>
-        </div>
 
         <!-- MY EVENTS TAB -->
         <div id="myEventsView" class="hidden">
@@ -106,6 +103,7 @@
 
         <!-- PUBLIC HUB TAB -->
         <div id="publicHubView">
+            <h2 data-i18n="public_hub" style="margin-top: 8px;">Public Hub</h2>
             <div id="publicEventsList"></div>
         </div>
     </div>
@@ -114,7 +112,7 @@
     <div id="participateSection" class="hidden">
         <div class="flex flex-between" style="margin-bottom: 20px;">
             <h2 id="partEventTitle" style="margin: 0; font-size: 22px;">Join Event</h2>
-            <button class="secondary icon-btn" onclick="showDashboard()" data-i18n="back">← Back</button>
+            <button class="secondary icon-btn" onclick="showPublicHub()" data-i18n="back">← Back</button>
         </div>
 
         <div class="card">
@@ -162,7 +160,7 @@
     <div id="setupSection" class="hidden">
         <div class="flex flex-between" style="margin-bottom: 20px;">
             <h2 id="setupTitle" data-i18n="step1_title" style="margin: 0; font-size: 24px;">Setup: General</h2>
-            <button class="secondary icon-btn" onclick="showDashboard()" data-i18n="back">← Back</button>
+            <button class="secondary icon-btn" onclick="showMyEvents()" data-i18n="back">← Back</button>
         </div>
 
         <div class="card">
@@ -171,15 +169,6 @@
                 <input type="text" id="eventNameInput" placeholder="Weekend Championship">
             </div>
             
-            <div class="form-group">
-                <label data-i18n="event_status">Event Status</label>
-                <select id="eventStatusSelect">
-                    <option value="announced" data-i18n="status_announced">Announced</option>
-                    <option value="ongoing" data-i18n="status_ongoing">Ongoing</option>
-                    <option value="finished" data-i18n="status_finished">Finished</option>
-                </select>
-            </div>
-
             <div class="form-group">
                 <label data-i18n="thumbnail_img">Thumbnail / Header Image</label>
                 <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
@@ -235,7 +224,7 @@
             <p data-i18n="bulk_desc" style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names. Symbols/brackets are auto-removed.</p>
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
-                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
+                <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.75); backdrop-filter: blur(2px); border-radius: var(--input-radius); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 14px; font-weight:600; color:var(--text-muted); z-index: 10;">
                     <span data-i18n="editing_disabled">Editing this is disabled, please edit participant list on the next page</span>
                 </div>
             </div>
@@ -292,9 +281,8 @@
         </div>
 
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
-            <div class="flex" style="gap: 12px; width: 100%; align-items: center;">
-                <a href="javascript:void(0)" onclick="downloadChart()" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
-                <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_event" style="flex: 1; padding:12px;">Save Event</button>
+            <div id="bottomActionBarButtons" class="flex" style="gap: 12px; width: 100%; align-items: center;">
+                <!-- Dynamically injected buttons -->
             </div>
         </div>
     </div>
@@ -332,6 +320,7 @@
     <div class="modal-card">
         <div class="modal-indicator"></div>
         <h3 data-i18n="add_remove_fish" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Add / Remove Catch</h3>
+        
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
                 <label data-i18n="species_sel">Species</label>
@@ -344,6 +333,7 @@
             <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_fish_btn">+ Add Catch</button>
             <div id="modalCurrentCatches" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
+
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
             <button class="secondary full-width" onclick="closeFishModal()" data-i18n="done" style="box-shadow: none;">Done</button>
         </div>
@@ -353,7 +343,8 @@
 <div id="penaltyModal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'penaltyModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
-        <h3 data-i18n="penalties" style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Penalties</h3>
+        <h3 style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;" data-i18n="penalties">Penalties</h3>
+        
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
                 <label data-i18n="pts_deduct">Points to Deduct</label>
@@ -366,6 +357,7 @@
             <button onclick="confirmAddPenalty()" class="danger" style="margin-bottom: 20px; padding: 16px;" data-i18n="add_penalty">+ Add Penalty</button>
             <div id="modalCurrentPenalties" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
+
         <div class="flex tier-grid" style="margin-top: 20px; padding:0; background:none; border:none; flex-shrink: 0;">
             <button class="secondary full-width" onclick="closePenaltyModal()" data-i18n="done" style="box-shadow: none;">Done</button>
         </div>
@@ -389,7 +381,6 @@
             <div class="modal-indicator"></div>
             <h3 id="pubTitle" style="margin:0; font-size: 20px;">Event Title</h3>
             <p id="pubHost" style="margin:4px 0 0 0; font-size:13px; color:var(--text-muted);">Hosted by ...</p>
-            <button id="pubParticipateBtn" class="primary-dark hidden" onclick="goToParticipate()" data-i18n="participate_btn" style="margin-top: 12px; padding: 12px;">Participate</button>
         </div>
         <div style="padding: 16px; overflow-y: auto;">
             <img id="pubThumb" class="event-hub-thumb hidden">
@@ -417,8 +408,9 @@
                 <div id="pubParticipantsDetail" style="font-size:13px;"></div>
             </div>
         </div>
-        <div style="padding:16px; background:var(--card-bg); border-top:1px solid var(--border);">
-            <button class="secondary" onclick="closePublicEventModal()" data-i18n="close" style="box-shadow:none;">Close</button>
+        <div style="padding:16px; background:var(--card-bg); border-top:1px solid var(--border); display:flex; gap:12px; justify-content:space-between;">
+            <button class="secondary" onclick="closePublicEventModal()" data-i18n="close" style="box-shadow:none; flex:1;">Close</button>
+            <button id="pubParticipateBtn" class="primary-dark hidden" onclick="goToParticipate()" data-i18n="participate_btn" style="box-shadow:none; margin:0; flex:1;">Participate</button>
         </div>
     </div>
 </div>
