@@ -18,13 +18,16 @@
 
     <!-- TOP HEADER -->
     <div class="header-bar">
-        <!-- Logo acts as Home Button -->
-        <div class="flex" style="gap: 8px; cursor: pointer;" onclick="showPublicHub()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
-                <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
-                <circle cx="12" cy="3" r="1.5"/>
-            </svg>
-            <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard Hub</div>
+        <div class="flex" style="gap: 16px; align-items: center;">
+            <div class="flex" style="gap: 8px; cursor: pointer;" onclick="showPublicHub()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
+                    <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
+                    <circle cx="12" cy="3" r="1.5"/>
+                </svg>
+                <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard Hub</div>
+            </div>
+            <!-- My Events Button (Organizations Only) -->
+            <button id="headerMyEventsBtn" class="secondary icon-btn hidden" onclick="showMyEvents()" data-i18n="my_events" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none; margin-left: 8px;">My Events</button>
         </div>
         
         <div class="flex" style="gap: 12px; align-items: center;">
@@ -37,8 +40,15 @@
                 <option value="it">🇮🇹 IT</option>
                 <option value="de">🇩🇪 DE</option>
             </select>
+            
             <button id="headerLoginBtn" class="secondary icon-btn" onclick="openLogin()" data-i18n="login_btn" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Login / Register</button>
-            <img id="headerAvatar" src="https://via.placeholder.com/40" style="width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: none; object-fit: cover; border: 2px solid rgba(255,255,255,0.8);" onclick="showProfilePage()">
+            
+            <!-- User Profile Avatar & Name -->
+            <div id="headerUserWrap" class="flex hidden" style="cursor: pointer; background: rgba(255,255,255,0.15); padding: 4px 12px 4px 4px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.3);" onclick="showProfilePage()">
+                <img id="headerAvatar" src="https://via.placeholder.com/40" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.8);">
+                <span id="headerUserName" style="font-weight: 600; font-size: 13px; color: white;">Name</span>
+            </div>
+
             <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor; margin: 0;">Logout</button>
         </div>
     </div>
@@ -80,67 +90,58 @@
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
+    <!-- MAIN DASHBOARD (Public Hub) -->
     <div id="dashboardSection">
-        <!-- PUBLIC HUB VIEW (Main Page) -->
-        <div id="publicHubView">
-            <h2 data-i18n="public_hub" style="margin-top: 8px;">Public Hub</h2>
-            <div id="publicEventsList"></div>
-        </div>
+        <h2 data-i18n="public_hub" style="margin-top: 8px;">Public Hub</h2>
+        <div id="publicEventsList"></div>
     </div>
 
-    <!-- PROFILE & MY EVENTS SECTION -->
+    <!-- MY EVENTS SECTION (Organization Only) -->
+    <div id="myEventsSection" class="hidden">
+        <h2 data-i18n="my_events" style="margin-top: 8px;">My Events</h2>
+        <div class="flex flex-between" style="margin-bottom: 20px;">
+            <div id="yearFilterContainer" style="display: none;">
+                <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"></select>
+            </div>
+            <select id="myEventsSort" onchange="processDashboard()" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <option value="newest" data-i18n="sort_newest">Newest First</option>
+                <option value="oldest" data-i18n="sort_oldest">Oldest First</option>
+                <option value="az" data-i18n="sort_az">Name A-Z</option>
+            </select>
+        </div>
+        
+        <div id="aotyContainer" style="margin-bottom: 24px;" class="hidden"></div>
+        
+        <button id="btnCreateEvent" onclick="openEventEditor()" data-i18n="create_event" style="margin-bottom: 24px; padding: 18px;">+ Create New Event</button>
+        <div id="eventsList"></div>
+    </div>
+
+    <!-- PROFILE SECTION -->
     <div id="profileSection" class="hidden">
-        <div class="dash-tabs" style="margin-bottom: 20px;">
-            <div id="tabProfile" class="dash-tab active" data-i18n="profile" onclick="switchProfileTab('profile')">Profile</div>
-            <div id="tabMyEvents" class="dash-tab" data-i18n="events" onclick="switchProfileTab('events')">Events</div>
-        </div>
-
-        <!-- PROFILE TAB -->
-        <div id="profileView">
-            <div class="card">
-                <div class="text-center" style="margin-bottom: 24px;">
-                    <img id="profileAvatarPreview" src="https://via.placeholder.com/100" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 12px; display: inline-block;">
-                    <input type="file" id="profileAvatarInput" accept="image/*" onchange="handleProfileAvatarUpload(event)" style="display: none;">
-                    <button class="secondary icon-btn" onclick="document.getElementById('profileAvatarInput').click()" data-i18n="change_picture" style="display: block; margin: 0 auto; box-shadow: none;">Change Picture</button>
-                </div>
-                <div class="form-group">
-                    <label>Username (Read Only)</label>
-                    <input type="text" id="profUsername" disabled style="opacity: 0.7;">
-                </div>
-                <div class="form-group">
-                    <label data-i18n="full_name">Full Name</label>
-                    <input type="text" id="profFullName">
-                </div>
-                <div class="form-group">
-                    <label data-i18n="dob">Date of Birth</label>
-                    <input type="date" id="profDob">
-                </div>
-                <div class="form-group">
-                    <label>New Password (leave blank to keep current)</label>
-                    <input type="password" id="profPassword" placeholder="***">
-                </div>
-                <button onclick="saveProfile()" class="primary-dark mt-2" data-i18n="save_profile">Save Profile</button>
+        <h2 data-i18n="profile" style="margin-top: 8px;">Profile</h2>
+        <div class="card">
+            <div class="text-center" style="margin-bottom: 24px;">
+                <img id="profileAvatarPreview" src="https://via.placeholder.com/100" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 12px; display: inline-block;">
+                <input type="file" id="profileAvatarInput" accept="image/*" onchange="handleProfileAvatarUpload(event)" style="display: none;">
+                <button class="secondary icon-btn" onclick="document.getElementById('profileAvatarInput').click()" data-i18n="change_picture" style="display: block; margin: 0 auto; box-shadow: none;">Change Picture</button>
             </div>
-        </div>
-
-        <!-- EVENTS TAB -->
-        <div id="myEventsView" class="hidden">
-            <div class="flex flex-between" style="margin-bottom: 20px;">
-                <div id="yearFilterContainer" style="display: none;">
-                    <select id="yearSelect" onchange="changeYear(this.value)" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"></select>
-                </div>
-                <select id="myEventsSort" onchange="processDashboard()" style="padding: 10px 16px; border-radius: 12px; width: auto; font-weight: 700; color: var(--primary-dark); font-size: 16px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                    <option value="newest" data-i18n="sort_newest">Newest First</option>
-                    <option value="oldest" data-i18n="sort_oldest">Oldest First</option>
-                    <option value="az" data-i18n="sort_az">Name A-Z</option>
-                </select>
+            <div class="form-group">
+                <label>Username (Read Only)</label>
+                <input type="text" id="profUsername" disabled style="opacity: 0.7;">
             </div>
-            
-            <div id="aotyContainer" style="margin-bottom: 24px;" class="hidden"></div>
-            
-            <button id="btnCreateEvent" onclick="openEventEditor()" data-i18n="create_event" style="margin-bottom: 24px; padding: 18px;">+ Create New Event</button>
-            <div id="eventsList"></div>
+            <div class="form-group">
+                <label data-i18n="full_name">Full Name</label>
+                <input type="text" id="profFullName">
+            </div>
+            <div class="form-group">
+                <label data-i18n="dob">Date of Birth</label>
+                <input type="date" id="profDob">
+            </div>
+            <div class="form-group">
+                <label>New Password (leave blank to keep current)</label>
+                <input type="password" id="profPassword" placeholder="***">
+            </div>
+            <button onclick="saveProfile()" class="primary-dark mt-2" data-i18n="save_profile">Save Profile</button>
         </div>
     </div>
 
@@ -157,7 +158,6 @@
                 <div id="tabForFriend" class="dash-tab" data-i18n="for_friend" onclick="switchPartTab('friend')">For a Friend</div>
             </div>
 
-            <!-- Me Form -->
             <div id="partMeForm">
                 <div class="form-group">
                     <label data-i18n="full_name">Full Name</label>
@@ -169,7 +169,6 @@
                 </div>
             </div>
 
-            <!-- Friend Form -->
             <div id="partFriendForm" class="hidden">
                 <div class="form-group">
                     <label data-i18n="friend_name">Friend's Full Name</label>
@@ -195,7 +194,7 @@
     <div id="setupSection" class="hidden">
         <div class="flex flex-between" style="margin-bottom: 20px;">
             <h2 id="setupTitle" data-i18n="step1_title" style="margin: 0; font-size: 24px;">Setup: General</h2>
-            <button class="secondary icon-btn" onclick="showProfilePage()" data-i18n="back">← Back</button>
+            <button class="secondary icon-btn" onclick="showMyEvents()" data-i18n="back">← Back</button>
         </div>
 
         <div class="card">
@@ -203,6 +202,7 @@
                 <label data-i18n="tourn_name">Tournament Name</label>
                 <input type="text" id="eventNameInput" placeholder="Weekend Championship">
             </div>
+            
             <div class="form-group">
                 <label data-i18n="thumbnail_img">Thumbnail / Header Image</label>
                 <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
