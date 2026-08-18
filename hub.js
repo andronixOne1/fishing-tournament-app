@@ -127,7 +127,7 @@ window.addEventListener("popstate", (event) => {
     document.getElementById("hubSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
     document.getElementById("profileSection").classList.add("hidden");
-    document.getElementById("publicHubView").classList.add("hidden");
+    document.getElementById("dashboardSection").classList.add("hidden");
     
     if (view === 'profileSection') {
         document.getElementById("profileSection").classList.remove("hidden");
@@ -153,10 +153,27 @@ function showPublicHub() {
     document.getElementById("participateSection").classList.add("hidden");
     document.getElementById("profileSection").classList.add("hidden");
     
+    document.getElementById("dashboardSection").classList.remove("hidden");
+    document.getElementById("myEventsView").classList.add("hidden");
     document.getElementById("publicHubView").classList.remove("hidden");
     
-    history.pushState({view: 'publicHubView'}, "");
+    history.pushState({view: 'dashboardSection', sub: 'public'}, "");
     renderPublicHub();
+}
+
+function showMyEvents() {
+    document.getElementById("setupSection").classList.add("hidden");
+    document.getElementById("hubSection").classList.add("hidden");
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("registerSection").classList.add("hidden");
+    document.getElementById("participateSection").classList.add("hidden");
+    
+    document.getElementById("dashboardSection").classList.remove("hidden");
+    document.getElementById("publicHubView").classList.add("hidden");
+    document.getElementById("myEventsView").classList.remove("hidden");
+    
+    history.pushState({view: 'dashboardSection', sub: 'my'}, "");
+    processDashboard();
 }
 
 function showProfilePage() {
@@ -165,7 +182,7 @@ function showProfilePage() {
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("registerSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
-    document.getElementById("publicHubView").classList.add("hidden");
+    document.getElementById("dashboardSection").classList.add("hidden");
     
     document.getElementById("profileSection").classList.remove("hidden");
     
@@ -317,7 +334,10 @@ function loginSuccess(user, data) {
     loggedInUser = user;
     loggedInUserData = data;
     
-    document.getElementById("headerClientAreaBtn").classList.add("hidden");
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("registerSection").classList.add("hidden");
+    
+    document.getElementById("headerLoginBtn").classList.add("hidden");
     document.getElementById("headerLogoutBtn").classList.remove("hidden");
     
     let avatarEl = document.getElementById("headerAvatar");
@@ -333,7 +353,11 @@ function handleLogout() {
     loggedInUser = "";
     loggedInUserData = null;
     
-    document.getElementById("headerClientAreaBtn").classList.remove("hidden");
+    document.getElementById("profileSection").classList.add("hidden");
+    document.getElementById("setupSection").classList.add("hidden");
+    document.getElementById("hubSection").classList.add("hidden");
+    
+    document.getElementById("headerLoginBtn").classList.remove("hidden");
     document.getElementById("headerAvatar").style.display = "none";
     document.getElementById("headerLogoutBtn").classList.add("hidden");
     
@@ -342,12 +366,11 @@ function handleLogout() {
 }
 
 function openLogin() {
-    document.getElementById("setupSection").classList.add("hidden");
-    document.getElementById("hubSection").classList.add("hidden");
-    document.getElementById("publicHubView").classList.add("hidden");
+    document.getElementById("dashboardSection").classList.add("hidden");
     document.getElementById("profileSection").classList.add("hidden");
     document.getElementById("participateSection").classList.add("hidden");
-    document.getElementById("registerSection").classList.add("hidden");
+    document.getElementById("setupSection").classList.add("hidden");
+    document.getElementById("hubSection").classList.add("hidden");
     
     document.getElementById("loginSection").classList.remove("hidden");
     window.scrollTo(0, 0);
@@ -364,14 +387,14 @@ function subscribeToEventsRealtime() {
         
         snapshot.forEach(doc => { 
             let data = { id: doc.id, ...doc.data() };
+            if (!data.details) data.details = {};
             
             if (loggedInUser && data.username === loggedInUser) {
                 loadedEvents.push(data);
             }
             
-            // Strictly check for boolean true or string "true"
-            let isPub = data.details && data.details.isPublic;
-            if (isPub === true || isPub === "true") {
+            let isPub = data.details.isPublic;
+            if (isPub !== false && isPub !== "false") {
                 allPublicEvents.push(data);
             }
         });
@@ -393,6 +416,7 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
+        alert("Database connection failed. Please ensure your Firebase security rules allow reading.");
     });
 }
 
@@ -654,6 +678,7 @@ function handleThumbnailUpload(e) {
 
 function openEventEditor(eventObj = null) {
     document.getElementById("profileSection").classList.add("hidden");
+    document.getElementById("dashboardSection").classList.add("hidden");
     document.getElementById("setupSection").classList.remove("hidden");
     window.scrollTo(0, 0);
     history.pushState({view: 'setupSection'}, "");
@@ -663,8 +688,9 @@ function openEventEditor(eventObj = null) {
         
         document.getElementById("eventNameInput").value = currentEvent.name || "";
         document.getElementById("eventDescInput").value = currentEvent.description || "";
-        document.getElementById("isPublicToggle").checked = currentEvent.isPublic === true;
+        document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false;
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
+        document.getElementById("eventStatusSelect").value = currentEvent.status || "ongoing";
         
         if(currentEvent.thumbnail) {
             document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
@@ -690,7 +716,7 @@ function openEventEditor(eventObj = null) {
             year: new Date().getFullYear().toString(),
             status: "announced",
             isRanked: true,
-            isPublic: false,
+            isPublic: true,
             isStarted: false,
             unit: 'metric',
             measureType: 'size',
@@ -703,8 +729,9 @@ function openEventEditor(eventObj = null) {
         
         document.getElementById("eventNameInput").value = "";
         document.getElementById("eventDescInput").value = "";
-        document.getElementById("isPublicToggle").checked = false;
+        document.getElementById("isPublicToggle").checked = true;
         document.getElementById("isRankedToggle").checked = true;
+        document.getElementById("eventStatusSelect").value = "announced";
         document.getElementById("eventThumbnailInput").value = "";
         document.getElementById('thumbnailPreview').style.display = 'none';
         document.getElementById("bulkParticipantsInput").value = "";
@@ -852,6 +879,7 @@ function goToEventHub() {
     currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
     currentEvent.description = document.getElementById("eventDescInput").value.trim();
     currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
+    currentEvent.status = document.getElementById("eventStatusSelect").value;
     let wantsRanked = document.getElementById("isRankedToggle").checked;
     
     let thumbSrc = document.getElementById('thumbnailPreview').src;
