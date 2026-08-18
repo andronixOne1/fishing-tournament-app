@@ -86,9 +86,7 @@ function changeLanguage(lang) {
     if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
     if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
     if(!document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
-    if(!document.getElementById("profileSection").classList.contains("hidden")) {
-        if(!document.getElementById("myEventsView").classList.contains("hidden")) processDashboard();
-    }
+    if(!document.getElementById("myEventsSection").classList.contains("hidden")) processDashboard();
     if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
     if(!document.getElementById("dashboardSection").classList.contains("hidden")) renderPublicHub();
 }
@@ -119,7 +117,7 @@ function parseParticipants(rawText) {
 
 // SAFE ROUTING ENGINE
 function hideAllSections() {
-    ["loginSection", "registerSection", "dashboardSection", "profileSection", "participateSection", "setupSection", "hubSection"].forEach(id => {
+    ["loginSection", "registerSection", "dashboardSection", "profileSection", "myEventsSection", "participateSection", "setupSection", "hubSection"].forEach(id => {
         let el = document.getElementById(id);
         if (el) el.classList.add("hidden");
     });
@@ -130,20 +128,8 @@ window.addEventListener("popstate", (event) => {
     let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
     
     hideAllSections();
-    
-    if (view === 'profileSection') {
-        let el = document.getElementById("profileSection");
-        if (el) el.classList.remove("hidden");
-        if (event.state && event.state.sub === 'events') {
-            switchProfileTab('events');
-        } else {
-            switchProfileTab('profile');
-        }
-    } else {
-        let target = document.getElementById(view);
-        if(target) target.classList.remove("hidden");
-    }
-    
+    let target = document.getElementById(view);
+    if(target) target.classList.remove("hidden");
     window.scrollTo(0, 0);
 });
 
@@ -154,17 +140,16 @@ function showPublicHub() {
     renderPublicHub();
 }
 
+function showMyEvents() {
+    hideAllSections();
+    document.getElementById("myEventsSection").classList.remove("hidden");
+    history.pushState({view: 'myEventsSection'}, "");
+    processDashboard();
+}
+
 function showProfilePage() {
     hideAllSections();
     document.getElementById("profileSection").classList.remove("hidden");
-    
-    if (loggedInUserData && (loggedInUserData.role === 'organization' || !loggedInUserData.role)) {
-        document.getElementById("tabMyEvents").style.display = "block";
-        document.getElementById("btnCreateEvent").style.display = "flex";
-    } else {
-        document.getElementById("tabMyEvents").style.display = "none";
-        document.getElementById("btnCreateEvent").style.display = "none";
-    }
 
     document.getElementById("profUsername").value = loggedInUser;
     document.getElementById("profFullName").value = loggedInUserData.fullName || "";
@@ -173,26 +158,7 @@ function showProfilePage() {
     document.getElementById("profileAvatarPreview").src = loggedInUserData.avatar || "https://via.placeholder.com/100";
     tempProfileAvatarBase64 = "";
 
-    switchProfileTab('profile');
-    history.pushState({view: 'profileSection', sub: 'profile'}, "");
-}
-
-function switchProfileTab(tab) {
-    document.getElementById("tabProfile").classList.remove("active");
-    document.getElementById("tabMyEvents").classList.remove("active");
-    document.getElementById("profileView").classList.add("hidden");
-    document.getElementById("myEventsView").classList.add("hidden");
-
-    if (tab === 'events') {
-        document.getElementById("tabMyEvents").classList.add("active");
-        document.getElementById("myEventsView").classList.remove("hidden");
-        processDashboard(); 
-        history.replaceState({view: 'profileSection', sub: 'events'}, "");
-    } else {
-        document.getElementById("tabProfile").classList.add("active");
-        document.getElementById("profileView").classList.remove("hidden");
-        history.replaceState({view: 'profileSection', sub: 'profile'}, "");
-    }
+    history.pushState({view: 'profileSection'}, "");
 }
 
 // PROFILE AVATAR LOGIC
@@ -229,7 +195,12 @@ function saveProfile() {
 
     db.collection("users").doc(loggedInUser).update(updateData).then(() => {
         loggedInUserData = { ...loggedInUserData, ...updateData };
-        document.getElementById("headerAvatar").src = loggedInUserData.avatar || "https://via.placeholder.com/40";
+        let headerAvatar = document.getElementById("headerAvatar");
+        if(headerAvatar) headerAvatar.src = loggedInUserData.avatar || "https://via.placeholder.com/40";
+        
+        let headerName = document.getElementById("headerUserName");
+        if(headerName) headerName.innerText = loggedInUserData.fullName || loggedInUser;
+
         document.getElementById("profPassword").value = "";
         alert("Profile saved successfully!");
     }).catch(err => {
@@ -245,11 +216,10 @@ function handleClientAreaClick() {
 
 // AUTHENTICATION
 function toggleAuth(view) {
+    hideAllSections();
     if(view === 'register') {
-        hideAllSections();
         document.getElementById("registerSection").classList.remove("hidden");
     } else {
-        hideAllSections();
         document.getElementById("loginSection").classList.remove("hidden");
     }
 }
@@ -312,10 +282,25 @@ function loginSuccess(user, data) {
     let btnLogout = document.getElementById("headerLogoutBtn");
     if (btnLogout) btnLogout.classList.remove("hidden");
     
+    let userWrap = document.getElementById("headerUserWrap");
+    if (userWrap) userWrap.classList.remove("hidden");
+    
     let avatarEl = document.getElementById("headerAvatar");
     if (avatarEl) {
         avatarEl.style.display = "block";
         avatarEl.src = data.avatar || "https://via.placeholder.com/40";
+    }
+
+    let nameEl = document.getElementById("headerUserName");
+    if (nameEl) {
+        nameEl.innerText = data.fullName || user;
+    }
+
+    let myEventsBtn = document.getElementById("headerMyEventsBtn");
+    if (data.role === 'organization') {
+        if(myEventsBtn) myEventsBtn.classList.remove("hidden");
+    } else {
+        if(myEventsBtn) myEventsBtn.classList.add("hidden");
     }
 
     showProfilePage();
@@ -333,8 +318,11 @@ function handleLogout() {
     let btnLogout = document.getElementById("headerLogoutBtn");
     if (btnLogout) btnLogout.classList.add("hidden");
     
-    let avatarEl = document.getElementById("headerAvatar");
-    if (avatarEl) avatarEl.style.display = "none";
+    let userWrap = document.getElementById("headerUserWrap");
+    if (userWrap) userWrap.classList.add("hidden");
+
+    let myEventsBtn = document.getElementById("headerMyEventsBtn");
+    if(myEventsBtn) myEventsBtn.classList.add("hidden");
     
     showPublicHub();
     subscribeToEventsRealtime(); 
@@ -359,17 +347,19 @@ function subscribeToEventsRealtime() {
             let data = { id: doc.id, ...doc.data() };
             if (!data.details) data.details = {};
             
+            // Populate Private List
             if (loggedInUser && data.username === loggedInUser) {
                 loadedEvents.push(data);
             }
             
+            // Populate Public List - STRICTLY ONLY IF isPublic IS EXPLICITLY TRUE OR MISSING (legacy)
             let isPub = data.details.isPublic;
-            if (isPub === true || String(isPub) === "true") {
+            if (isPub === true || String(isPub) === "true" || isPub === undefined) {
                 allPublicEvents.push(data);
             }
         });
         
-        if (loggedInUser && !document.getElementById("profileSection").classList.contains("hidden")) {
+        if (loggedInUser && !document.getElementById("myEventsSection").classList.contains("hidden")) {
             processDashboard();
         }
         
@@ -598,7 +588,6 @@ function renderEventsList(filteredEvents) {
             <div class="flex" style="gap:8px; align-items:center;">
                 <a href="javascript:void(0)" onclick="downloadChart('${ev.id}')" style="color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: underline; margin-right: 4px;">PDF</a>
                 <button onclick="editEvent('${ev.id}')" class="icon-btn primary-dark" style="padding:10px 14px; box-shadow:none;">Open</button>
-                <button onclick="deleteEvent('${ev.id}')" class="danger icon-btn" style="padding:10px 14px; box-shadow:none;">Del</button>
             </div>
         </div>`;
     });
@@ -606,17 +595,6 @@ function renderEventsList(filteredEvents) {
 }
 
 // SETUP PHASE
-function editEvent(id) {
-    let found = loadedEvents.find(e => e.id === id);
-    if (found) openEventEditor(found.details);
-}
-
-function deleteEvent(id) {
-    if (confirm("Delete this event from the cloud?")) {
-        db.collection("events").doc(id).delete();
-    }
-}
-
 function setUnit(u) {
     confUnit = u;
     document.getElementById('unitBtnMetric').className = u === 'metric' ? 'primary-dark' : 'secondary';
@@ -668,7 +646,8 @@ function openEventEditor(eventObj = null) {
         
         document.getElementById("eventNameInput").value = currentEvent.name || "";
         document.getElementById("eventDescInput").value = currentEvent.description || "";
-        document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false;
+        
+        document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false && currentEvent.isPublic !== "false";
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         
         if(currentEvent.thumbnail) {
@@ -1225,11 +1204,233 @@ function saveCurrentEvent(redirect = true) {
     localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
 
     db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
-        if(redirect) showProfilePage(); 
+        if(redirect) showMyEvents(); 
     }).catch(err => { 
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud. Check internet connection."); 
+        alert("Failed to save event to cloud."); 
     });
+}
+
+// PARTICIPATION & PUBLIC MODAL LOGIC
+function openPublicEvent(eventId) {
+    let evData = allPublicEvents.find(e => e.id === eventId);
+    if(!evData) return;
+    let ev = evData.details;
+    currentParticipationEventId = eventId;
+
+    document.getElementById("pubTitle").innerText = evData.name;
+    document.getElementById("pubHost").innerText = `Hosted by ${evData.username} | ${ev.date || ''}`;
+    
+    if(ev.thumbnail) {
+        document.getElementById("pubThumb").src = ev.thumbnail;
+        document.getElementById("pubThumb").classList.remove("hidden");
+    } else {
+        document.getElementById("pubThumb").classList.add("hidden");
+    }
+
+    document.getElementById("pubDesc").innerText = ev.description || "No description provided.";
+    
+    let limitTxt = ev.limitType === 'top5' ? "Top 5 Counted" : "All Fish Counted";
+    let measureTxt = ev.measureType === 'weight' ? "Weighted" : "Size/Points";
+    let rulesHtml = `<div style="margin-bottom:12px;"><b>Format:</b> ${measureTxt} | ${limitTxt}</div>`;
+    
+    rulesHtml += (ev.species||[]).map(s => {
+        let trs = s.tiers.map(t => `${t.from}-${t.to} (${parseFloat(t.multiplier||1).toFixed(1)}x)`).join(', ');
+        return `<div><b>${s.name} (${s.abbr.toUpperCase()}):</b> ${trs}</div>`;
+    }).join('');
+    document.getElementById("pubRules").innerHTML = rulesHtml;
+
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+    document.getElementById("pubParticipantsDetail").innerHTML = (ev.participants||[]).map((p, i) => {
+        let catches = (p.catches||[]).length > 0 ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') : 'None';
+        let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger);">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
+        return `<div style="padding:8px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
+    }).join('');
+
+    isLeaderboardExpanded = false;
+    let st = ev.status || 'finished';
+    
+    if (st === 'announced') {
+        document.getElementById("pubRulesCard").classList.remove("hidden");
+        document.getElementById("pubLeaderboardCard").classList.add("hidden");
+        document.getElementById("pubPartCard").classList.remove("hidden");
+        document.getElementById("pubParticipateBtn").classList.remove("hidden");
+    } else if (st === 'ongoing') {
+        document.getElementById("pubRulesCard").classList.remove("hidden");
+        document.getElementById("pubLeaderboardCard").classList.remove("hidden");
+        document.getElementById("pubPartCard").classList.add("hidden");
+        document.getElementById("pubParticipateBtn").classList.add("hidden");
+        renderPublicLeaderboardList(ev);
+    } else { // Finished
+        document.getElementById("pubRulesCard").classList.remove("hidden");
+        document.getElementById("pubLeaderboardCard").classList.remove("hidden");
+        document.getElementById("pubPartCard").classList.add("hidden");
+        document.getElementById("pubParticipateBtn").classList.add("hidden");
+        renderPublicLeaderboardList(ev);
+    }
+
+    document.getElementById("publicEventModal").classList.remove("hidden");
+}
+
+function closePublicEventModal() { 
+    document.getElementById("publicEventModal").classList.add("hidden"); 
+    currentParticipationEventId = null;
+}
+
+function toggleFullLeaderboard() {
+    isLeaderboardExpanded = !isLeaderboardExpanded;
+    document.getElementById("btnToggleLeaderboard").innerText = isLeaderboardExpanded ? t('hide_all') : t('show_all');
+    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+    if(evData) renderPublicLeaderboardList(evData.details);
+}
+
+function renderPublicLeaderboardList(ev) {
+    if(!ev) return;
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+
+    let processed = (ev.participants||[]).map(p => {
+        let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
+        let countedCatches = ev.limitType === 'top5' ? [...(p.catches||[])].sort((a,b) => b.size - a.size).slice(0,5) : (p.catches||[]);
+
+        countedCatches.forEach(c => {
+            totalMeasure += c.size;
+            if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+        });
+        
+        let penPts = 0;
+        if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
+        totalPts -= penPts;
+
+        return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
+    });
+
+    processed.sort((a, b) => b.totalPts - a.totalPts); 
+
+    let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
+
+    let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>Max</th></tr>`;
+    toShow.forEach((p, idx) => {
+        let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
+        let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
+        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
+        html += `<tr>
+            <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
+            <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
+            <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
+            <td>${maxDisplay}</td>
+        </tr>`;
+    });
+    html += `</table>`;
+    
+    document.getElementById("pubLeaderboard").innerHTML = html;
+    document.getElementById("btnToggleLeaderboard").style.display = processed.length > 3 ? "inline-block" : "none";
+}
+
+function goToParticipate() {
+    if(!loggedInUser) {
+        alert("You must be logged in to participate.");
+        closePublicEventModal();
+        openLogin();
+        return;
+    }
+    closePublicEventModal();
+    hideAllSections();
+    
+    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+    document.getElementById("partEventTitle").innerText = "Join " + evData.name;
+    
+    document.getElementById("partMyName").value = getMyName();
+    document.getElementById("partMyDob").value = (loggedInUserData && loggedInUserData.dob) ? loggedInUserData.dob : "";
+    
+    let isAlreadyJoined = (evData.details.participants||[]).some(p => p.registeredBy === loggedInUser || p.name === getMyName());
+    
+    document.getElementById("btnJoinEvent").disabled = true;
+    document.getElementById("btnJoinEvent").classList.remove("hidden");
+    document.getElementById("btnPayFee").innerText = t("pay_fee");
+    document.getElementById("btnPayFee").disabled = false;
+    document.getElementById("btnPayFee").className = "warning";
+    
+    if(isAlreadyJoined) {
+        document.getElementById("btnLeaveEvent").classList.remove("hidden");
+    } else {
+        document.getElementById("btnLeaveEvent").classList.add("hidden");
+    }
+
+    switchPartTab('me');
+    document.getElementById("participateSection").classList.remove("hidden");
+    window.scrollTo(0,0);
+    history.pushState({view: 'participateSection'}, "");
+}
+
+function switchPartTab(type) {
+    isForMe = (type === 'me');
+    document.getElementById("tabForMe").classList.remove("active");
+    document.getElementById("tabForFriend").classList.remove("active");
+    document.getElementById("partMeForm").classList.add("hidden");
+    document.getElementById("partFriendForm").classList.add("hidden");
+    
+    if(isForMe) {
+        document.getElementById("tabForMe").classList.add("active");
+        document.getElementById("partMeForm").classList.remove("hidden");
+    } else {
+        document.getElementById("tabForFriend").classList.add("active");
+        document.getElementById("partFriendForm").classList.remove("hidden");
+    }
+    
+    document.getElementById("btnJoinEvent").disabled = true;
+    document.getElementById("btnPayFee").innerText = t("pay_fee");
+    document.getElementById("btnPayFee").disabled = false;
+    document.getElementById("btnPayFee").className = "warning";
+}
+
+function processPayment() {
+    let btn = document.getElementById("btnPayFee");
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+    setTimeout(() => {
+        btn.innerText = t("fee_paid");
+        btn.className = "success";
+        document.getElementById("btnJoinEvent").disabled = false;
+    }, 1000);
+}
+
+function confirmParticipation() {
+    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+    let ev = evData.details;
+    if(!ev.participants) ev.participants = [];
+    
+    let pName = isForMe ? getMyName() : document.getElementById("partFriendName").value.trim();
+    if(!pName) { alert("Please provide a name."); return; }
+
+    ev.participants.push({
+        id: 'p_' + Math.random().toString(36).substr(2, 9),
+        name: pName,
+        catches: [],
+        penalties: [],
+        registeredBy: loggedInUser
+    });
+
+    db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
+        alert("Successfully joined the event!");
+        document.getElementById("participateSection").classList.add("hidden");
+        showPublicHub();
+    });
+}
+
+function leaveEvent() {
+    if(confirm("Are you sure you want to leave this event?")) {
+        let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+        let ev = evData.details;
+        
+        ev.participants = (ev.participants||[]).filter(p => p.name !== getMyName() && p.registeredBy !== loggedInUser);
+        
+        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
+            alert("You have left the event.");
+            document.getElementById("participateSection").classList.add("hidden");
+            showPublicHub();
+        });
+    }
 }
 
 function downloadChart(eventId = null) {
