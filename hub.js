@@ -86,7 +86,9 @@ function changeLanguage(lang) {
     if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
     if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
     if(!document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
-    if(!document.getElementById("myEventsSection").classList.contains("hidden")) processDashboard();
+    if(!document.getElementById("profileSection").classList.contains("hidden")) {
+        if(!document.getElementById("myEventsView").classList.contains("hidden")) processDashboard();
+    }
     if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
     if(!document.getElementById("dashboardSection").classList.contains("hidden")) renderPublicHub();
 }
@@ -352,7 +354,7 @@ function subscribeToEventsRealtime() {
                 loadedEvents.push(data);
             }
             
-            // Populate Public List - STRICTLY ONLY IF isPublic IS EXPLICITLY TRUE OR MISSING (legacy)
+            // Populate Public List 
             let isPub = data.details.isPublic;
             if (isPub === true || String(isPub) === "true" || isPub === undefined) {
                 allPublicEvents.push(data);
@@ -376,6 +378,12 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
+        if (!loggedInUser) {
+            let container = document.getElementById("publicEventsList");
+            if(container) {
+                container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--danger);"><b>Database Connection Blocked</b><br><br>Firebase is blocking unauthenticated reads. Please go to your Firebase Console -> Firestore Database -> Rules and ensure it says:<br><br><code>allow read, write: if true;</code></div>`;
+            }
+        }
     });
 }
 
@@ -588,6 +596,7 @@ function renderEventsList(filteredEvents) {
             <div class="flex" style="gap:8px; align-items:center;">
                 <a href="javascript:void(0)" onclick="downloadChart('${ev.id}')" style="color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: underline; margin-right: 4px;">PDF</a>
                 <button onclick="editEvent('${ev.id}')" class="icon-btn primary-dark" style="padding:10px 14px; box-shadow:none;">Open</button>
+                <button onclick="deleteEvent('${ev.id}')" class="danger icon-btn" style="padding:10px 14px; box-shadow:none;">Del</button>
             </div>
         </div>`;
     });
@@ -595,6 +604,23 @@ function renderEventsList(filteredEvents) {
 }
 
 // SETUP PHASE
+function editEvent(id) {
+    let found = loadedEvents.find(e => e.id === id);
+    if (found) openEventEditor(found.details);
+}
+
+function deleteEvent(id) {
+    if (confirm("Are you sure you want to permanently delete this event?")) {
+        db.collection("events").doc(id).delete()
+            .then(() => {
+                console.log("Event deleted.");
+            })
+            .catch(err => {
+                alert("Failed to delete event: " + err.message);
+            });
+    }
+}
+
 function setUnit(u) {
     confUnit = u;
     document.getElementById('unitBtnMetric').className = u === 'metric' ? 'primary-dark' : 'secondary';
@@ -646,7 +672,6 @@ function openEventEditor(eventObj = null) {
         
         document.getElementById("eventNameInput").value = currentEvent.name || "";
         document.getElementById("eventDescInput").value = currentEvent.description || "";
-        
         document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false && currentEvent.isPublic !== "false";
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         
@@ -1207,11 +1232,10 @@ function saveCurrentEvent(redirect = true) {
         if(redirect) showMyEvents(); 
     }).catch(err => { 
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud."); 
+        alert("Failed to save event to cloud. Check internet connection."); 
     });
 }
 
-// PARTICIPATION & PUBLIC MODAL LOGIC
 function openPublicEvent(eventId) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
@@ -1305,7 +1329,7 @@ function renderPublicLeaderboardList(ev) {
         return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
     });
 
-    processed.sort((a, b) => b.totalPts - a.totalPts); 
+    processed.sort((a, b) => b.totalPts - a.totalPts); // Sort purely by points for public simplified view
 
     let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
 
@@ -1413,7 +1437,6 @@ function confirmParticipation() {
 
     db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
         alert("Successfully joined the event!");
-        document.getElementById("participateSection").classList.add("hidden");
         showPublicHub();
     });
 }
@@ -1427,7 +1450,6 @@ function leaveEvent() {
         
         db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
             alert("You have left the event.");
-            document.getElementById("participateSection").classList.add("hidden");
             showPublicHub();
         });
     }
@@ -1579,7 +1601,8 @@ function downloadSeasonChart() {
 changeLanguage(document.getElementById("langSelect").value);
 
 hideAllSections();
+document.getElementById("dashboardSection").classList.remove("hidden");
 document.getElementById("publicHubView").classList.remove("hidden");
-history.replaceState({view: 'publicHubView'}, "");
+history.replaceState({view: 'dashboardSection'}, "");
 
 subscribeToEventsRealtime();
