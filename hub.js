@@ -150,7 +150,6 @@ window.addEventListener("popstate", (event) => {
 function showPublicHub() {
     hideAllSections();
     document.getElementById("dashboardSection").classList.remove("hidden");
-    document.getElementById("publicHubView").classList.remove("hidden");
     history.pushState({view: 'dashboardSection'}, "");
     renderPublicHub();
 }
@@ -358,14 +357,13 @@ function subscribeToEventsRealtime() {
         
         snapshot.forEach(doc => { 
             let data = { id: doc.id, ...doc.data() };
+            if (!data.details) data.details = {};
             
-            // Populate Private List
             if (loggedInUser && data.username === loggedInUser) {
                 loadedEvents.push(data);
             }
             
-            // Populate Public List - STRICTLY ONLY IF isPublic IS TRUE
-            let isPub = data.details ? data.details.isPublic : false;
+            let isPub = data.details.isPublic;
             if (isPub === true || String(isPub) === "true") {
                 allPublicEvents.push(data);
             }
@@ -600,6 +598,7 @@ function renderEventsList(filteredEvents) {
             <div class="flex" style="gap:8px; align-items:center;">
                 <a href="javascript:void(0)" onclick="downloadChart('${ev.id}')" style="color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: underline; margin-right: 4px;">PDF</a>
                 <button onclick="editEvent('${ev.id}')" class="icon-btn primary-dark" style="padding:10px 14px; box-shadow:none;">Open</button>
+                <button onclick="deleteEvent('${ev.id}')" class="danger icon-btn" style="padding:10px 14px; box-shadow:none;">Del</button>
             </div>
         </div>`;
     });
@@ -607,6 +606,17 @@ function renderEventsList(filteredEvents) {
 }
 
 // SETUP PHASE
+function editEvent(id) {
+    let found = loadedEvents.find(e => e.id === id);
+    if (found) openEventEditor(found.details);
+}
+
+function deleteEvent(id) {
+    if (confirm("Delete this event from the cloud?")) {
+        db.collection("events").doc(id).delete();
+    }
+}
+
 function setUnit(u) {
     confUnit = u;
     document.getElementById('unitBtnMetric').className = u === 'metric' ? 'primary-dark' : 'secondary';
@@ -658,8 +668,7 @@ function openEventEditor(eventObj = null) {
         
         document.getElementById("eventNameInput").value = currentEvent.name || "";
         document.getElementById("eventDescInput").value = currentEvent.description || "";
-        
-        document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false && currentEvent.isPublic !== "false";
+        document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false;
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         
         if(currentEvent.thumbnail) {
@@ -858,7 +867,6 @@ function goToEventHub() {
     currentEvent.limitType = confLimit;
     
     if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
-    if(!currentEvent.status) currentEvent.status = "announced";
 
     if(wantsRanked) {
         let existingRankedCount = loadedEvents.filter(e => {
@@ -1220,7 +1228,7 @@ function saveCurrentEvent(redirect = true) {
         if(redirect) showProfilePage(); 
     }).catch(err => { 
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud."); 
+        alert("Failed to save event to cloud. Check internet connection."); 
     });
 }
 
