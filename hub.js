@@ -359,13 +359,14 @@ function subscribeToEventsRealtime() {
             let data = { id: doc.id, ...doc.data() };
             if (!data.details) data.details = {};
             
+            // Populate Private List
             if (loggedInUser && data.username === loggedInUser) {
                 loadedEvents.push(data);
             }
             
-            // Older events that don't have isPublic explicitly set to false will default to true
+            // Populate Public List - STRICTLY ONLY IF isPublic IS TRUE
             let isPub = data.details.isPublic;
-            if (isPub !== false && isPub !== "false") {
+            if (isPub === true || String(isPub) === "true") {
                 allPublicEvents.push(data);
             }
         });
@@ -387,6 +388,9 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
+        if (!loggedInUser) {
+            console.log("Firebase rules blocked read. Make sure allow read: if true; is set.");
+        }
     });
 }
 
@@ -657,8 +661,11 @@ function openEventEditor(eventObj = null) {
         
         document.getElementById("eventNameInput").value = currentEvent.name || "";
         document.getElementById("eventDescInput").value = currentEvent.description || "";
-        document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false;
+        
+        // Strict check: if explicitly false, uncheck. Otherwise check.
+        document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false && currentEvent.isPublic !== "false";
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
+        document.getElementById("eventStatusSelect").value = currentEvent.status || "ongoing";
         
         if(currentEvent.thumbnail) {
             document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
@@ -699,6 +706,7 @@ function openEventEditor(eventObj = null) {
         document.getElementById("eventDescInput").value = "";
         document.getElementById("isPublicToggle").checked = true;
         document.getElementById("isRankedToggle").checked = true;
+        document.getElementById("eventStatusSelect").value = "announced";
         document.getElementById("eventThumbnailInput").value = "";
         document.getElementById('thumbnailPreview').style.display = 'none';
         document.getElementById("bulkParticipantsInput").value = "";
@@ -846,6 +854,7 @@ function goToEventHub() {
     currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
     currentEvent.description = document.getElementById("eventDescInput").value.trim();
     currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
+    currentEvent.status = document.getElementById("eventStatusSelect").value;
     let wantsRanked = document.getElementById("isRankedToggle").checked;
     
     let thumbSrc = document.getElementById('thumbnailPreview').src;
@@ -856,7 +865,6 @@ function goToEventHub() {
     currentEvent.limitType = confLimit;
     
     if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
-    if(!currentEvent.status) currentEvent.status = "announced";
 
     if(wantsRanked) {
         let existingRankedCount = loadedEvents.filter(e => {
@@ -1218,7 +1226,7 @@ function saveCurrentEvent(redirect = true) {
         if(redirect) showProfilePage(); 
     }).catch(err => { 
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud. Check internet connection."); 
+        alert("Failed to save event to cloud."); 
     });
 }
 
