@@ -90,7 +90,7 @@ function changeLanguage(lang) {
         if(!document.getElementById("myEventsView").classList.contains("hidden")) processDashboard();
     }
     if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
-    if(!document.getElementById("publicHubView").classList.contains("hidden")) renderPublicHub();
+    if(!document.getElementById("dashboardSection").classList.contains("hidden")) renderPublicHub();
 }
 
 function t(key) { return translations[currentLang] ? (translations[currentLang][key] || translations['en'][key] || key) : key; }
@@ -117,20 +117,23 @@ function parseParticipants(rawText) {
     return cleaned.split(/[\n,]+/).map(n => n.replace(/\s+/g, ' ').trim()).filter(n => n.length > 0);
 }
 
+// SAFE ROUTING ENGINE
+function hideAllSections() {
+    ["loginSection", "registerSection", "dashboardSection", "profileSection", "participateSection", "setupSection", "hubSection"].forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.classList.add("hidden");
+    });
+}
+
 window.addEventListener("popstate", (event) => {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
-    let view = (event.state && event.state.view) ? event.state.view : "publicHubView";
+    let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
     
-    document.getElementById("loginSection").classList.add("hidden");
-    document.getElementById("registerSection").classList.add("hidden");
-    document.getElementById("setupSection").classList.add("hidden");
-    document.getElementById("hubSection").classList.add("hidden");
-    document.getElementById("participateSection").classList.add("hidden");
-    document.getElementById("profileSection").classList.add("hidden");
-    document.getElementById("dashboardSection").classList.add("hidden");
+    hideAllSections();
     
     if (view === 'profileSection') {
-        document.getElementById("profileSection").classList.remove("hidden");
+        let el = document.getElementById("profileSection");
+        if (el) el.classList.remove("hidden");
         if (event.state && event.state.sub === 'events') {
             switchProfileTab('events');
         } else {
@@ -144,46 +147,15 @@ window.addEventListener("popstate", (event) => {
     window.scrollTo(0, 0);
 });
 
-// NAVIGATION LOGIC
 function showPublicHub() {
-    document.getElementById("setupSection").classList.add("hidden");
-    document.getElementById("hubSection").classList.add("hidden");
-    document.getElementById("loginSection").classList.add("hidden");
-    document.getElementById("registerSection").classList.add("hidden");
-    document.getElementById("participateSection").classList.add("hidden");
-    document.getElementById("profileSection").classList.add("hidden");
-    
+    hideAllSections();
     document.getElementById("dashboardSection").classList.remove("hidden");
-    document.getElementById("myEventsView").classList.add("hidden");
-    document.getElementById("publicHubView").classList.remove("hidden");
-    
-    history.pushState({view: 'dashboardSection', sub: 'public'}, "");
+    history.pushState({view: 'dashboardSection'}, "");
     renderPublicHub();
 }
 
-function showMyEvents() {
-    document.getElementById("setupSection").classList.add("hidden");
-    document.getElementById("hubSection").classList.add("hidden");
-    document.getElementById("loginSection").classList.add("hidden");
-    document.getElementById("registerSection").classList.add("hidden");
-    document.getElementById("participateSection").classList.add("hidden");
-    
-    document.getElementById("dashboardSection").classList.remove("hidden");
-    document.getElementById("publicHubView").classList.add("hidden");
-    document.getElementById("myEventsView").classList.remove("hidden");
-    
-    history.pushState({view: 'dashboardSection', sub: 'my'}, "");
-    processDashboard();
-}
-
 function showProfilePage() {
-    document.getElementById("setupSection").classList.add("hidden");
-    document.getElementById("hubSection").classList.add("hidden");
-    document.getElementById("loginSection").classList.add("hidden");
-    document.getElementById("registerSection").classList.add("hidden");
-    document.getElementById("participateSection").classList.add("hidden");
-    document.getElementById("dashboardSection").classList.add("hidden");
-    
+    hideAllSections();
     document.getElementById("profileSection").classList.remove("hidden");
     
     if (loggedInUserData && (loggedInUserData.role === 'organization' || !loggedInUserData.role)) {
@@ -274,10 +246,10 @@ function handleClientAreaClick() {
 // AUTHENTICATION
 function toggleAuth(view) {
     if(view === 'register') {
-        document.getElementById("loginSection").classList.add("hidden");
+        hideAllSections();
         document.getElementById("registerSection").classList.remove("hidden");
     } else {
-        document.getElementById("registerSection").classList.add("hidden");
+        hideAllSections();
         document.getElementById("loginSection").classList.remove("hidden");
     }
 }
@@ -334,15 +306,17 @@ function loginSuccess(user, data) {
     loggedInUser = user;
     loggedInUserData = data;
     
-    document.getElementById("loginSection").classList.add("hidden");
-    document.getElementById("registerSection").classList.add("hidden");
+    let btnLogin = document.getElementById("headerLoginBtn");
+    if (btnLogin) btnLogin.classList.add("hidden");
     
-    document.getElementById("headerLoginBtn").classList.add("hidden");
-    document.getElementById("headerLogoutBtn").classList.remove("hidden");
+    let btnLogout = document.getElementById("headerLogoutBtn");
+    if (btnLogout) btnLogout.classList.remove("hidden");
     
     let avatarEl = document.getElementById("headerAvatar");
-    avatarEl.style.display = "block";
-    avatarEl.src = data.avatar || "https://via.placeholder.com/40";
+    if (avatarEl) {
+        avatarEl.style.display = "block";
+        avatarEl.src = data.avatar || "https://via.placeholder.com/40";
+    }
 
     showProfilePage();
     subscribeToEventsRealtime();
@@ -353,25 +327,21 @@ function handleLogout() {
     loggedInUser = "";
     loggedInUserData = null;
     
-    document.getElementById("profileSection").classList.add("hidden");
-    document.getElementById("setupSection").classList.add("hidden");
-    document.getElementById("hubSection").classList.add("hidden");
+    let btnLogin = document.getElementById("headerLoginBtn");
+    if (btnLogin) btnLogin.classList.remove("hidden");
     
-    document.getElementById("headerLoginBtn").classList.remove("hidden");
-    document.getElementById("headerAvatar").style.display = "none";
-    document.getElementById("headerLogoutBtn").classList.add("hidden");
+    let btnLogout = document.getElementById("headerLogoutBtn");
+    if (btnLogout) btnLogout.classList.add("hidden");
+    
+    let avatarEl = document.getElementById("headerAvatar");
+    if (avatarEl) avatarEl.style.display = "none";
     
     showPublicHub();
     subscribeToEventsRealtime(); 
 }
 
 function openLogin() {
-    document.getElementById("dashboardSection").classList.add("hidden");
-    document.getElementById("profileSection").classList.add("hidden");
-    document.getElementById("participateSection").classList.add("hidden");
-    document.getElementById("setupSection").classList.add("hidden");
-    document.getElementById("hubSection").classList.add("hidden");
-    
+    hideAllSections();
     document.getElementById("loginSection").classList.remove("hidden");
     window.scrollTo(0, 0);
     history.pushState({view: 'loginSection'}, "");
@@ -393,17 +363,18 @@ function subscribeToEventsRealtime() {
                 loadedEvents.push(data);
             }
             
+            // Older events that don't have isPublic explicitly set to false will default to true
             let isPub = data.details.isPublic;
             if (isPub !== false && isPub !== "false") {
                 allPublicEvents.push(data);
             }
         });
         
-        if (loggedInUser && !document.getElementById("myEventsView").classList.contains("hidden")) {
+        if (loggedInUser && !document.getElementById("profileSection").classList.contains("hidden")) {
             processDashboard();
         }
         
-        if (!document.getElementById("publicHubView").classList.contains("hidden")) {
+        if (!document.getElementById("dashboardSection").classList.contains("hidden")) {
             renderPublicHub();
         }
 
@@ -416,7 +387,6 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
-        alert("Database connection failed. Please ensure your Firebase security rules allow reading.");
     });
 }
 
@@ -677,8 +647,7 @@ function handleThumbnailUpload(e) {
 }
 
 function openEventEditor(eventObj = null) {
-    document.getElementById("profileSection").classList.add("hidden");
-    document.getElementById("dashboardSection").classList.add("hidden");
+    hideAllSections();
     document.getElementById("setupSection").classList.remove("hidden");
     window.scrollTo(0, 0);
     history.pushState({view: 'setupSection'}, "");
@@ -690,7 +659,6 @@ function openEventEditor(eventObj = null) {
         document.getElementById("eventDescInput").value = currentEvent.description || "";
         document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false;
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
-        document.getElementById("eventStatusSelect").value = currentEvent.status || "ongoing";
         
         if(currentEvent.thumbnail) {
             document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
@@ -731,7 +699,6 @@ function openEventEditor(eventObj = null) {
         document.getElementById("eventDescInput").value = "";
         document.getElementById("isPublicToggle").checked = true;
         document.getElementById("isRankedToggle").checked = true;
-        document.getElementById("eventStatusSelect").value = "announced";
         document.getElementById("eventThumbnailInput").value = "";
         document.getElementById('thumbnailPreview').style.display = 'none';
         document.getElementById("bulkParticipantsInput").value = "";
@@ -879,7 +846,6 @@ function goToEventHub() {
     currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
     currentEvent.description = document.getElementById("eventDescInput").value.trim();
     currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
-    currentEvent.status = document.getElementById("eventStatusSelect").value;
     let wantsRanked = document.getElementById("isRankedToggle").checked;
     
     let thumbSrc = document.getElementById('thumbnailPreview').src;
@@ -890,6 +856,7 @@ function goToEventHub() {
     currentEvent.limitType = confLimit;
     
     if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+    if(!currentEvent.status) currentEvent.status = "announced";
 
     if(wantsRanked) {
         let existingRankedCount = loadedEvents.filter(e => {
@@ -921,7 +888,7 @@ function goToEventHub() {
         };
     });
     
-    document.getElementById("setupSection").classList.add("hidden");
+    hideAllSections();
     document.getElementById("hubSection").classList.remove("hidden");
     window.scrollTo(0, 0);
     
@@ -930,7 +897,7 @@ function goToEventHub() {
 }
 
 function backToSetup() {
-    document.getElementById("hubSection").classList.add("hidden");
+    hideAllSections();
     document.getElementById("setupSection").classList.remove("hidden");
     window.scrollTo(0, 0);
     history.pushState({view: 'setupSection'}, "");
@@ -1248,7 +1215,7 @@ function saveCurrentEvent(redirect = true) {
     localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
 
     db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
-        if(redirect) showMyEvents(); 
+        if(redirect) showProfilePage(); 
     }).catch(err => { 
         console.error("Save error:", err); 
         alert("Failed to save event to cloud. Check internet connection."); 
@@ -1400,13 +1367,8 @@ function downloadSeasonChart() {
 // INITIALIZATION
 changeLanguage(document.getElementById("langSelect").value);
 
-document.getElementById("loginSection").classList.add("hidden");
-document.getElementById("registerSection").classList.add("hidden");
-document.getElementById("dashboardSection").classList.remove("hidden");
-document.getElementById("myEventsView").classList.add("hidden");
-document.getElementById("profileSection").classList.add("hidden");
-document.getElementById("participateSection").classList.add("hidden");
+hideAllSections();
 document.getElementById("publicHubView").classList.remove("hidden");
-
 history.replaceState({view: 'publicHubView'}, "");
+
 subscribeToEventsRealtime();
