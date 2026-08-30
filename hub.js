@@ -86,9 +86,10 @@ function changeLanguage(lang) {
     if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
     if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
     if(!document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
-    if(!document.getElementById("profileSection").classList.contains("hidden")) {
-        if(!document.getElementById("myEventsView").classList.contains("hidden")) processDashboard();
-    }
+    
+    let myEventsView = document.getElementById("myEventsSection");
+    if(myEventsView && !myEventsView.classList.contains("hidden")) processDashboard();
+    
     if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
     if(!document.getElementById("dashboardSection").classList.contains("hidden")) renderPublicHub();
 }
@@ -137,21 +138,24 @@ window.addEventListener("popstate", (event) => {
 
 function showPublicHub() {
     hideAllSections();
-    document.getElementById("dashboardSection").classList.remove("hidden");
+    let dbSec = document.getElementById("dashboardSection");
+    if(dbSec) dbSec.classList.remove("hidden");
     history.pushState({view: 'dashboardSection'}, "");
     renderPublicHub();
 }
 
 function showMyEvents() {
     hideAllSections();
-    document.getElementById("myEventsSection").classList.remove("hidden");
+    let myEv = document.getElementById("myEventsSection");
+    if(myEv) myEv.classList.remove("hidden");
     history.pushState({view: 'myEventsSection'}, "");
     processDashboard();
 }
 
 function showProfilePage() {
     hideAllSections();
-    document.getElementById("profileSection").classList.remove("hidden");
+    let profSec = document.getElementById("profileSection");
+    if(profSec) profSec.classList.remove("hidden");
 
     document.getElementById("profUsername").value = loggedInUser;
     document.getElementById("profFullName").value = loggedInUserData.fullName || "";
@@ -197,6 +201,8 @@ function saveProfile() {
 
     db.collection("users").doc(loggedInUser).update(updateData).then(() => {
         loggedInUserData = { ...loggedInUserData, ...updateData };
+        localStorage.setItem("lureboard_session_data", JSON.stringify(loggedInUserData));
+        
         let headerAvatar = document.getElementById("headerAvatar");
         if(headerAvatar) headerAvatar.src = loggedInUserData.avatar || "https://via.placeholder.com/40";
         
@@ -278,35 +284,47 @@ function loginSuccess(user, data) {
     loggedInUser = user;
     loggedInUserData = data;
     
-    let btnLogin = document.getElementById("headerLoginBtn");
-    if (btnLogin) btnLogin.classList.add("hidden");
+    localStorage.setItem("lureboard_session_user", user);
+    localStorage.setItem("lureboard_session_data", JSON.stringify(data));
     
-    let btnLogout = document.getElementById("headerLogoutBtn");
-    if (btnLogout) btnLogout.classList.remove("hidden");
-    
-    let userWrap = document.getElementById("headerUserWrap");
-    if (userWrap) userWrap.classList.remove("hidden");
-    
-    let avatarEl = document.getElementById("headerAvatar");
-    if (avatarEl) {
-        avatarEl.style.display = "block";
-        avatarEl.src = data.avatar || "https://via.placeholder.com/40";
-    }
-
-    let nameEl = document.getElementById("headerUserName");
-    if (nameEl) {
-        nameEl.innerText = data.fullName || user;
-    }
-
-    let myEventsBtn = document.getElementById("headerMyEventsBtn");
-    if (data.role === 'organization') {
-        if(myEventsBtn) myEventsBtn.classList.remove("hidden");
-    } else {
-        if(myEventsBtn) myEventsBtn.classList.add("hidden");
-    }
-
+    updateUIAfterAuth();
     showProfilePage();
     subscribeToEventsRealtime();
+}
+
+function updateUIAfterAuth() {
+    let btnLogin = document.getElementById("headerLoginBtn");
+    let btnLogout = document.getElementById("headerLogoutBtn");
+    let userWrap = document.getElementById("headerUserWrap");
+    let avatarEl = document.getElementById("headerAvatar");
+    let nameEl = document.getElementById("headerUserName");
+    let myEventsBtn = document.getElementById("headerMyEventsBtn");
+
+    if (loggedInUser && loggedInUserData) {
+        if (btnLogin) btnLogin.classList.add("hidden");
+        if (btnLogout) btnLogout.classList.remove("hidden");
+        if (userWrap) userWrap.classList.remove("hidden");
+        if (avatarEl) {
+            avatarEl.style.display = "block";
+            avatarEl.src = loggedInUserData.avatar || "https://via.placeholder.com/40";
+        }
+        if (nameEl) {
+            nameEl.innerText = loggedInUserData.fullName || loggedInUser;
+        }
+        if (myEventsBtn) {
+            if (loggedInUserData.role === 'organization' || !loggedInUserData.role) {
+                myEventsBtn.classList.remove("hidden");
+            } else {
+                myEventsBtn.classList.add("hidden");
+            }
+        }
+    } else {
+        if (btnLogin) btnLogin.classList.remove("hidden");
+        if (btnLogout) btnLogout.classList.add("hidden");
+        if (userWrap) userWrap.classList.add("hidden");
+        if (avatarEl) avatarEl.style.display = "none";
+        if (myEventsBtn) myEventsBtn.classList.add("hidden");
+    }
 }
 
 function handleLogout() {
@@ -314,18 +332,10 @@ function handleLogout() {
     loggedInUser = "";
     loggedInUserData = null;
     
-    let btnLogin = document.getElementById("headerLoginBtn");
-    if (btnLogin) btnLogin.classList.remove("hidden");
+    localStorage.removeItem("lureboard_session_user");
+    localStorage.removeItem("lureboard_session_data");
     
-    let btnLogout = document.getElementById("headerLogoutBtn");
-    if (btnLogout) btnLogout.classList.add("hidden");
-    
-    let userWrap = document.getElementById("headerUserWrap");
-    if (userWrap) userWrap.classList.add("hidden");
-
-    let myEventsBtn = document.getElementById("headerMyEventsBtn");
-    if(myEventsBtn) myEventsBtn.classList.add("hidden");
-    
+    updateUIAfterAuth();
     showPublicHub();
     subscribeToEventsRealtime(); 
 }
@@ -349,27 +359,25 @@ function subscribeToEventsRealtime() {
             let data = { id: doc.id, ...doc.data() };
             if (!data.details) data.details = {};
             
-            // Populate Private List
             if (loggedInUser && data.username === loggedInUser) {
                 loadedEvents.push(data);
             }
             
-            // Populate Public List 
             let isPub = data.details.isPublic;
             if (isPub === true || String(isPub) === "true" || isPub === undefined) {
                 allPublicEvents.push(data);
             }
         });
         
-        if (loggedInUser && !document.getElementById("myEventsSection").classList.contains("hidden")) {
+        let myEvSec = document.getElementById("myEventsSection");
+        if (loggedInUser && myEvSec && !myEvSec.classList.contains("hidden")) {
             processDashboard();
         }
         
-        if (!document.getElementById("dashboardSection").classList.contains("hidden")) {
-            renderPublicHub();
-        }
+        renderPublicHub();
 
-        if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) {
+        let hubSection = document.getElementById("hubSection");
+        if (currentEvent && hubSection && !hubSection.classList.contains("hidden")) {
             let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id) || allPublicEvents.find(e => e.id === currentEvent.id);
             if (activeUpdated) {
                 currentEvent = activeUpdated.details;
@@ -378,12 +386,6 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
-        if (!loggedInUser) {
-            let container = document.getElementById("publicEventsList");
-            if(container) {
-                container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--danger);"><b>Database Connection Blocked</b><br><br>Firebase is blocking unauthenticated reads. Please go to your Firebase Console -> Firestore Database -> Rules and ensure it says:<br><br><code>allow read, write: if true;</code></div>`;
-            }
-        }
     });
 }
 
@@ -399,6 +401,8 @@ function sortEventsArray(eventsArr, sortMode) {
 
 function renderPublicHub() {
     let container = document.getElementById("publicEventsList");
+    if (!container) return;
+    
     if (allPublicEvents.length === 0) {
         container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No public tournaments right now.</div>`;
         return;
@@ -563,6 +567,8 @@ function processDashboard() {
     
     renderEventsList(sortedEvents);
 }
+
+function changeYear(y) { selectedYear = y; processDashboard(); }
 
 function renderEventsList(filteredEvents) {
     let container = document.getElementById("eventsList");
@@ -871,6 +877,7 @@ function goToEventHub() {
     currentEvent.limitType = confLimit;
     
     if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+    if(!currentEvent.status) currentEvent.status = "announced";
 
     if(wantsRanked) {
         let existingRankedCount = loadedEvents.filter(e => {
@@ -1232,10 +1239,11 @@ function saveCurrentEvent(redirect = true) {
         if(redirect) showMyEvents(); 
     }).catch(err => { 
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud. Check internet connection."); 
+        alert("Failed to save event to cloud."); 
     });
 }
 
+// PARTICIPATION & PUBLIC MODAL LOGIC
 function openPublicEvent(eventId) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
@@ -1329,7 +1337,7 @@ function renderPublicLeaderboardList(ev) {
         return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
     });
 
-    processed.sort((a, b) => b.totalPts - a.totalPts); // Sort purely by points for public simplified view
+    processed.sort((a, b) => b.totalPts - a.totalPts); 
 
     let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
 
@@ -1437,6 +1445,7 @@ function confirmParticipation() {
 
     db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
         alert("Successfully joined the event!");
+        document.getElementById("participateSection").classList.add("hidden");
         showPublicHub();
     });
 }
@@ -1450,6 +1459,7 @@ function leaveEvent() {
         
         db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
             alert("You have left the event.");
+            document.getElementById("participateSection").classList.add("hidden");
             showPublicHub();
         });
     }
@@ -1597,12 +1607,25 @@ function downloadSeasonChart() {
     let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
 }
 
-// INITIALIZATION
+// RESTORE SESSION & INITIALIZATION
+let savedUser = localStorage.getItem("lureboard_session_user");
+let savedData = localStorage.getItem("lureboard_session_data");
+
+if (savedUser && savedData) {
+    try {
+        loggedInUser = savedUser;
+        loggedInUserData = JSON.parse(savedData);
+    } catch(e) {
+        loggedInUser = "";
+        loggedInUserData = null;
+    }
+}
+
+updateUIAfterAuth();
 changeLanguage(document.getElementById("langSelect").value);
 
 hideAllSections();
 document.getElementById("dashboardSection").classList.remove("hidden");
-document.getElementById("publicHubView").classList.remove("hidden");
 history.replaceState({view: 'dashboardSection'}, "");
 
 subscribeToEventsRealtime();
