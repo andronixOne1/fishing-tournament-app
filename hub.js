@@ -204,7 +204,10 @@ function saveProfile() {
         if(headerAvatar) headerAvatar.src = loggedInUserData.avatar || "https://via.placeholder.com/40";
         
         let headerName = document.getElementById("headerUserName");
-        if(headerName) headerName.innerText = loggedInUserData.fullName || loggedInUser;
+        if(headerName) {
+            let dispName = loggedInUserData.fullName || loggedInUser;
+            headerName.innerText = dispName.length > 5 ? dispName.substring(0, 5) + "..." : dispName;
+        }
 
         document.getElementById("profPassword").value = "";
         alert("Profile saved successfully!");
@@ -294,13 +297,15 @@ function updateUIAfterAuth() {
 
     if (loggedInUser && loggedInUserData) {
         if (btnLogin) btnLogin.classList.add("hidden");
-        if (btnLogout) btnLogout.classList.add("hidden"); 
+        if (btnLogout) btnLogout.classList.remove("hidden");
         if (userWrap) userWrap.classList.remove("hidden");
         if (avatarEl) {
+            avatarEl.style.display = "block";
             avatarEl.src = loggedInUserData.avatar || "https://via.placeholder.com/40";
         }
         if (nameEl) {
-            nameEl.innerText = loggedInUserData.fullName || loggedInUser;
+            let dispName = loggedInUserData.fullName || loggedInUser;
+            nameEl.innerText = dispName.length > 5 ? dispName.substring(0, 5) + "..." : dispName;
         }
         if (myEventsBtn) {
             if (loggedInUserData.role === 'organization' || !loggedInUserData.role) {
@@ -313,6 +318,7 @@ function updateUIAfterAuth() {
         if (btnLogin) btnLogin.classList.remove("hidden");
         if (btnLogout) btnLogout.classList.add("hidden");
         if (userWrap) userWrap.classList.add("hidden");
+        if (avatarEl) avatarEl.style.display = "none";
         if (myEventsBtn) myEventsBtn.classList.add("hidden");
     }
 }
@@ -349,12 +355,14 @@ function subscribeToEventsRealtime() {
             let data = { id: doc.id, ...doc.data() };
             if (!data.details) data.details = {};
             
+            // Populate Private List
             if (loggedInUser && data.username === loggedInUser) {
                 loadedEvents.push(data);
             }
             
+            // Populate Public List 
             let isPub = data.details.isPublic;
-            if (isPub === true || String(isPub) === "true") {
+            if (isPub === true || String(isPub) === "true" || isPub === undefined) {
                 allPublicEvents.push(data);
             }
         });
@@ -384,10 +392,6 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
-        let container = document.getElementById("publicEventsList");
-        if(container) {
-            container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--danger);"><b>Database Connection Issue</b><br>Firebase is blocking reads. Please verify your Firestore Database rules.</div>`;
-        }
     });
 }
 
@@ -1298,6 +1302,7 @@ function saveCurrentEvent(redirect = true) {
     });
 }
 
+// PARTICIPATION & PUBLIC MODAL LOGIC
 function openPublicEvent(eventId) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
