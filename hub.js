@@ -35,53 +35,28 @@ let confMeasure = 'size';
 let confLimit = 'all';
 
 let currentParticipationEventId = null;
-let isForMe = true;
 let isLeaderboardExpanded = false;
 let regRoleSelect = 'participant';
 let tempProfileAvatarBase64 = "";
 
+// Minimal SVGs for replacement
+const svgTrophy = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v8a5 5 0 0 1-10 0V4"/><path d="M4 9h3"/><path d="M17 9h3"/></svg>`;
+const svgCircle = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/></svg>`;
+const svgUsers = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+const svgFish = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z"/><circle cx="15" cy="12" r="1"/><path d="M2 12c2 2 4 4 6 4s6-2 6-2"/></svg>`;
+const svgCal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+const svgDownload = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+const svgEdit = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+const svgTrash = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+const svgWarning = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+
 const translations = {
-    en: {
-        login_title: "Login", login_desc: "Enter your credentials.", username: "Username", password: "Password", login_btn: "Login",
-        register_title: "Register", full_name: "Full Name", dob: "Date of Birth", role_part: "Participant", role_org: "Organization",
-        register_btn: "Create Account", go_register: "Don't have an account? Register", go_login: "Already have an account? Login",
-        your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back", client_area: "Client Area", public_hub: "Public Hub", my_events: "My Events",
-        tourn_name: "Tournament Name", ranked_tourn: "Ranked Tournament", ranked_desc: "Include in Yearly Leaderboard (Max 7/year)", bulk_part: "Participants List",
-        bulk_desc: "Paste names. Symbols/brackets are auto-removed.", fish_species_title: "Species & Multipliers", add_species: "+ Add Species", next_btn: "Next",
-        hub_title: "Tournament Hub", edit_setup: "← Setup", manage_part: "Participants", add_new: "+ Add", leaderboard: "Leaderboard", mode_pts: "Rank by Points",
-        mode_cm: "Rank by Size/Weight", save_event: "Save Event", finish_event: "Finish Event", start_event: "Start Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
-        add_remove_fish: "Add / Remove Catch", species_sel: "Species", size_cm: "Measurement", save: "Save", add_fish_btn: "+ Add Catch", edit_rules: "Edit Rules",
-        add_rule: "+ Add New Rule", done: "Done", rule_from: "From", rule_to: "To", rule_mult: "Multiplier", download_chart: "PDF", download_season_pdf: "Season PDF",
-        season_results: "Season Results", current_catches: "Current Catches", no_catches: "No catches logged.", too_small_title: "Fish Too Small", 
-        too_small_desc: "The fish is too small based on the rules.", ok: "OK", ignore: "Ignore", angler_of_year: "Angler of the Year", edit_name: "Edit Name", 
-        unranked_badge: "UNRANKED", rank_pts: "Rank Pts", tournaments: "tournaments", editing_disabled: "Editing this is disabled, please edit participant list on the next page",
-        finish_warning: "If you finish the event now you will not be able to change anything anymore and the event will be officially finished.",
-        status_announced: "Announced", status_finished: "Finished", status_ongoing: "Ongoing", event_status: "Event Status",
-        place: "Place", name: "Name", points: "Points", total_cm: "Total", biggest_fish: "Biggest", details: "Details", generated_on: "Generated on", 
-        tournament_results: "Tournament Results", rank_pts_best5: "Rank Pts (Best 5)", tournaments_played: "Tournaments Played", all_placements: "All Placements", sort_newest: "Newest First", sort_oldest: "Oldest First", sort_az: "Name A-Z",
-        thumbnail_img: "Thumbnail / Header Image", desc_rules: "Description & Rules", public_desc: "Make visible to everyone", tourn_format: "Tournament Format",
-        meas_unit: "Measurement Unit", score_meth: "Scoring Method", catch_lim: "Catch Limits", lim_all: "All Fish", lim_top5: "Top 5 Counted",
-        penalties: "Penalties", pts_deduct: "Points to Deduct", reason_desc: "Reason / Description", add_penalty: "+ Add Penalty", part_detailed: "Participants",
-        participate_btn: "Participate", join_event: "Join Event", leave_event: "Leave Event", pay_fee: "Pay Participation Fee (50 🪙)", fee_paid: "Fee Paid ✔️",
-        for_me: "For Me", for_friend: "For a Friend", friend_name: "Friend's Full Name", friend_dob: "Friend's DOB", show_all: "Show Full Leaderboard", hide_all: "Hide Full Leaderboard",
-        profile: "Profile", events: "Events", save_profile: "Save Profile", change_picture: "Change Picture"
-    },
-    ka: { 
-        login_title: "შესვლა", go_register: "რეგისტრაცია", public_hub: "საჯარო ჰაბი", client_area: "კლიენტის სივრცე", status_announced: "გამოცხადდა",
-        profile: "პროფილი", events: "ტურნირები", save_profile: "შენახვა", change_picture: "სურათის შეცვლა"
-    }
+    en: {},
+    ka: { login_btn: "შესვლა" }
 };
 
 function changeLanguage(lang) {
     currentLang = lang;
-    document.querySelectorAll("[data-i18n]").forEach(el => {
-        let key = el.getAttribute("data-i18n");
-        if (translations[lang] && translations[lang][key]) {
-            el.innerText = translations[lang][key];
-        } else if (translations['en'][key]) {
-            el.innerText = translations['en'][key];
-        }
-    });
     if(!document.getElementById("setupSection").classList.contains("hidden")) refreshSetupUI();
     if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
     if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
@@ -90,15 +65,14 @@ function changeLanguage(lang) {
     let myEventsView = document.getElementById("myEventsSection");
     if(myEventsView && !myEventsView.classList.contains("hidden")) processDashboard();
     
+    let historyView = document.getElementById("historyView");
+    if(historyView && !historyView.classList.contains("hidden")) renderHistoryTab();
+    
     if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
     if(!document.getElementById("dashboardSection").classList.contains("hidden")) renderPublicHub();
 }
 
-function t(key) { return translations[currentLang] ? (translations[currentLang][key] || translations['en'][key] || key) : key; }
-
-function getMyName() {
-    return (loggedInUserData && loggedInUserData.fullName) ? loggedInUserData.fullName : loggedInUser;
-}
+function getMyName() { return (loggedInUserData && loggedInUserData.fullName) ? loggedInUserData.fullName : loggedInUser; }
 
 function handleOverlayClick(e, modalId) {
     if (e.target.id === modalId) {
@@ -157,6 +131,12 @@ function showProfilePage() {
     let profSec = document.getElementById("profileSection");
     if(profSec) profSec.classList.remove("hidden");
 
+    if (loggedInUserData && loggedInUserData.role === 'participant') {
+        document.getElementById("tabHistory").classList.remove("hidden");
+    } else {
+        document.getElementById("tabHistory").classList.add("hidden");
+    }
+
     document.getElementById("profUsername").value = loggedInUser;
     document.getElementById("profFullName").value = loggedInUserData.fullName || "";
     document.getElementById("profDob").value = loggedInUserData.dob || "";
@@ -164,7 +144,24 @@ function showProfilePage() {
     document.getElementById("profileAvatarPreview").src = loggedInUserData.avatar || "https://via.placeholder.com/100";
     tempProfileAvatarBase64 = "";
 
+    switchProfileTab('profile');
     history.pushState({view: 'profileSection'}, "");
+}
+
+function switchProfileTab(tab) {
+    document.getElementById("tabProfile").classList.remove("active");
+    document.getElementById("tabHistory").classList.remove("active");
+    document.getElementById("profileView").classList.add("hidden");
+    document.getElementById("historyView").classList.add("hidden");
+
+    if (tab === 'history') {
+        document.getElementById("tabHistory").classList.add("active");
+        document.getElementById("historyView").classList.remove("hidden");
+        renderHistoryTab();
+    } else {
+        document.getElementById("tabProfile").classList.add("active");
+        document.getElementById("profileView").classList.remove("hidden");
+    }
 }
 
 // PROFILE AVATAR LOGIC
@@ -215,11 +212,6 @@ function saveProfile() {
         console.error("Error updating profile: ", err);
         alert("Failed to save profile. Ensure database connection is stable.");
     });
-}
-
-function handleClientAreaClick() {
-    if (loggedInUser) showProfilePage();
-    else openLogin();
 }
 
 // AUTHENTICATION
@@ -288,7 +280,7 @@ function loginSuccess(user, data) {
     localStorage.setItem("lureboard_session_data", JSON.stringify(data));
     
     updateUIAfterAuth();
-    showProfilePage();
+    showPublicHub();
     subscribeToEventsRealtime();
 }
 
@@ -302,10 +294,9 @@ function updateUIAfterAuth() {
 
     if (loggedInUser && loggedInUserData) {
         if (btnLogin) btnLogin.classList.add("hidden");
-        if (btnLogout) btnLogout.classList.remove("hidden");
+        if (btnLogout) btnLogout.classList.add("hidden"); 
         if (userWrap) userWrap.classList.remove("hidden");
         if (avatarEl) {
-            avatarEl.style.display = "block";
             avatarEl.src = loggedInUserData.avatar || "https://via.placeholder.com/40";
         }
         if (nameEl) {
@@ -322,7 +313,6 @@ function updateUIAfterAuth() {
         if (btnLogin) btnLogin.classList.remove("hidden");
         if (btnLogout) btnLogout.classList.add("hidden");
         if (userWrap) userWrap.classList.add("hidden");
-        if (avatarEl) avatarEl.style.display = "none";
         if (myEventsBtn) myEventsBtn.classList.add("hidden");
     }
 }
@@ -364,7 +354,7 @@ function subscribeToEventsRealtime() {
             }
             
             let isPub = data.details.isPublic;
-            if (isPub === true || String(isPub) === "true" || isPub === undefined) {
+            if (isPub === true || String(isPub) === "true") {
                 allPublicEvents.push(data);
             }
         });
@@ -374,7 +364,15 @@ function subscribeToEventsRealtime() {
             processDashboard();
         }
         
-        renderPublicHub();
+        let histSec = document.getElementById("historyView");
+        if (loggedInUser && histSec && !histSec.classList.contains("hidden")) {
+            renderHistoryTab();
+        }
+        
+        let dbSec = document.getElementById("dashboardSection");
+        if (dbSec && !dbSec.classList.contains("hidden")) {
+            renderPublicHub();
+        }
 
         let hubSection = document.getElementById("hubSection");
         if (currentEvent && hubSection && !hubSection.classList.contains("hidden")) {
@@ -386,6 +384,10 @@ function subscribeToEventsRealtime() {
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
+        let container = document.getElementById("publicEventsList");
+        if(container) {
+            container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--danger);"><b>Database Connection Issue</b><br>Firebase is blocking reads. Please verify your Firestore Database rules.</div>`;
+        }
     });
 }
 
@@ -417,27 +419,86 @@ function renderPublicHub() {
         let thumb = ev.details.thumbnail ? `<img src="${ev.details.thumbnail}" class="event-hub-thumb">` : '';
         
         let status = ev.details.status || 'finished';
-        let statusColor = status === 'finished' ? 'background:#e2e8f0; color:#475569;' : (status === 'ongoing' ? 'background:#d1fae5; color:#059669;' : 'background:#e0e7ff; color:#3730a3;');
-        let statusText = status === 'finished' ? t('status_finished') : (status === 'ongoing' ? t('status_ongoing') : t('status_announced'));
+        let stBadge = status === 'finished' ? 'neutral' : (status === 'ongoing' ? 'success' : 'primary-light');
+
+        let hostName = ev.details.hostFullName || ev.username;
+        let hostAvatar = ev.details.hostAvatar || "https://via.placeholder.com/40";
 
         html += `
-        <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
+        <div class="card" style="padding:16px; cursor:pointer;" onclick="openPublicEvent('${ev.id}')">
             ${thumb}
             <div class="flex flex-between" style="align-items:flex-start;">
                 <div>
-                    <h3 style="margin-bottom:4px;">${ev.name}</h3>
-                    <div style="font-size:12px; color:var(--text-muted);">Host: <b>${ev.username}</b></div>
+                    <h3 style="margin-bottom:8px;">${ev.name}</h3>
+                    <div class="flex" style="font-size:12px; color:var(--text-muted);">
+                        <img src="${hostAvatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">
+                        <b>${hostName}</b>
+                    </div>
                 </div>
-                <span class="badge" style="${statusColor} box-shadow:none;">${statusText}</span>
+                <span class="badge ${stBadge}">${status}</span>
             </div>
-            <div style="margin-top:12px; font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
-                <span>👥 ${pCount} Participants</span>
-                <span>🎣 ${cCount} Catches</span>
+            <div style="margin-top:16px; font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
+                <span class="flex">${svgUsers} ${pCount}</span>
+                <span class="flex">${svgFish} ${cCount}</span>
             </div>
         </div>`;
     });
     container.innerHTML = html;
 }
+
+// History Tab for Participants
+function renderHistoryTab() {
+    let container = document.getElementById("historyListContainer");
+    if (!container) return;
+
+    let myName = getMyName().toLowerCase();
+    
+    // Find all events where user is a participant
+    let historyEvents = allPublicEvents.filter(e => {
+        return (e.details.participants || []).some(p => p.name.toLowerCase() === myName);
+    });
+
+    let years = [...new Set(historyEvents.map(e => String(e.details.year || new Date().getFullYear().toString())))];
+    years.sort((a,b) => b - a);
+    
+    let yearSelect = document.getElementById("historyYearSelect");
+    if (yearSelect && years.length > 0) {
+        if (!yearSelect.value || !years.includes(yearSelect.value)) yearSelect.value = years[0];
+        yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    } else {
+        container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No participation history found.</div>`;
+        return;
+    }
+
+    let selectedHYear = yearSelect.value;
+    let filteredHistory = historyEvents.filter(e => String(e.details.year || new Date().getFullYear().toString()) === selectedHYear);
+
+    if (filteredHistory.length === 0) {
+        container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No participation history in ${selectedHYear}.</div>`;
+        return;
+    }
+
+    let html = "";
+    filteredHistory.forEach(ev => {
+        let pData = ev.details.participants.find(p => p.name.toLowerCase() === myName);
+        let cCount = pData ? (pData.catches || []).length : 0;
+        let status = ev.details.status || 'finished';
+        let stBadge = status === 'finished' ? 'neutral' : (status === 'ongoing' ? 'success' : 'primary-light');
+
+        html += `
+        <div class="card flex flex-between" style="padding: 16px; cursor: pointer;" onclick="openPublicEvent('${ev.id}')">
+            <div>
+                <div class="flex" style="margin-bottom:6px;"><b style="font-size:15px;">${ev.name}</b> <span class="badge ${stBadge}" style="font-size:10px; padding: 2px 6px;">${status}</span></div>
+                <div class="flex" style="font-size:13px; color:var(--text-muted);">
+                    <span class="flex">${svgFish} ${cCount} catches logged</span>
+                </div>
+            </div>
+            <button class="secondary icon-btn" style="box-shadow:none;">View</button>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
 
 // AOTY Logic
 function getEventPlacements(evDetails) {
@@ -529,23 +590,22 @@ function processDashboard() {
 
     let aotyContainer = document.getElementById("aotyContainer");
     if(aotyArray.length > 0) {
-        let medals = ["🥇", "🥈", "🥉"];
-        let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
+        let medals = ["1st", "2nd", "3rd"];
+        let aotyHtml = `<div class="card" style="background: var(--primary); color: white; border:none;">
             <div class="flex flex-between" style="margin-bottom: 16px;">
-                <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
-                <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">⬇ ${t('download_season_pdf')}</a>
+                <h3 style="color:white; margin:0; font-size:16px;">Angler of the Year (${selectedYear})</h3>
+                <button class="secondary icon-btn" onclick="downloadSeasonChart()" style="padding:4px 8px; width:auto; border:none; background:rgba(255,255,255,0.2); color:white;">${svgDownload}</button>
             </div>`;
         
         aotyArray.slice(0, 3).forEach((angler, idx) => {
             aotyHtml += `
-            <div class="flex flex-between" style="background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 16px; margin-bottom: 8px; backdrop-filter: blur(8px);">
+            <div class="flex flex-between" style="background: rgba(255,255,255,0.1); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 8px;">
                 <div class="flex" style="gap: 12px;">
-                    <span style="font-size: 20px; font-weight: bold;">${medals[idx]}</span>
-                    <b style="font-size: 16px;">${angler.name}</b>
+                    <span style="font-size: 14px; font-weight: bold; opacity:0.8;">${medals[idx]}</span>
+                    <b style="font-size: 15px;">${angler.name}</b>
                 </div>
                 <div style="text-align:right;">
-                    <b style="font-size: 16px;">${angler.totalRankPts} <span style="font-size:12px; font-weight:normal;">${t('rank_pts')}</span></b><br>
-                    <span style="font-size:12px; opacity:0.8;">${angler.validEventsCount} ${t('tournaments')}</span>
+                    <b style="font-size: 15px;">${angler.totalRankPts} <span style="font-size:11px; font-weight:normal;">pts</span></b>
                 </div>
             </div>`;
         });
@@ -568,8 +628,6 @@ function processDashboard() {
     renderEventsList(sortedEvents);
 }
 
-function changeYear(y) { selectedYear = y; processDashboard(); }
-
 function renderEventsList(filteredEvents) {
     let container = document.getElementById("eventsList");
     if (filteredEvents.length === 0) {
@@ -579,30 +637,30 @@ function renderEventsList(filteredEvents) {
     let html = "";
     filteredEvents.forEach(ev => {
         let publishDate = ev.details.date || "Unknown Date";
-        let rankIcon = ev.details.isRanked !== false ? '🏆' : '⚪';
-        let rankBadge = ev.details.isRanked === false ? `<span class="badge" style="background:#ffe4e6; color:#be123c; padding:2px 6px; font-size:10px; margin-left:6px; box-shadow:none;">${t('unranked_badge')}</span>` : '';
+        let rankIcon = ev.details.isRanked !== false ? svgTrophy : svgCircle;
+        let rankBadge = ev.details.isRanked === false ? `<span class="badge" style="background:var(--danger-bg); color:var(--danger); padding:2px 6px; font-size:10px; margin-left:6px;">Unranked</span>` : '';
         
         let status = ev.details.status || 'finished';
-        let statusColor = status === 'finished' ? 'background:#e2e8f0; color:#475569;' : (status === 'ongoing' ? 'background:#d1fae5; color:#059669;' : 'background:#e0e7ff; color:#3730a3;');
-        let statusText = status === 'finished' ? t('status_finished') : (status === 'ongoing' ? t('status_ongoing') : t('status_announced'));
-        let statusBadge = `<span class="badge" style="${statusColor} padding:2px 6px; font-size:10px; margin-left:6px; box-shadow:none;">${statusText}</span>`;
+        let stBadge = status === 'finished' ? 'neutral' : (status === 'ongoing' ? 'success' : 'primary-light');
 
         html += `<div class="card flex flex-between" style="padding: 16px;">
             <div style="flex:1;">
-                <div class="flex flex-wrap" style="font-weight:700; margin-bottom:6px; font-size:16px;">
-                    <span style="font-size:18px;">${rankIcon}</span> 
+                <div class="flex flex-wrap" style="font-weight:700; margin-bottom:6px; font-size:15px; color:var(--text-main);">
+                    <span style="color:var(--primary);">${rankIcon}</span> 
                     <span>${ev.name}</span>
                     <div class="flex" style="gap:4px;">
-                        ${statusBadge}
+                        <span class="badge ${stBadge}" style="padding:2px 6px; font-size:10px;">${status}</span>
                         ${rankBadge}
                     </div>
                 </div>
-                <div style="font-size:13px; color:var(--text-muted); font-weight:500;">📅 ${publishDate} • ${(ev.details.participants||[]).length} Participants</div>
+                <div class="flex" style="font-size:12px; color:var(--text-muted); font-weight:500;">
+                    ${svgCal} ${publishDate} • ${svgUsers} ${(ev.details.participants||[]).length}
+                </div>
             </div>
             <div class="flex" style="gap:8px; align-items:center;">
-                <a href="javascript:void(0)" onclick="downloadChart('${ev.id}')" style="color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: underline; margin-right: 4px;">PDF</a>
-                <button onclick="editEvent('${ev.id}')" class="icon-btn primary-dark" style="padding:10px 14px; box-shadow:none;">Open</button>
-                <button onclick="deleteEvent('${ev.id}')" class="danger icon-btn" style="padding:10px 14px; box-shadow:none;">Del</button>
+                <button onclick="downloadChart('${ev.id}')" class="secondary icon-btn" style="box-shadow:none; padding:8px;">${svgDownload}</button>
+                <button onclick="editEvent('${ev.id}')" class="primary icon-btn" style="padding:8px;">${svgEdit}</button>
+                <button onclick="deleteEvent('${ev.id}')" class="danger icon-btn" style="padding:8px;">${svgTrash}</button>
             </div>
         </div>`;
     });
@@ -617,30 +675,24 @@ function editEvent(id) {
 
 function deleteEvent(id) {
     if (confirm("Are you sure you want to permanently delete this event?")) {
-        db.collection("events").doc(id).delete()
-            .then(() => {
-                console.log("Event deleted.");
-            })
-            .catch(err => {
-                alert("Failed to delete event: " + err.message);
-            });
+        db.collection("events").doc(id).delete().catch(err => alert("Failed to delete: " + err.message));
     }
 }
 
 function setUnit(u) {
     confUnit = u;
-    document.getElementById('unitBtnMetric').className = u === 'metric' ? 'primary-dark' : 'secondary';
-    document.getElementById('unitBtnImperial').className = u === 'imperial' ? 'primary-dark' : 'secondary';
+    document.getElementById('unitBtnMetric').className = u === 'metric' ? 'primary' : 'secondary';
+    document.getElementById('unitBtnImperial').className = u === 'imperial' ? 'primary' : 'secondary';
 }
 function setMeasure(m) {
     confMeasure = m;
-    document.getElementById('measureBtnSize').className = m === 'size' ? 'primary-dark' : 'secondary';
-    document.getElementById('measureBtnWeight').className = m === 'weight' ? 'primary-dark' : 'secondary';
+    document.getElementById('measureBtnSize').className = m === 'size' ? 'primary' : 'secondary';
+    document.getElementById('measureBtnWeight').className = m === 'weight' ? 'primary' : 'secondary';
 }
 function setLimit(l) {
     confLimit = l;
-    document.getElementById('limitBtnAll').className = l === 'all' ? 'primary-dark' : 'secondary';
-    document.getElementById('limitBtnTop5').className = l === 'top5' ? 'primary-dark' : 'secondary';
+    document.getElementById('limitBtnAll').className = l === 'all' ? 'primary' : 'secondary';
+    document.getElementById('limitBtnTop5').className = l === 'top5' ? 'primary' : 'secondary';
 }
 
 function handleThumbnailUpload(e) {
@@ -760,18 +812,18 @@ function refreshSetupUI() {
         }).join(' | ');
 
         return `
-        <div class="card" style="padding:16px; border:1px solid var(--border); margin-bottom:12px; background:var(--card-bg);">
+        <div class="card" style="padding:16px; margin-bottom:12px;">
             <div class="flex flex-between">
                 <div>
                     <div class="flex">
-                        <b style="font-size:16px; color:var(--text);">${s.name}</b>
-                        <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${s.abbr.toUpperCase()}</span>
+                        <b style="font-size:15px;">${s.name}</b>
+                        <span class="badge neutral" style="font-size:10px;">${s.abbr.toUpperCase()}</span>
                     </div>
-                    <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">${rulesSummary}</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">${rulesSummary}</div>
                 </div>
                 <div class="flex">
-                    <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})" style="box-shadow:none;">Rules</button>
-                    <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeSpecies(${sIdx})">✕</button>
+                    <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})">Rules</button>
+                    <button class="danger icon-btn" style="padding:6px 10px;" onclick="removeSpecies(${sIdx})">${svgTrash}</button>
                 </div>
             </div>
         </div>`;
@@ -847,7 +899,7 @@ function renderRules() {
         }
         return `
         <div class="tier-grid" style="position:relative;">
-            <button class="danger icon-btn" style="position:absolute; top:-8px; right:-8px; padding:4px 8px; font-size:11px; border-radius:50%; box-shadow:none;" onclick="removeRule(${tIdx})">✕</button>
+            <button class="danger icon-btn" style="position:absolute; top:-8px; right:-8px; padding:4px; border-radius:50%; box-shadow:none;" onclick="removeRule(${tIdx})">${svgTrash}</button>
             <div><label>${t('rule_from')}</label><input type="number" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)"></div>
             <div><label>${t('rule_to')}</label>
                 <div style="display:flex; gap:4px;">
@@ -876,6 +928,10 @@ function goToEventHub() {
     currentEvent.measureType = confMeasure;
     currentEvent.limitType = confLimit;
     
+    // Save host info directly onto the event details
+    currentEvent.hostFullName = loggedInUserData ? loggedInUserData.fullName || loggedInUser : loggedInUser;
+    currentEvent.hostAvatar = loggedInUserData ? loggedInUserData.avatar || "https://via.placeholder.com/40" : "https://via.placeholder.com/40";
+
     if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
     if(!currentEvent.status) currentEvent.status = "announced";
 
@@ -934,7 +990,7 @@ function startEventNow() {
 
 function promptFinishEvent() {
     if(currentEvent.status === 'finished') return;
-    if (confirm(t('finish_warning'))) {
+    if (confirm("Finish event? This will lock scoring permanently.")) {
         currentEvent.status = "finished";
         saveCurrentEvent(true);
     }
@@ -1030,8 +1086,8 @@ function renderModalCatches() {
     container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">${t('current_catches')}:</label>` + 
         p.catches.map((c, cIdx) => `
         <div class="flex flex-between" style="padding:12px 0; border-bottom:1px solid var(--border);">
-            <span><b>${c.size}</b>${unitText} <span class="badge" style="background:#f1f5f9; box-shadow:none;">${c.abbr.toUpperCase()}</span></span>
-            <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">✕</button>
+            <span><b>${c.size}</b>${unitText} <span class="badge neutral">${c.abbr.toUpperCase()}</span></span>
+            <button class="danger icon-btn" style="padding:6px; box-shadow:none;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">${svgTrash}</button>
         </div>`).join('');
 }
 
@@ -1073,7 +1129,7 @@ function renderModalPenalties() {
         p.penalties.map((pen, idx) => `
         <div class="flex flex-between" style="padding:12px 0; border-bottom:1px solid var(--border);">
             <div><b style="color:var(--danger);">-${pen.points} pts</b> <span style="font-size:13px; color:var(--text-muted); margin-left:6px;">${pen.reason}</span></div>
-            <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none; background:transparent; color:var(--text-muted);" onclick="removePenalty(${activePenaltyParticipantIndex}, ${idx})">✕</button>
+            <button class="danger icon-btn" style="padding:6px; box-shadow:none; background:transparent; color:var(--text-muted);" onclick="removePenalty(${activePenaltyParticipantIndex}, ${idx})">${svgTrash}</button>
         </div>`).join('');
 }
 
@@ -1106,7 +1162,6 @@ function renderHubUI() {
 
     let query = document.getElementById("searchParticipant").value.toLowerCase();
     let container = document.getElementById("participantsHubContainer");
-    let addRemoveText = t("add_remove_fish");
 
     let countEl = document.getElementById("hubParticipantCount");
     if(countEl) countEl.innerText = (currentEvent.participants||[]).length;
@@ -1121,7 +1176,7 @@ function renderHubUI() {
             ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') 
             : `<span style="color:var(--text-muted); opacity: 0.7; font-style:italic;">${t('no_catches')}</span>`;
 
-        let penBadge = (p.penalties && p.penalties.length > 0) ? `<button onclick="showPenaltyReason(${pIndexReal})" class="danger icon-btn" style="padding:2px 6px; border-radius:50%; box-shadow:none; font-size:10px;" title="Has Penalties">❗</button>` : '';
+        let penBadge = (p.penalties && p.penalties.length > 0) ? `<button onclick="showPenaltyReason(${pIndexReal})" class="danger icon-btn" style="padding:4px; border-radius:50%; box-shadow:none; font-size:12px;">${svgWarning}</button>` : '';
 
         let actionButtons = '';
         if (isFinished) {
@@ -1130,18 +1185,18 @@ function renderHubUI() {
             actionButtons = `<span style="font-size:12px; color:var(--text-muted); font-weight:bold; padding-right:8px;">Announced</span>`;
         } else {
             actionButtons = `
-                <button onclick="openPenaltyModal(${pIndexReal})" class="secondary icon-btn" style="padding:10px; box-shadow:none;" title="Add Penalty">⚖️</button>
-                <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary-dark" style="padding:10px 16px;">${addRemoveText}</button>
+                <button onclick="openPenaltyModal(${pIndexReal})" class="secondary icon-btn" style="padding:10px;">${svgWarning}</button>
+                <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary" style="padding:10px 14px;">${svgFish}</button>
             `;
         }
 
-        let editBtn = isFinished ? '' : `<button onclick="editParticipantName(${pIndexReal})" class="icon-btn" style="padding:4px; background:transparent; color:var(--text-muted); box-shadow:none;">✏️</button>`;
+        let editBtn = isFinished ? '' : `<button onclick="editParticipantName(${pIndexReal})" class="icon-btn" style="padding:4px; background:transparent; color:var(--text-muted); box-shadow:none;">${svgEdit}</button>`;
 
         filteredHtml += `
         <div class="card" style="padding:16px; margin-bottom:16px;">
             <div class="flex flex-between" style="align-items:center;">
                 <div class="flex" style="gap: 8px;">
-                    <b style="font-size:16px;">${pIndexReal + 1}. ${p.name}</b> ${penBadge} ${editBtn}
+                    <b style="font-size:15px;">${pIndexReal + 1}. ${p.name}</b> ${penBadge} ${editBtn}
                 </div>
                 <div class="flex">${actionButtons}</div>
             </div>
@@ -1153,17 +1208,17 @@ function renderHubUI() {
 
     let actionBtnHtml = '';
     if (isAnnounced) {
-        actionBtnHtml = `<button onclick="startEventNow()" class="success" style="flex: 1; padding:12px;" data-i18n="start_event">Start Event</button>`;
+        actionBtnHtml = `<button onclick="startEventNow()" class="success" style="flex: 1;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Event</button>`;
     } else if (!isFinished) {
-        actionBtnHtml = `<button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 1; padding:12px;" data-i18n="finish_event">Finish Event</button>`;
+        actionBtnHtml = `<button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 1;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg> Finish Event</button>`;
     } else {
-        actionBtnHtml = `<button disabled class="danger" style="flex: 1; padding:12px;" data-i18n="status_finished">Event Finished</button>`;
+        actionBtnHtml = `<button disabled class="danger" style="flex: 1;">Event Finished</button>`;
     }
 
     document.getElementById("bottomActionBarButtons").innerHTML = `
-        <a href="javascript:void(0)" onclick="downloadChart()" data-i18n="download_chart" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
+        <a href="javascript:void(0)" onclick="downloadChart()" style="color: var(--text-muted); padding: 8px;">${svgDownload}</a>
         ${actionBtnHtml}
-        <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_event" style="flex: 1; padding:12px;">Save Event</button>
+        <button onclick="saveCurrentEvent(true)" class="primary" style="flex: 1;">Save Event</button>
     `;
 
     renderLeaderboard();
@@ -1199,22 +1254,22 @@ function renderLeaderboard() {
         topSummaryContainer.innerHTML = `
             <div class="flex flex-between">
                 <div>
-                    <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase;">🏆 ${t('biggest_fish')}</div>
-                    <div style="font-weight:700; font-size:18px; color:var(--text); margin-top:4px;">${sortedByBiggest[0].name}</div>
+                    <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase;">${svgTrophy} Biggest Catch</div>
+                    <div style="font-weight:700; font-size:16px; color:var(--text-main); margin-top:4px;">${sortedByBiggest[0].name}</div>
                 </div>
                 <div style="text-align:right;">
-                    <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishMeasure}</span> ${unitText}
-                    <div class="badge" style="background:#fef08a; color:#b45309; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
+                    <span style="font-size:18px; font-weight:800; color:var(--text-main);">${sortedByBiggest[0].maxFishMeasure}</span> ${unitText}
+                    <div class="badge" style="background:#fef08a; color:#b45309; margin-left:4px;">${sortedByBiggest[0].maxFishAbbr}</div>
                 </div>
             </div>`;
         topSummaryContainer.classList.remove('hidden');
     } else { topSummaryContainer.classList.add('hidden'); }
 
-    let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
+    let html = `<table><tr><th style="width:40px;">#</th><th>Name</th><th>Pts</th><th>Total</th><th>Amt</th><th>Max</th></tr>`;
     sortedByMain.forEach((p, idx) => {
-        let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
+        let placeBadge = (idx === 0) ? "1st" : (idx === 1) ? "2nd" : (idx === 2) ? "3rd" : `${idx + 1}`;
         let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
-        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
+        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">${svgWarning}</span>` : '';
         html += `<tr>
             <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
             <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
@@ -1239,11 +1294,10 @@ function saveCurrentEvent(redirect = true) {
         if(redirect) showMyEvents(); 
     }).catch(err => { 
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud."); 
+        alert("Failed to save event to cloud. Check internet connection."); 
     });
 }
 
-// PARTICIPATION & PUBLIC MODAL LOGIC
 function openPublicEvent(eventId) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
@@ -1251,7 +1305,8 @@ function openPublicEvent(eventId) {
     currentParticipationEventId = eventId;
 
     document.getElementById("pubTitle").innerText = evData.name;
-    document.getElementById("pubHost").innerText = `Hosted by ${evData.username} | ${ev.date || ''}`;
+    document.getElementById("pubHost").innerText = `Hosted by ${ev.hostFullName || evData.username} | ${ev.date || ''}`;
+    document.getElementById("pubHostAvatar").src = ev.hostAvatar || "https://via.placeholder.com/40";
     
     if(ev.thumbnail) {
         document.getElementById("pubThumb").src = ev.thumbnail;
@@ -1282,22 +1337,31 @@ function openPublicEvent(eventId) {
     isLeaderboardExpanded = false;
     let st = ev.status || 'finished';
     
+    let partBtn = document.getElementById("pubParticipateBtn");
+    
     if (st === 'announced') {
         document.getElementById("pubRulesCard").classList.remove("hidden");
         document.getElementById("pubLeaderboardCard").classList.add("hidden");
         document.getElementById("pubPartCard").classList.remove("hidden");
-        document.getElementById("pubParticipateBtn").classList.remove("hidden");
-    } else if (st === 'ongoing') {
+        
+        if (loggedInUserData && loggedInUserData.role === 'participant') {
+            partBtn.classList.remove("hidden");
+            let isAlreadyJoined = (ev.participants||[]).some(p => p.name === getMyName());
+            if (isAlreadyJoined) {
+                partBtn.innerHTML = `${svgCircle} Leave Event`;
+                partBtn.className = "danger";
+            } else {
+                partBtn.innerHTML = `${svgCircle} Join Event`;
+                partBtn.className = "success";
+            }
+        } else {
+            partBtn.classList.add("hidden");
+        }
+    } else {
         document.getElementById("pubRulesCard").classList.remove("hidden");
         document.getElementById("pubLeaderboardCard").classList.remove("hidden");
         document.getElementById("pubPartCard").classList.add("hidden");
-        document.getElementById("pubParticipateBtn").classList.add("hidden");
-        renderPublicLeaderboardList(ev);
-    } else { // Finished
-        document.getElementById("pubRulesCard").classList.remove("hidden");
-        document.getElementById("pubLeaderboardCard").classList.remove("hidden");
-        document.getElementById("pubPartCard").classList.add("hidden");
-        document.getElementById("pubParticipateBtn").classList.add("hidden");
+        partBtn.classList.add("hidden");
         renderPublicLeaderboardList(ev);
     }
 
@@ -1311,7 +1375,7 @@ function closePublicEventModal() {
 
 function toggleFullLeaderboard() {
     isLeaderboardExpanded = !isLeaderboardExpanded;
-    document.getElementById("btnToggleLeaderboard").innerText = isLeaderboardExpanded ? t('hide_all') : t('show_all');
+    document.getElementById("btnToggleLeaderboard").innerText = isLeaderboardExpanded ? "Hide Full Leaderboard" : "Show Full Leaderboard";
     let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
     if(evData) renderPublicLeaderboardList(evData.details);
 }
@@ -1341,11 +1405,11 @@ function renderPublicLeaderboardList(ev) {
 
     let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
 
-    let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>Max</th></tr>`;
+    let html = `<table><tr><th style="width:40px;">#</th><th>Name</th><th>Pts</th><th>Max</th></tr>`;
     toShow.forEach((p, idx) => {
-        let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
+        let placeBadge = (idx === 0) ? "1st" : (idx === 1) ? "2nd" : (idx === 2) ? "3rd" : `${idx + 1}`;
         let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
-        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
+        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;">${svgWarning}</span>` : '';
         html += `<tr>
             <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
             <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
@@ -1359,109 +1423,33 @@ function renderPublicLeaderboardList(ev) {
     document.getElementById("btnToggleLeaderboard").style.display = processed.length > 3 ? "inline-block" : "none";
 }
 
-function goToParticipate() {
-    if(!loggedInUser) {
-        alert("You must be logged in to participate.");
-        closePublicEventModal();
-        openLogin();
-        return;
-    }
-    closePublicEventModal();
-    hideAllSections();
-    
-    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
-    document.getElementById("partEventTitle").innerText = "Join " + evData.name;
-    
-    document.getElementById("partMyName").value = getMyName();
-    document.getElementById("partMyDob").value = (loggedInUserData && loggedInUserData.dob) ? loggedInUserData.dob : "";
-    
-    let isAlreadyJoined = (evData.details.participants||[]).some(p => p.registeredBy === loggedInUser || p.name === getMyName());
-    
-    document.getElementById("btnJoinEvent").disabled = true;
-    document.getElementById("btnJoinEvent").classList.remove("hidden");
-    document.getElementById("btnPayFee").innerText = t("pay_fee");
-    document.getElementById("btnPayFee").disabled = false;
-    document.getElementById("btnPayFee").className = "warning";
-    
-    if(isAlreadyJoined) {
-        document.getElementById("btnLeaveEvent").classList.remove("hidden");
-    } else {
-        document.getElementById("btnLeaveEvent").classList.add("hidden");
-    }
-
-    switchPartTab('me');
-    document.getElementById("participateSection").classList.remove("hidden");
-    window.scrollTo(0,0);
-    history.pushState({view: 'participateSection'}, "");
-}
-
-function switchPartTab(type) {
-    isForMe = (type === 'me');
-    document.getElementById("tabForMe").classList.remove("active");
-    document.getElementById("tabForFriend").classList.remove("active");
-    document.getElementById("partMeForm").classList.add("hidden");
-    document.getElementById("partFriendForm").classList.add("hidden");
-    
-    if(isForMe) {
-        document.getElementById("tabForMe").classList.add("active");
-        document.getElementById("partMeForm").classList.remove("hidden");
-    } else {
-        document.getElementById("tabForFriend").classList.add("active");
-        document.getElementById("partFriendForm").classList.remove("hidden");
-    }
-    
-    document.getElementById("btnJoinEvent").disabled = true;
-    document.getElementById("btnPayFee").innerText = t("pay_fee");
-    document.getElementById("btnPayFee").disabled = false;
-    document.getElementById("btnPayFee").className = "warning";
-}
-
-function processPayment() {
-    let btn = document.getElementById("btnPayFee");
-    btn.innerText = "Processing...";
-    btn.disabled = true;
-    setTimeout(() => {
-        btn.innerText = t("fee_paid");
-        btn.className = "success";
-        document.getElementById("btnJoinEvent").disabled = false;
-    }, 1000);
-}
-
-function confirmParticipation() {
+function joinEventDirectly() {
     let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
     let ev = evData.details;
     if(!ev.participants) ev.participants = [];
     
-    let pName = isForMe ? getMyName() : document.getElementById("partFriendName").value.trim();
-    if(!pName) { alert("Please provide a name."); return; }
-
-    ev.participants.push({
-        id: 'p_' + Math.random().toString(36).substr(2, 9),
-        name: pName,
-        catches: [],
-        penalties: [],
-        registeredBy: loggedInUser
-    });
-
-    db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
-        alert("Successfully joined the event!");
-        document.getElementById("participateSection").classList.add("hidden");
-        showPublicHub();
-    });
-}
-
-function leaveEvent() {
-    if(confirm("Are you sure you want to leave this event?")) {
-        let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
-        let ev = evData.details;
-        
-        ev.participants = (ev.participants||[]).filter(p => p.name !== getMyName() && p.registeredBy !== loggedInUser);
-        
-        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
-            alert("You have left the event.");
-            document.getElementById("participateSection").classList.add("hidden");
-            showPublicHub();
-        });
+    let myName = getMyName();
+    let isAlreadyJoined = ev.participants.some(p => p.name === myName);
+    
+    if (isAlreadyJoined) {
+        if(confirm("Are you sure you want to leave this event?")) {
+            ev.participants = ev.participants.filter(p => p.name !== myName);
+            db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
+                alert("You have left the event.");
+                closePublicEventModal();
+            });
+        }
+    } else {
+        if(confirm("Join this event? Participation fee: 50 coins (Simulation).")) {
+            ev.participants.push({
+                id: 'p_' + Math.random().toString(36).substr(2, 9),
+                name: myName, catches: [], penalties: [], registeredBy: loggedInUser
+            });
+            db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
+                alert("Successfully joined the event!");
+                closePublicEventModal();
+            });
+        }
     }
 }
 
@@ -1501,17 +1489,17 @@ function downloadChart(eventId = null) {
 
     let htmlContent = `
         <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
-            <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">${t('tournament_results')}: ${ev.name}</h2>
-            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()} | Format: ${ev.limitType==='top5'?'Top 5 Counted':'All Fish'}</p>
+            <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">Tournament Results: ${ev.name}</h2>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">Generated on: ${new Date().toLocaleDateString()} | Format: ${ev.limitType==='top5'?'Top 5 Counted':'All Fish'}</p>
             <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                 <thead><tr style="background-color: #4f46e5; color: #ffffff;">
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('points')}</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Place</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Name</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Points</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Total ${unitText.toUpperCase()}</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Amt</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('biggest_fish')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 35%;">${t('details')}</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Biggest Fish</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 35%;">Details</th>
                 </tr></thead><tbody>
                     ${processed.map((p, i) => `
                         <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
@@ -1581,15 +1569,15 @@ function downloadSeasonChart() {
 
     let htmlContent = `
         <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 800px; margin: 0 auto; background: white;">
-            <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">${t('season_results')} ${selectedYear}</h2>
-            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
+            <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">Season Results ${selectedYear}</h2>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">Generated on: ${new Date().toLocaleDateString()}</p>
             <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                 <thead><tr style="background-color: #4f46e5; color: #ffffff;">
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('rank_pts_best5')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('tournaments_played')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('all_placements')}</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Place</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Name</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Rank Pts (Best 5)</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Tournaments Played</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">All Placements</th>
                 </tr></thead>
                 <tbody>${aotyArray.map((p, index) => `
                     <tr style="${index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
@@ -1622,7 +1610,6 @@ if (savedUser && savedData) {
 }
 
 updateUIAfterAuth();
-changeLanguage(document.getElementById("langSelect").value);
 
 hideAllSections();
 document.getElementById("dashboardSection").classList.remove("hidden");
