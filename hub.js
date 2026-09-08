@@ -1150,6 +1150,7 @@ function openFishModal(pIndexReal) {
     renderModalCatches();
     if(!isUserUpload) setTimeout(() => document.getElementById("modalFishSize").focus(), 100);
 }
+
 function closeFishModal() { document.getElementById("fishModal").classList.add("hidden"); activeFishParticipantIndex = null; selectedModalSpecies = ""; }
 
 function openUserUploadModal() {
@@ -1235,6 +1236,7 @@ function executeAddFish(abbr, size) {
         document.getElementById("modalFishSize").focus();
     }
 }
+
 function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
 function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
 
@@ -1257,6 +1259,7 @@ function removeFish(pIndexReal, cIdx) {
         db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
             if(activeFishParticipantIndex !== null) renderModalCatches();
             renderPublicLeaderboardList(safeDetails);
+            renderPublicGallery(safeDetails);
         }).catch(err => console.error("Save error:", err));
     } else {
         saveCurrentEvent(false);
