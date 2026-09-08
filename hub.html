@@ -289,7 +289,7 @@
         </div>
 
         <div class="card">
-            <h3>Leaderboard</h3>
+            <h3 data-i18n="leaderboard">Leaderboard</h3>
             <div id="leaderboardTopSummary" style="margin-bottom: 16px; background: #fffbeb; border: 1px solid #fde68a; padding: 16px; border-radius: var(--radius-sm);"></div>
             <div class="form-group"><select id="rankingMode" onchange="renderLeaderboard()"><option value="points">Rank by Points</option><option value="measure">Rank by Size/Weight</option></select></div>
             <div class="table-container"><div id="leaderboardContainer"></div></div>
@@ -327,6 +327,7 @@
     </div>
 </div>
 
+<!-- Log Catch Modal -->
 <div id="fishModal" class="modal-overlay hidden" style="z-index: 1100;" onclick="handleOverlayClick(event, 'fishModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
@@ -379,7 +380,7 @@
     </div>
 </div>
 
-<div id="smallFishWarningModal" class="modal-overlay hidden" style="align-items: center; z-index: 1200;" onclick="handleOverlayClick(event, 'smallFishWarningModal')">
+<div id="smallFishWarningModal" class="modal-overlay hidden" style="align-items: center; justify-content: center; z-index: 1200;" onclick="handleOverlayClick(event, 'smallFishWarningModal')">
     <div class="card" style="width: 90%; max-width: 320px; text-align: center; padding: 28px 24px; margin-bottom: 0; display: block; border-radius: var(--radius-lg);">
         <svg xmlns="http://www.w3.org/2000/svg" class="svg-lg" style="color: var(--danger); margin: 0 auto 12px; display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <h3 style="color: var(--danger); margin-bottom: 12px; font-size: 18px;">Fish Too Small</h3>
@@ -388,6 +389,16 @@
             <button class="secondary" onclick="cancelSmallFish()">Cancel</button>
             <button class="danger" onclick="ignoreSmallFish()">Ignore Rule</button>
         </div>
+    </div>
+</div>
+
+<!-- Photo Preview Modal -->
+<div id="photoPreviewModal" class="modal-overlay hidden" style="align-items: center; justify-content: center; z-index: 1500;" onclick="handleOverlayClick(event, 'photoPreviewModal')">
+    <div class="card" style="width: 90%; max-width: 500px; padding: 16px; position: relative; margin: auto; border-radius: var(--radius-lg);">
+        <button class="secondary icon-btn" style="position: absolute; top: 16px; right: 16px; z-index: 10; padding:6px; border-radius:50%; box-shadow:var(--shadow-sm);" onclick="closePhotoPreview()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <img id="fullPhotoPreview" style="width: 100%; border-radius: var(--radius-sm); object-fit: contain; max-height: 70vh;">
     </div>
 </div>
 
