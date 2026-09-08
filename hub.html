@@ -142,7 +142,7 @@
                 <span id="pubEvTypeBadge" class="badge neutral" style="font-size:10px; padding: 2px 6px;">STD</span>
                 <h2 id="pubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Event Title</h2>
             </div>
-            <button class="secondary icon-btn" onclick="window.history.back()">
+            <button class="secondary icon-btn" onclick="showPublicHub()">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             </button>
         </div>
@@ -196,8 +196,10 @@
             <div id="pubGalleryContainer" class="gallery-grid"></div>
         </div>
 
+        <!-- The Action Bar (ID Fixed!) -->
         <div id="pubActionBar" class="bottom-action-bar hidden">
             <div class="flex">
+                <button class="secondary" onclick="showPublicHub()" style="flex:1;">Back to Hub</button>
                 <button id="pubParticipateBtn" class="success hidden" onclick="joinEventDirectly()" style="flex:1;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Join Event</button>
                 <button id="pubUploadCatchBtn" class="primary hidden" onclick="openUserUploadModal()" style="flex:1;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Log Catch
@@ -289,7 +291,7 @@
         </div>
 
         <div class="card">
-            <h3 data-i18n="leaderboard">Leaderboard</h3>
+            <h3>Leaderboard</h3>
             <div id="leaderboardTopSummary" style="margin-bottom: 16px; background: #fffbeb; border: 1px solid #fde68a; padding: 16px; border-radius: var(--radius-sm);"></div>
             <div class="form-group"><select id="rankingMode" onchange="renderLeaderboard()"><option value="points">Rank by Points</option><option value="measure">Rank by Size/Weight</option></select></div>
             <div class="table-container"><div id="leaderboardContainer"></div></div>
