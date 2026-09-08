@@ -216,6 +216,11 @@ function saveProfile() {
     });
 }
 
+function handleClientAreaClick() {
+    if (loggedInUser) showProfilePage();
+    else openLogin();
+}
+
 // AUTHENTICATION
 function toggleAuth(view) {
     hideAllSections();
@@ -351,6 +356,7 @@ function subscribeToEventsRealtime() {
             let data = { id: doc.id, ...doc.data() };
             if (!data.details) data.details = {};
             
+            // AUTOMATIC 7-DAY PHOTO CLEANUP FOR FINISHED EVENTS
             let evDet = data.details;
             if (evDet.status === 'finished' && evDet.finishedAt) {
                 let daysSince = (Date.now() - evDet.finishedAt) / (1000 * 3600 * 24);
@@ -424,7 +430,10 @@ function sortEventsArray(eventsArr, sortMode) {
     });
 }
 
-// PUBLIC EVENT VIEWER LOGIC (Now correctly opening the event view!)
+// ---------------------------------------------------------
+// PUBLIC EVENT VIEWER LOGIC (Restored & Functional)
+// ---------------------------------------------------------
+
 function openPublicEvent(eventId) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
@@ -472,7 +481,8 @@ function openPublicEvent(eventId) {
     let partBtn = document.getElementById("pubParticipateBtn");
     let uploadBtn = document.getElementById("pubUploadCatchBtn");
     let actionBar = document.getElementById("pubActionBar");
-    let isAlreadyJoined = (ev.participants||[]).some(p => p.name.toLowerCase() === getMyName().toLowerCase());
+    let myName = getMyName();
+    let isAlreadyJoined = loggedInUser && myName && (ev.participants||[]).some(p => p.name.toLowerCase() === myName.toLowerCase());
 
     let showActionbar = false;
 
@@ -501,8 +511,11 @@ function openPublicEvent(eventId) {
         renderPublicLeaderboardList(ev);
     }
 
-    if (showActionbar) actionBar.classList.remove("hidden");
-    else actionBar.classList.add("hidden");
+    if (showActionbar) {
+        actionBar.classList.remove("hidden");
+    } else {
+        actionBar.classList.add("hidden");
+    }
 
     if (ev.eventType === 'cpr') { document.getElementById("tabPubGallery").classList.remove("hidden"); renderPublicGallery(ev); } 
     else { document.getElementById("tabPubGallery").classList.add("hidden"); }
@@ -553,6 +566,94 @@ function renderPublicGallery(ev) {
     });
     if(!html) html = `<div style="grid-column: span 2; text-align:center; padding:20px; color:var(--text-muted);">No photos uploaded yet.</div>`;
     container.innerHTML = html;
+}
+
+function closePublicEventModal() { 
+    document.getElementById("publicEventSection").classList.add("hidden"); 
+    currentParticipationEventId = null;
+}
+
+function toggleFullLeaderboard() {
+    isLeaderboardExpanded = !isLeaderboardExpanded;
+    document.getElementById("btnToggleLeaderboard").innerText = isLeaderboardExpanded ? "Hide Full Leaderboard" : "Show Full Leaderboard";
+    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+    if(evData) renderPublicLeaderboardList(evData.details);
+}
+
+function renderPublicLeaderboardList(ev) {
+    if(!ev) return;
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+
+    let processed = (ev.participants||[]).map(p => {
+        let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
+        let countedCatches = ev.limitType === 'top5' ? [...(p.catches||[])].sort((a,b) => b.size - a.size).slice(0,5) : (p.catches||[]);
+
+        countedCatches.forEach(c => {
+            totalMeasure += c.size;
+            if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+        });
+        
+        let penPts = 0;
+        if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
+        totalPts -= penPts;
+
+        return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
+    });
+
+    processed.sort((a, b) => b.totalPts - a.totalPts); 
+
+    let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
+
+    let html = `<table><tr><th style="width:40px;">#</th><th>Name</th><th>Pts</th><th>Max</th></tr>`;
+    toShow.forEach((p, idx) => {
+        let placeBadge = (idx === 0) ? "1st" : (idx === 1) ? "2nd" : (idx === 2) ? "3rd" : `${idx + 1}`;
+        let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
+        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;">${svgWarning}</span>` : '';
+        html += `<tr>
+            <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
+            <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
+            <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
+            <td>${maxDisplay}</td>
+        </tr>`;
+    });
+    html += `</table>`;
+    
+    document.getElementById("pubLeaderboard").innerHTML = html;
+    let toggleBtn = document.getElementById("btnToggleLeaderboard");
+    if(toggleBtn) toggleBtn.style.display = processed.length > 3 ? "inline-block" : "none";
+}
+
+function joinEventDirectly() {
+    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+    let ev = evData.details;
+    if(!ev.participants) ev.participants = [];
+    
+    let myName = getMyName();
+    let isAlreadyJoined = ev.participants.some(p => p.name.toLowerCase() === myName.toLowerCase());
+    
+    if (isAlreadyJoined) {
+        if(confirm("Are you sure you want to leave this event?")) {
+            ev.participants = ev.participants.filter(p => p.name.toLowerCase() !== myName.toLowerCase());
+            
+            let safeDetails = JSON.parse(JSON.stringify(ev));
+            db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
+                alert("You have left the event.");
+                openPublicEvent(currentParticipationEventId);
+            });
+        }
+    } else {
+        // Direct Join for registered participants
+        ev.participants.push({
+            id: 'p_' + Math.random().toString(36).substr(2, 9),
+            name: myName, catches: [], penalties: [], registeredBy: loggedInUser
+        });
+        let safeDetails = JSON.parse(JSON.stringify(ev));
+        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
+            alert("Successfully joined the event!");
+            openPublicEvent(currentParticipationEventId);
+        });
+    }
 }
 
 function renderPublicHub() {
@@ -1361,6 +1462,7 @@ function executeAddFish(abbr, size) {
         document.getElementById("modalFishSize").focus();
     }
 }
+
 function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
 function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
 
