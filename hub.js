@@ -52,10 +52,7 @@ const svgTrash = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fi
 const svgWarning = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
 const svgCamera = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
 
-const translations = {
-    en: {},
-    ka: { login_btn: "შესვლა" }
-};
+const translations = { en: {}, ka: { login_btn: "შესვლა" } };
 
 function changeLanguage(lang) {
     currentLang = lang;
@@ -63,11 +60,14 @@ function changeLanguage(lang) {
     if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
     if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
     if(!document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
+    
     let myEventsView = document.getElementById("myEventsSection");
     if(myEventsView && !myEventsView.classList.contains("hidden")) processDashboard();
+    
     let historyView = document.getElementById("historyView");
     if(historyView && !historyView.classList.contains("hidden")) renderHistoryTab();
-    if(!document.getElementById("publicEventModal").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
+    
+    if(!document.getElementById("publicEventSection").classList.contains("hidden")) renderPublicLeaderboardList(allPublicEvents.find(e => e.id === currentParticipationEventId)?.details);
     if(!document.getElementById("dashboardSection").classList.contains("hidden")) renderPublicHub();
 }
 
@@ -80,7 +80,6 @@ function handleOverlayClick(e, modalId) {
         if (modalId === 'penaltyModal') closePenaltyModal();
         if (modalId === 'rulesModal') closeRulesModal();
         if (modalId === 'smallFishWarningModal') cancelSmallFish();
-        if (modalId === 'publicEventModal') closePublicEventModal();
     }
 }
 
@@ -93,7 +92,7 @@ function parseParticipants(rawText) {
 
 // SAFE ROUTING ENGINE
 function hideAllSections() {
-    ["loginSection", "registerSection", "dashboardSection", "profileSection", "myEventsSection", "participateSection", "setupSection", "hubSection"].forEach(id => {
+    ["loginSection", "registerSection", "dashboardSection", "profileSection", "myEventsSection", "participateSection", "setupSection", "hubSection", "publicEventSection"].forEach(id => {
         let el = document.getElementById(id);
         if (el) el.classList.add("hidden");
     });
@@ -406,6 +405,15 @@ function subscribeToEventsRealtime() {
                 renderHubUI();
             }
         }
+
+        let pubSection = document.getElementById("publicEventSection");
+        if (currentParticipationEventId && pubSection && !pubSection.classList.contains("hidden")) {
+            let activeUpdated = allPublicEvents.find(e => e.id === currentParticipationEventId);
+            if (activeUpdated) {
+                renderPublicLeaderboardList(activeUpdated.details);
+                if (activeUpdated.details.eventType === 'cpr') renderPublicGallery(activeUpdated.details);
+            }
+        }
     }, error => {
         console.error("Firebase Read Error: ", error);
     });
@@ -443,10 +451,10 @@ function renderPublicHub() {
 
         let hostName = ev.details.hostFullName || ev.username;
         let hostAvatar = ev.details.hostAvatar || "https://via.placeholder.com/40";
-        let evTypeBadge = ev.details.eventType === 'cpr' ? `<span class="badge" style="background:#fef3c7; color:#d97706; margin-right:8px; font-size:10px;">CPR</span>` : '';
+        let evTypeBadge = ev.details.eventType === 'cpr' ? `<span class="badge warning" style="margin-right:8px; font-size:10px;">CPR</span>` : '';
 
         html += `
-        <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
+        <div class="card" style="padding:16px; cursor:pointer;" onclick="openPublicEvent('${ev.id}')">
             ${thumb}
             <div class="flex flex-between" style="align-items:flex-start;">
                 <div>
@@ -937,6 +945,7 @@ function recalcRulesCascading() {
     }
 }
 
+// BUGFIXED RENDER RULES
 function renderRules() {
     let s = currentEvent.species[activeSpeciesIndex];
     document.getElementById('rulesModalTitle').innerText = 'Edit Rules: ' + s.name;
@@ -1075,14 +1084,13 @@ function selectModalSpecies(abbr, element) {
 }
 
 function openFishModal(pIndexReal) {
-    let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventModal").classList.contains("hidden"));
+    let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventSection").classList.contains("hidden"));
     
     if (isUserUpload && currentEvent.status !== 'ongoing') {
         alert("You can only log catches while the event is ongoing.");
         return;
     }
     
-    // Organizers can add/edit catches during 'ongoing' AND 'finished' states
     if (!isUserUpload && currentEvent.status === 'announced') return;
 
     activeFishParticipantIndex = pIndexReal;
@@ -1140,7 +1148,7 @@ function openUserUploadModal() {
 function confirmAddFishModal() {
     if (activeFishParticipantIndex === null || !selectedModalSpecies) return;
     
-    let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventModal").classList.contains("hidden"));
+    let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventSection").classList.contains("hidden"));
     let size = 0;
 
     if (!isUserUpload) {
@@ -1172,7 +1180,7 @@ function confirmAddFishModal() {
 }
 
 function executeAddFish(abbr, size) {
-    let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventModal").classList.contains("hidden"));
+    let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventSection").classList.contains("hidden"));
     
     let catchObj = { abbr, size };
     if (tempCatchPhotoBase64) {
@@ -1231,7 +1239,7 @@ function renderModalCatches() {
     let p = currentEvent.participants[activeFishParticipantIndex];
     if ((p.catches||[]).length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">No catches logged.</p>`; return; }
     
-    let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventModal").classList.contains("hidden"));
+    let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventSection").classList.contains("hidden"));
     let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
     
     container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">Current Catches:</label>` + 
@@ -1347,7 +1355,6 @@ function renderHubUI() {
         if (isAnnounced) {
             actionButtons = `<span style="font-size:12px; color:var(--text-muted); font-weight:bold; padding-right:8px;">Announced</span>`;
         } else {
-            // Organizer can edit catches in both Ongoing and Finished
             actionButtons = `
                 <button onclick="openPenaltyModal(${pIndexReal})" class="secondary icon-btn" style="padding:10px;">${svgWarning}</button>
                 <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary" style="padding:10px 14px;">${svgFish}</button>
@@ -1445,6 +1452,417 @@ function renderLeaderboard() {
     });
     html += `</table>`;
     document.getElementById("leaderboardContainer").innerHTML = html;
+}
+
+function saveCurrentEvent(redirect = true) {
+    try {
+        if (!currentEvent.date) currentEvent.date = new Date().toLocaleDateString();
+        if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+
+        let safeDetails = JSON.parse(JSON.stringify(currentEvent));
+
+        const eventPayload = { 
+            username: loggedInUser, 
+            name: currentEvent.name, 
+            details: safeDetails, 
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+        };
+        
+        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeDetails.species));
+
+        db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
+            if(redirect) showMyEvents(); 
+        }).catch(err => { 
+            console.error("Save error:", err); 
+            alert("Failed to save event to cloud: " + err.message); 
+        });
+    } catch (e) {
+        console.error("Sync error during save:", e);
+        alert("An error occurred while preparing to save: " + e.message);
+    }
+}
+
+// PUBLIC EVENT PAGE & PARTICIPATION LOGIC
+function openPublicEvent(eventId) {
+    let evData = allPublicEvents.find(e => e.id === eventId);
+    if(!evData) return;
+    let ev = evData.details;
+    currentParticipationEventId = eventId;
+
+    document.getElementById("pubTitle").innerText = evData.name;
+    document.getElementById("pubEvTypeBadge").innerText = ev.eventType === 'cpr' ? "CPR" : "STD";
+    if (ev.eventType === 'cpr') document.getElementById("pubEvTypeBadge").className = "badge warning";
+    else document.getElementById("pubEvTypeBadge").className = "badge neutral";
+
+    document.getElementById("pubHost").innerText = ev.date || '';
+    document.getElementById("pubHostName").innerText = ev.hostFullName || evData.username;
+    document.getElementById("pubHostAvatar").src = ev.hostAvatar || "https://via.placeholder.com/40";
+    
+    if(ev.thumbnail) {
+        document.getElementById("pubThumb").src = ev.thumbnail;
+        document.getElementById("pubThumb").classList.remove("hidden");
+    } else {
+        document.getElementById("pubThumb").classList.add("hidden");
+    }
+
+    document.getElementById("pubDesc").innerText = ev.description || "No description provided.";
+    
+    let limitTxt = ev.limitType === 'top5' ? "Top 5 Counted" : "All Fish Counted";
+    let measureTxt = ev.measureType === 'weight' ? "Weighted" : "Size/Points";
+    let rulesHtml = `<div style="margin-bottom:12px;"><b>Format:</b> ${measureTxt} | ${limitTxt}</div>`;
+    
+    rulesHtml += (ev.species||[]).map(s => {
+        let trs = s.tiers.map(t => `${t.from}-${t.to} (${parseFloat(t.multiplier||1).toFixed(1)}x)`).join(', ');
+        return `<div><b style="color:var(--text-main);">${s.name} (${s.abbr.toUpperCase()}):</b> ${trs}</div>`;
+    }).join('');
+    document.getElementById("pubRules").innerHTML = rulesHtml;
+
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+    document.getElementById("pubParticipantsDetail").innerHTML = (ev.participants||[]).map((p, i) => {
+        let catches = (p.catches||[]).length > 0 ? p.catches.map(c => `<span class="badge neutral" style="font-weight:600;">${c.size}${unitText} ${c.abbr.toUpperCase()}</span>`).join(' ') : 'None';
+        let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger); font-size:12px; font-weight:600;">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
+        return `<div style="padding:12px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
+    }).join('');
+
+    isLeaderboardExpanded = false;
+    let st = ev.status || 'finished';
+    
+    let partBtn = document.getElementById("pubParticipateBtn");
+    let uploadBtn = document.getElementById("pubUploadCatchBtn");
+    let actionBar = document.getElementById("pubActionBar");
+    let isAlreadyJoined = (ev.participants||[]).some(p => p.name.toLowerCase() === getMyName().toLowerCase());
+
+    let showActionbar = false;
+
+    if (st === 'announced') {
+        document.getElementById("pubRulesCard").classList.remove("hidden");
+        document.getElementById("pubLeaderboardCard").classList.add("hidden");
+        document.getElementById("pubPartCard").classList.remove("hidden");
+        
+        if (loggedInUserData && loggedInUserData.role === 'participant') {
+            partBtn.classList.remove("hidden");
+            showActionbar = true;
+            if (isAlreadyJoined) { partBtn.innerHTML = `Leave Event`; partBtn.className = "danger"; } 
+            else { partBtn.innerHTML = `Join Event`; partBtn.className = "success"; }
+        } else { partBtn.classList.add("hidden"); }
+        uploadBtn.classList.add("hidden");
+    } else if (st === 'ongoing') {
+        partBtn.classList.add("hidden");
+        if (isAlreadyJoined && loggedInUserData && loggedInUserData.role === 'participant') {
+            uploadBtn.classList.remove("hidden");
+            showActionbar = true;
+        } else { uploadBtn.classList.add("hidden"); }
+    } else { 
+        partBtn.classList.add("hidden");
+        uploadBtn.classList.add("hidden");
+    }
+
+    if (showActionbar) actionBar.classList.remove("hidden");
+    else actionBar.classList.add("hidden");
+
+    if (ev.eventType === 'cpr') { document.getElementById("tabPubGallery").classList.remove("hidden"); renderPublicGallery(ev); } 
+    else { document.getElementById("tabPubGallery").classList.add("hidden"); }
+
+    switchPubTab('lb');
+    
+    hideAllSections();
+    document.getElementById("publicEventSection").classList.remove("hidden");
+    window.scrollTo(0, 0);
+    history.pushState({view: 'publicEventSection'}, "");
+}
+
+function switchPubTab(tab) {
+    document.getElementById("tabPubLb").classList.remove("active");
+    document.getElementById("tabPubRules").classList.remove("active");
+    document.getElementById("tabPubGallery").classList.remove("active");
+    
+    document.getElementById("pubLeaderboardWrapSection").classList.add("hidden");
+    document.getElementById("pubRulesWrapSection").classList.add("hidden");
+    document.getElementById("pubGalleryWrapSection").classList.add("hidden");
+
+    if (tab === 'rules') {
+        document.getElementById("tabPubRules").classList.add("active");
+        document.getElementById("pubRulesWrapSection").classList.remove("hidden");
+    } else if (tab === 'gallery') {
+        document.getElementById("tabPubGallery").classList.add("active");
+        document.getElementById("pubGalleryWrapSection").classList.remove("hidden");
+    } else {
+        document.getElementById("tabPubLb").classList.add("active");
+        document.getElementById("pubLeaderboardWrapSection").classList.remove("hidden");
+        let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+        if(evData) renderPublicLeaderboardList(evData.details);
+    }
+}
+
+function renderPublicGallery(ev) {
+    let container = document.getElementById("pubGalleryContainer");
+    let html = "";
+    (ev.participants||[]).forEach(p => {
+        (p.catches||[]).forEach(c => {
+            if(c.photo) {
+                html += `<div class="gallery-item">
+                    <img src="${c.photo}">
+                    <div class="gallery-meta">${p.name}<br><span style="color:var(--text-muted); font-size:11px;">${c.size} ${c.abbr.toUpperCase()}</span></div>
+                </div>`;
+            }
+        });
+    });
+    if(!html) html = `<div style="grid-column: span 2; text-align:center; padding:20px; color:var(--text-muted);">No photos uploaded yet.</div>`;
+    container.innerHTML = html;
+}
+
+function toggleFullLeaderboard() {
+    isLeaderboardExpanded = !isLeaderboardExpanded;
+    document.getElementById("btnToggleLeaderboard").innerText = isLeaderboardExpanded ? "Hide Full Leaderboard" : "Show Full Leaderboard";
+    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+    if(evData) renderPublicLeaderboardList(evData.details);
+}
+
+function renderPublicLeaderboardList(ev) {
+    if(!ev) return;
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+
+    let processed = (ev.participants||[]).map(p => {
+        let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
+        let countedCatches = ev.limitType === 'top5' ? [...(p.catches||[])].sort((a,b) => b.size - a.size).slice(0,5) : (p.catches||[]);
+
+        countedCatches.forEach(c => {
+            totalMeasure += c.size;
+            if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+        });
+        
+        let penPts = 0;
+        if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
+        totalPts -= penPts;
+
+        return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
+    });
+
+    processed.sort((a, b) => b.totalPts - a.totalPts); 
+
+    let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
+
+    let html = `<table><tr><th style="width:40px;">#</th><th>Name</th><th>Pts</th><th>Max</th></tr>`;
+    toShow.forEach((p, idx) => {
+        let placeBadge = (idx === 0) ? "1st" : (idx === 1) ? "2nd" : (idx === 2) ? "3rd" : `${idx + 1}`;
+        let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
+        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;">${svgWarning}</span>` : '';
+        html += `<tr>
+            <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
+            <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
+            <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
+            <td>${maxDisplay}</td>
+        </tr>`;
+    });
+    html += `</table>`;
+    
+    document.getElementById("pubLeaderboard").innerHTML = html;
+    document.getElementById("btnToggleLeaderboard").style.display = processed.length > 3 ? "inline-block" : "none";
+}
+
+function joinEventDirectly() {
+    let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+    let ev = evData.details;
+    if(!ev.participants) ev.participants = [];
+    
+    let myName = getMyName();
+    let isAlreadyJoined = ev.participants.some(p => p.name.toLowerCase() === myName.toLowerCase());
+    
+    if (isAlreadyJoined) {
+        if(confirm("Are you sure you want to leave this event?")) {
+            ev.participants = ev.participants.filter(p => p.name.toLowerCase() !== myName.toLowerCase());
+            
+            let safeDetails = JSON.parse(JSON.stringify(ev));
+            db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
+                alert("You have left the event.");
+                openPublicEvent(currentParticipationEventId);
+            });
+        }
+    } else {
+        ev.participants.push({
+            id: 'p_' + Math.random().toString(36).substr(2, 9),
+            name: myName, catches: [], penalties: [], registeredBy: loggedInUser
+        });
+        let safeDetails = JSON.parse(JSON.stringify(ev));
+        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
+            alert("Successfully joined the event!");
+            openPublicEvent(currentParticipationEventId);
+        });
+    }
+}
+
+function downloadChart(eventId = null) {
+    let ev = currentEvent;
+    if (eventId) { let found = loadedEvents.find(e => e.id === eventId); if (found) ev = found.details; }
+    if (!ev || ev.participants.length === 0) { alert("No data to download."); return; }
+
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+
+    let processed = ev.participants.map(p => {
+        let totalM = 0, totalPts = 0, maxFishM = 0, maxFishAbbr = "";
+        let countedCatches = ev.limitType === 'top5' ? [...p.catches].sort((a,b)=>b.size-a.size).slice(0,5) : p.catches;
+        
+        countedCatches.forEach(c => {
+            totalM += c.size;
+            if (c.size > maxFishM) { maxFishM = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+        });
+        
+        let penPts = 0; let penStr = "";
+        if(p.penalties && p.penalties.length > 0) {
+            p.penalties.forEach(pn => penPts += parseFloat(pn.points));
+            penStr = ` (Penalty: -${penPts})`;
+        }
+        totalPts -= penPts;
+
+        let allCatchesStr = p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') || "-";
+        return { name: p.name, totalM, totalPts, maxFishM, maxFishAbbr, amountCatches: countedCatches.length, allCatchesStr, penStr };
+    });
+
+    processed.sort((a, b) => {
+        if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+        if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
+        return b.maxFishM - a.maxFishM; 
+    });
+
+    let htmlContent = `
+        <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
+            <h2 style="margin-bottom: 8px; color: #000000; font-size:28px;">Tournament Results: ${ev.name}</h2>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">Generated on: ${new Date().toLocaleDateString()} | Format: ${ev.limitType==='top5'?'Top 5 Counted':'All Fish'}</p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                <thead><tr style="background-color: #000000; color: #ffffff;">
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Place</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Name</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Points</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Total ${unitText.toUpperCase()}</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Amt</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Biggest Fish</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000; width: 35%;">Details</th>
+                </tr></thead><tbody>
+                    ${processed.map((p, i) => `
+                        <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${i + 1}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.totalPts.toFixed(1)}${p.penStr ? `<br><span style="color:#e11d48; font-size:11px;">${p.penStr}</span>` : ''}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.totalM.toFixed(1)}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.amountCatches}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.maxFishM > 0 ? `${p.maxFishM}${unitText} ${p.maxFishAbbr}` : '-'}</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px; line-height: 1.4;">${p.allCatchesStr}</td>
+                        </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+
+    let opt = {
+        margin: 0.3, filename: `${ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`,
+        image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+    };
+    let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent;
+    html2pdf().set(opt).from(tempDiv).save();
+}
+
+async function downloadPhotosZip(eventId) {
+    let evData = loadedEvents.find(e => e.id === eventId);
+    if (!evData || evData.details.eventType !== 'cpr') return;
+    let ev = evData.details;
+
+    let zip = new JSZip();
+    let hasPhotos = false;
+    
+    ev.participants.forEach(p => {
+        (p.catches || []).forEach((c, idx) => {
+            if (c.photo) {
+                hasPhotos = true;
+                let base64Data = c.photo.split(',')[1];
+                let fileName = `${p.name.replace(/[^a-z0-9]/gi, '_')}_${c.abbr}_${c.size}_catch${idx+1}.jpg`;
+                zip.file(fileName, base64Data, {base64: true});
+            }
+        });
+    });
+    
+    if (!hasPhotos) {
+        alert("No photos found in this event.");
+        return;
+    }
+    
+    let content = await zip.generateAsync({type:"blob"});
+    let link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = `${ev.name.replace(/[^a-z0-9]/gi, '_')}_Photos.zip`;
+    link.click();
+}
+
+function downloadSeasonChart() {
+    let rankedFinishedEvents = loadedEvents.filter(e => {
+        let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+        let status = e.details.status || 'finished';
+        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
+    });
+
+    if (rankedFinishedEvents.length === 0) {
+        alert("No finished ranked tournaments found for this season.");
+        return;
+    }
+
+    let yearlyAgg = {};
+    rankedFinishedEvents.forEach(ev => {
+        let placements = getEventPlacements(ev.details);
+        Object.keys(placements).forEach(normName => {
+            if(!yearlyAgg[normName]) {
+                let originalName = ev.details.participants.find(p => p.name.toLowerCase().trim() === normName)?.name || normName;
+                yearlyAgg[normName] = { name: originalName, scores: [] };
+            }
+            yearlyAgg[normName].scores.push(placements[normName]);
+        });
+    });
+
+    let aotyArray = Object.values(yearlyAgg).map(angler => {
+        let sortedScores = [...angler.scores].sort((a, b) => a - b);
+        let best5 = sortedScores.slice(0, 5); 
+        let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
+        return {
+            name: angler.name,
+            validEventsCount: angler.scores.length,
+            totalRankPts: totalRankPts,
+            allScoresStr: sortedScores.join(', ')
+        };
+    }).filter(a => a.validEventsCount > 0);
+
+    aotyArray.sort((a, b) => {
+        let aEvents = Math.min(a.validEventsCount, 5);
+        let bEvents = Math.min(b.validEventsCount, 5);
+        if(aEvents !== bEvents) return bEvents - aEvents; 
+        return a.totalRankPts - b.totalRankPts; 
+    });
+
+    let htmlContent = `
+        <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 800px; margin: 0 auto; background: white;">
+            <h2 style="margin-bottom: 8px; color: #000000; font-size:28px;">Season Results ${selectedYear}</h2>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">Generated on: ${new Date().toLocaleDateString()}</p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                <thead><tr style="background-color: #000000; color: #ffffff;">
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Place</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Name</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Rank Pts (Best 5)</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">Tournaments Played</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0; color: #ffffff !important; background-color: #000000;">All Placements</th>
+                </tr></thead>
+                <tbody>${aotyArray.map((p, index) => `
+                    <tr style="${index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${index + 1}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.totalRankPts}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.validEventsCount}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px;">${p.allScoresStr}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+
+    let opt = { margin: 0.3, filename: `season_${selectedYear}_results.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+    let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
 }
 
 // RESTORE SESSION & INITIALIZATION
