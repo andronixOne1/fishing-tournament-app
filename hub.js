@@ -356,6 +356,9 @@ function subscribeToEventsRealtime() {
             let data = { id: doc.id, ...doc.data() };
             if (!data.details) data.details = {};
             
+            // Fix undefined IDs for older databases
+            data.details.id = doc.id; 
+
             // AUTOMATIC 7-DAY PHOTO CLEANUP FOR FINISHED EVENTS
             let evDet = data.details;
             if (evDet.status === 'finished' && evDet.finishedAt) {
@@ -403,6 +406,7 @@ function subscribeToEventsRealtime() {
             let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id) || allPublicEvents.find(e => e.id === currentEvent.id);
             if (activeUpdated) {
                 currentEvent = activeUpdated.details;
+                currentEvent.id = activeUpdated.id; 
                 renderHubUI();
             }
         }
@@ -411,6 +415,7 @@ function subscribeToEventsRealtime() {
         if (currentParticipationEventId && pubSection && !pubSection.classList.contains("hidden")) {
             let activeUpdated = allPublicEvents.find(e => e.id === currentParticipationEventId);
             if (activeUpdated) {
+                activeUpdated.details.id = activeUpdated.id;
                 renderPublicLeaderboardList(activeUpdated.details);
                 if (activeUpdated.details.eventType === 'cpr') renderPublicGallery(activeUpdated.details);
             }
@@ -431,27 +436,14 @@ function sortEventsArray(eventsArr, sortMode) {
 }
 
 // ---------------------------------------------------------
-// PHOTO PREVIEW (Universal)
+// PUBLIC EVENT VIEWER LOGIC 
 // ---------------------------------------------------------
-function openPhotoPreviewByUrl(url) {
-    if (!url) return;
-    document.getElementById("fullPhotoPreview").src = url;
-    document.getElementById("photoPreviewModal").classList.remove("hidden");
-}
 
-function closePhotoPreview() {
-    document.getElementById("photoPreviewModal").classList.add("hidden");
-    document.getElementById("fullPhotoPreview").src = "";
-}
-
-
-// ---------------------------------------------------------
-// PUBLIC EVENT VIEWER LOGIC
-// ---------------------------------------------------------
 function openPublicEvent(eventId) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
     let ev = evData.details;
+    ev.id = evData.id; 
     currentParticipationEventId = eventId;
 
     document.getElementById("pubTitle").innerText = evData.name;
@@ -600,7 +592,7 @@ function toggleFullLeaderboard() {
 
 function renderPublicLeaderboardList(ev) {
     if(!ev) return;
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+    let unitText = ev.unit === 'imperial' ? (currentEvent && currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
 
     let processed = (ev.participants||[]).map(p => {
         let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
@@ -661,7 +653,6 @@ function joinEventDirectly() {
             });
         }
     } else {
-        // Direct Join for registered participants
         ev.participants.push({
             id: 'p_' + Math.random().toString(36).substr(2, 9),
             name: myName, catches: [], penalties: [], registeredBy: loggedInUser
@@ -725,6 +716,25 @@ function renderPublicHub() {
         </div>`;
     });
     container.innerHTML = html;
+}
+
+// Photo Preview Modal Control
+function openPhotoPreview(pIdx, cIdx) {
+    let p = currentEvent.participants[pIdx];
+    if (!p || !p.catches[cIdx] || !p.catches[cIdx].photo) return;
+    document.getElementById("fullPhotoPreview").src = p.catches[cIdx].photo;
+    document.getElementById("photoPreviewModal").classList.remove("hidden");
+}
+
+function openPhotoPreviewByUrl(url) {
+    if (!url) return;
+    document.getElementById("fullPhotoPreview").src = url;
+    document.getElementById("photoPreviewModal").classList.remove("hidden");
+}
+
+function closePhotoPreview() {
+    document.getElementById("photoPreviewModal").classList.add("hidden");
+    document.getElementById("fullPhotoPreview").src = "";
 }
 
 // History Tab for Participants
@@ -951,7 +961,10 @@ function renderEventsList(filteredEvents) {
 // SETUP PHASE
 function editEvent(id) {
     let found = loadedEvents.find(e => e.id === id);
-    if (found) openEventEditor(found.details);
+    if (found) {
+        found.details.id = found.id;
+        openEventEditor(found.details);
+    }
 }
 
 function deleteEvent(id) {
@@ -1287,6 +1300,14 @@ function goToEventHub() {
     renderHubUI();
 }
 
+function backToSetup() {
+    hideAllSections();
+    document.getElementById("setupSection").classList.remove("hidden");
+    refreshSetupUI();
+    window.scrollTo(0, 0);
+    history.pushState({view: 'setupSection'}, "");
+}
+
 function startEventNow() {
     if (confirm("Start the event? This will lock the participant list and allow scoring.")) {
         currentEvent.status = 'ongoing';
@@ -1342,7 +1363,6 @@ function openFishModal(pIndexReal) {
         return;
     }
     
-    // Organizers can add/edit catches during 'ongoing' AND 'finished' states
     if (!isUserUpload && currentEvent.status === 'announced') return;
 
     activeFishParticipantIndex = pIndexReal;
@@ -1470,12 +1490,22 @@ function executeAddFish(abbr, size) {
 function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
 function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
 
-function updateCatchSize(pIdx, cIdx, val) {
+function updateCatchSize(pIdx, cIdx, val, btnElement) {
     let size = parseFloat(val);
     if (isNaN(size) || size < 0) size = 0;
     currentEvent.participants[pIdx].catches[cIdx].size = size;
+    
+    if (btnElement) {
+        let oldText = btnElement.innerHTML;
+        btnElement.innerHTML = "Saved!";
+        btnElement.classList.replace("primary", "success");
+        setTimeout(() => {
+            btnElement.innerHTML = oldText;
+            btnElement.classList.replace("success", "primary");
+        }, 1500);
+    }
+    
     saveCurrentEvent(false);
-    renderModalCatches();
     renderHubUI();
 }
 
@@ -1511,11 +1541,10 @@ function renderModalCatches() {
         p.catches.map((c, cIdx) => {
             let sizeDisplay = isUserUpload ? 
                 `<b>${c.size > 0 ? c.size + unitText : 'Pending'}</b>` :
-                `<div class="flex" style="margin-right:8px;"><input type="number" id="editCatchSize_${cIdx}" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px;"><button class="success icon-btn" style="padding:4px 8px; box-shadow:none;" onclick="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, document.getElementById('editCatchSize_${cIdx}').value)">Save</button></div>`;
+                `<div class="flex" style="margin-right:8px;"><input type="number" id="editCatchSize_${cIdx}" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px;"><button class="primary icon-btn" style="padding:4px 8px; box-shadow:none;" onclick="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, document.getElementById('editCatchSize_${cIdx}').value, this)">Save</button></div>`;
 
-            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreviewByUrl('${c.photo}')">${svgCamera}</button>` : '';
+            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreview(${activeFishParticipantIndex}, ${cIdx})">${svgCamera}</button>` : '';
             
-            // Allow delete if it's the organizer OR if it's the user and the event is ongoing
             let canDelete = (!isUserUpload) || (isUserUpload && currentEvent.status === 'ongoing');
             let deleteBtn = canDelete ? `<button class="danger icon-btn" style="padding:6px; box-shadow:none;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">${svgTrash}</button>` : '';
 
@@ -1586,7 +1615,7 @@ function showPenaltyReason(pIdx) {
 function calculateFishPoints(abbr, size, speciesList, measureType) {
     if(measureType === 'weight') return size; 
     let sp = speciesList.find(s => s.abbr === abbr);
-    if (!sp || !sp.tiers || sp.tiers.length === 0) return size;
+    if (!sp || !sp.tiers || sp.tiers.length === 0) return 0;
     
     let matchingTier = sp.tiers.find(t => {
         let f = t.from === "" ? 0 : parseFloat(t.from);
@@ -1728,6 +1757,34 @@ function renderLeaderboard() {
     });
     html += `</table>`;
     document.getElementById("leaderboardContainer").innerHTML = html;
+}
+
+function saveCurrentEvent(redirect = true) {
+    try {
+        if (!currentEvent.date) currentEvent.date = new Date().toLocaleDateString();
+        if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+
+        let safeDetails = JSON.parse(JSON.stringify(currentEvent));
+
+        const eventPayload = { 
+            username: loggedInUser, 
+            name: currentEvent.name, 
+            details: safeDetails, 
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+        };
+        
+        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeDetails.species));
+
+        db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
+            if(redirect) showMyEvents(); 
+        }).catch(err => { 
+            console.error("Save error:", err); 
+            alert("Failed to save event to cloud: " + err.message); 
+        });
+    } catch (e) {
+        console.error("Sync error during save:", e);
+        alert("An error occurred while preparing to save: " + e.message);
+    }
 }
 
 // RESTORE SESSION & INITIALIZATION
