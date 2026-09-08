@@ -216,11 +216,6 @@ function saveProfile() {
     });
 }
 
-function handleClientAreaClick() {
-    if (loggedInUser) showProfilePage();
-    else openLogin();
-}
-
 // AUTHENTICATION
 function toggleAuth(view) {
     hideAllSections();
@@ -429,6 +424,137 @@ function sortEventsArray(eventsArr, sortMode) {
     });
 }
 
+// PUBLIC EVENT VIEWER LOGIC (Now correctly opening the event view!)
+function openPublicEvent(eventId) {
+    let evData = allPublicEvents.find(e => e.id === eventId);
+    if(!evData) return;
+    let ev = evData.details;
+    currentParticipationEventId = eventId;
+
+    document.getElementById("pubTitle").innerText = evData.name;
+    document.getElementById("pubEvTypeBadge").innerText = ev.eventType === 'cpr' ? "CPR" : "STD";
+    if (ev.eventType === 'cpr') document.getElementById("pubEvTypeBadge").className = "badge warning";
+    else document.getElementById("pubEvTypeBadge").className = "badge neutral";
+
+    document.getElementById("pubHost").innerText = ev.date || '';
+    document.getElementById("pubHostName").innerText = ev.hostFullName || evData.username;
+    document.getElementById("pubHostAvatar").src = ev.hostAvatar || "https://via.placeholder.com/40";
+    
+    if(ev.thumbnail) {
+        document.getElementById("pubThumb").src = ev.thumbnail;
+        document.getElementById("pubThumb").classList.remove("hidden");
+    } else {
+        document.getElementById("pubThumb").classList.add("hidden");
+    }
+
+    document.getElementById("pubDesc").innerText = ev.description || "No description provided.";
+    
+    let limitTxt = ev.limitType === 'top5' ? "Top 5 Counted" : "All Fish Counted";
+    let measureTxt = ev.measureType === 'weight' ? "Weighted" : "Size/Points";
+    let rulesHtml = `<div style="margin-bottom:12px;"><b>Format:</b> ${measureTxt} | ${limitTxt}</div>`;
+    
+    rulesHtml += (ev.species||[]).map(s => {
+        let trs = s.tiers.map(t => `${t.from}-${t.to} (${parseFloat(t.multiplier||1).toFixed(1)}x)`).join(', ');
+        return `<div><b style="color:var(--text-main);">${s.name} (${s.abbr.toUpperCase()}):</b> ${trs}</div>`;
+    }).join('');
+    document.getElementById("pubRules").innerHTML = rulesHtml;
+
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+    document.getElementById("pubParticipantsDetail").innerHTML = (ev.participants||[]).map((p, i) => {
+        let catches = (p.catches||[]).length > 0 ? p.catches.map(c => `<span class="badge neutral" style="font-weight:600;">${c.size}${unitText} ${c.abbr.toUpperCase()}</span>`).join(' ') : 'None';
+        let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger); font-size:12px; font-weight:600;">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
+        return `<div style="padding:12px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
+    }).join('');
+
+    isLeaderboardExpanded = false;
+    let st = ev.status || 'finished';
+    
+    let partBtn = document.getElementById("pubParticipateBtn");
+    let uploadBtn = document.getElementById("pubUploadCatchBtn");
+    let actionBar = document.getElementById("pubActionBar");
+    let isAlreadyJoined = (ev.participants||[]).some(p => p.name.toLowerCase() === getMyName().toLowerCase());
+
+    let showActionbar = false;
+
+    if (st === 'announced') {
+        document.getElementById("pubRulesCard").classList.remove("hidden");
+        document.getElementById("pubLeaderboardCard").classList.add("hidden");
+        document.getElementById("pubPartCard").classList.remove("hidden");
+        
+        if (loggedInUserData && loggedInUserData.role === 'participant') {
+            partBtn.classList.remove("hidden");
+            showActionbar = true;
+            if (isAlreadyJoined) { partBtn.innerHTML = `Leave Event`; partBtn.className = "danger"; } 
+            else { partBtn.innerHTML = `Join Event`; partBtn.className = "success"; }
+        } else { partBtn.classList.add("hidden"); }
+        uploadBtn.classList.add("hidden");
+    } else if (st === 'ongoing') {
+        partBtn.classList.add("hidden");
+        if (isAlreadyJoined && loggedInUserData && loggedInUserData.role === 'participant') {
+            uploadBtn.classList.remove("hidden");
+            showActionbar = true;
+        } else { uploadBtn.classList.add("hidden"); }
+        renderPublicLeaderboardList(ev);
+    } else { 
+        partBtn.classList.add("hidden");
+        uploadBtn.classList.add("hidden");
+        renderPublicLeaderboardList(ev);
+    }
+
+    if (showActionbar) actionBar.classList.remove("hidden");
+    else actionBar.classList.add("hidden");
+
+    if (ev.eventType === 'cpr') { document.getElementById("tabPubGallery").classList.remove("hidden"); renderPublicGallery(ev); } 
+    else { document.getElementById("tabPubGallery").classList.add("hidden"); }
+
+    switchPubTab('lb');
+    
+    hideAllSections();
+    document.getElementById("publicEventSection").classList.remove("hidden");
+    window.scrollTo(0, 0);
+    history.pushState({view: 'publicEventSection'}, "");
+}
+
+function switchPubTab(tab) {
+    document.getElementById("tabPubLb").classList.remove("active");
+    document.getElementById("tabPubRules").classList.remove("active");
+    document.getElementById("tabPubGallery").classList.remove("active");
+    
+    document.getElementById("pubLeaderboardWrapSection").classList.add("hidden");
+    document.getElementById("pubRulesWrapSection").classList.add("hidden");
+    document.getElementById("pubGalleryWrapSection").classList.add("hidden");
+
+    if (tab === 'rules') {
+        document.getElementById("tabPubRules").classList.add("active");
+        document.getElementById("pubRulesWrapSection").classList.remove("hidden");
+    } else if (tab === 'gallery') {
+        document.getElementById("tabPubGallery").classList.add("active");
+        document.getElementById("pubGalleryWrapSection").classList.remove("hidden");
+    } else {
+        document.getElementById("tabPubLb").classList.add("active");
+        document.getElementById("pubLeaderboardWrapSection").classList.remove("hidden");
+        let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
+        if(evData) renderPublicLeaderboardList(evData.details);
+    }
+}
+
+function renderPublicGallery(ev) {
+    let container = document.getElementById("pubGalleryContainer");
+    let html = "";
+    (ev.participants||[]).forEach(p => {
+        (p.catches||[]).forEach(c => {
+            if(c.photo) {
+                html += `<div class="gallery-item">
+                    <img src="${c.photo}">
+                    <div class="gallery-meta">${p.name}<br><span style="color:var(--text-muted); font-size:11px;">${c.size} ${c.abbr.toUpperCase()}</span></div>
+                </div>`;
+            }
+        });
+    });
+    if(!html) html = `<div style="grid-column: span 2; text-align:center; padding:20px; color:var(--text-muted);">No photos uploaded yet.</div>`;
+    container.innerHTML = html;
+}
+
 function renderPublicHub() {
     let container = document.getElementById("publicEventsList");
     if (!container) return;
@@ -494,7 +620,6 @@ function closePhotoPreview() {
     document.getElementById("photoPreviewModal").classList.add("hidden");
     document.getElementById("fullPhotoPreview").src = "";
 }
-
 
 // History Tab for Participants
 function renderHistoryTab() {
@@ -1236,7 +1361,6 @@ function executeAddFish(abbr, size) {
         document.getElementById("modalFishSize").focus();
     }
 }
-
 function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
 function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
 
