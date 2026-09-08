@@ -446,7 +446,7 @@ function renderPublicHub() {
         let evTypeBadge = ev.details.eventType === 'cpr' ? `<span class="badge" style="background:#fef3c7; color:#d97706; margin-right:8px; font-size:10px;">CPR</span>` : '';
 
         html += `
-        <div class="card" style="padding:16px; cursor:pointer;" onclick="openPublicEvent('${ev.id}')">
+        <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
             ${thumb}
             <div class="flex flex-between" style="align-items:flex-start;">
                 <div>
@@ -938,7 +938,6 @@ function recalcRulesCascading() {
     }
 }
 
-// BUGFIXED RENDER RULES
 function renderRules() {
     let s = currentEvent.species[activeSpeciesIndex];
     document.getElementById('rulesModalTitle').innerText = 'Edit Rules: ' + s.name;
@@ -1095,7 +1094,6 @@ function openFishModal(pIndexReal) {
     document.getElementById('modalFishPhotoPreview').src = '';
     tempCatchPhotoBase64 = "";
 
-    // If it's the organizer entering manually, photo is optional. If it's CPR, we show the uploader.
     if(currentEvent.eventType === 'cpr') {
         photoGroup.classList.remove("hidden");
     } else {
@@ -1128,7 +1126,6 @@ function confirmAddFishModal() {
     let size = parseFloat(document.getElementById("modalFishSize").value.replace(',', '.'));
     if (isNaN(size) || size <= 0) return;
 
-    // Strict CPR Rule for Users: Must upload a photo
     let isUserUpload = (currentParticipationEventId !== null && document.getElementById("publicEventModal").classList.contains("hidden") === false);
     
     if (currentEvent.eventType === 'cpr' && isUserUpload && !tempCatchPhotoBase64) {
@@ -1161,14 +1158,19 @@ function executeAddFish(abbr, size) {
     document.getElementById('modalFishPhotoPreview').src = '';
     tempCatchPhotoBase64 = "";
 
-    // If User uploaded directly from Hub
     let isUserUpload = (currentParticipationEventId !== null && document.getElementById("publicEventModal").classList.contains("hidden") === false);
     if (isUserUpload) {
         let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
-        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: currentEvent }).then(() => {
+        
+        let safeDetails = JSON.parse(JSON.stringify(currentEvent));
+        
+        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
             alert("Catch logged successfully!");
             closeFishModal();
-            openPublicEvent(currentParticipationEventId); // Refresh public modal
+            openPublicEvent(currentParticipationEventId); 
+        }).catch(err => {
+            console.error("Save error:", err);
+            alert("Failed to save catch.");
         });
     } else {
         renderModalCatches(); 
@@ -1374,7 +1376,7 @@ function renderLeaderboard() {
         topSummaryContainer.classList.remove('hidden');
     } else { topSummaryContainer.classList.add('hidden'); }
 
-    let html = `<table><tr><th style="width:40px;">#</th><th>Name</th><th>Pts</th><th>Max</th></tr>`;
+    let html = `<table><tr><th style="width:40px;">#</th><th>Name</th><th>Pts</th><th>Total</th><th>Amt</th><th>Max</th></tr>`;
     sortedByMain.forEach((p, idx) => {
         let placeBadge = (idx === 0) ? "1st" : (idx === 1) ? "2nd" : (idx === 2) ? "3rd" : `${idx + 1}`;
         let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
@@ -1383,11 +1385,42 @@ function renderLeaderboard() {
             <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
             <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
             <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
+            <td>${p.totalMeasure.toFixed(1)}</td>
+            <td>${p.amountCatches}</td>
             <td>${maxDisplay}</td>
         </tr>`;
     });
     html += `</table>`;
     document.getElementById("leaderboardContainer").innerHTML = html;
+}
+
+function saveCurrentEvent(redirect = true) {
+    try {
+        if (!currentEvent.date) currentEvent.date = new Date().toLocaleDateString();
+        if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+
+        // Scrub undefined values to prevent Firestore crash
+        let safeDetails = JSON.parse(JSON.stringify(currentEvent));
+
+        const eventPayload = { 
+            username: loggedInUser, 
+            name: currentEvent.name, 
+            details: safeDetails, 
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+        };
+        
+        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeDetails.species));
+
+        db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
+            if(redirect) showMyEvents(); 
+        }).catch(err => { 
+            console.error("Save error:", err); 
+            alert("Failed to save event to cloud: " + err.message); 
+        });
+    } catch (e) {
+        console.error("Sync error during save:", e);
+        alert("An error occurred while preparing to save: " + e.message);
+    }
 }
 
 // PARTICIPATION & PUBLIC MODAL LOGIC
@@ -1568,7 +1601,9 @@ function joinEventDirectly() {
     if (isAlreadyJoined) {
         if(confirm("Are you sure you want to leave this event?")) {
             ev.participants = ev.participants.filter(p => p.name.toLowerCase() !== myName.toLowerCase());
-            db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
+            
+            let safeDetails = JSON.parse(JSON.stringify(ev));
+            db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
                 alert("You have left the event.");
                 closePublicEventModal();
             });
@@ -1579,7 +1614,8 @@ function joinEventDirectly() {
             id: 'p_' + Math.random().toString(36).substr(2, 9),
             name: myName, catches: [], penalties: [], registeredBy: loggedInUser
         });
-        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: ev }).then(() => {
+        let safeDetails = JSON.parse(JSON.stringify(ev));
+        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
             alert("Successfully joined the event!");
             closePublicEventModal();
         });
