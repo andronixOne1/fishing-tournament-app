@@ -431,9 +431,23 @@ function sortEventsArray(eventsArr, sortMode) {
 }
 
 // ---------------------------------------------------------
-// PUBLIC EVENT VIEWER LOGIC (Restored & Functional)
+// PHOTO PREVIEW (Universal)
 // ---------------------------------------------------------
+function openPhotoPreviewByUrl(url) {
+    if (!url) return;
+    document.getElementById("fullPhotoPreview").src = url;
+    document.getElementById("photoPreviewModal").classList.remove("hidden");
+}
 
+function closePhotoPreview() {
+    document.getElementById("photoPreviewModal").classList.add("hidden");
+    document.getElementById("fullPhotoPreview").src = "";
+}
+
+
+// ---------------------------------------------------------
+// PUBLIC EVENT VIEWER LOGIC
+// ---------------------------------------------------------
 function openPublicEvent(eventId) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
@@ -470,7 +484,11 @@ function openPublicEvent(eventId) {
 
     let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
     document.getElementById("pubParticipantsDetail").innerHTML = (ev.participants||[]).map((p, i) => {
-        let catches = (p.catches||[]).length > 0 ? p.catches.map(c => `<span class="badge neutral" style="font-weight:600;">${c.size}${unitText} ${c.abbr.toUpperCase()}</span>`).join(' ') : 'None';
+        let catches = (p.catches||[]).length > 0 ? p.catches.map((c, cIdx) => {
+            let sizeDisp = c.size > 0 ? c.size + unitText : 'Pending';
+            let photoIcon = c.photo ? `<span style="cursor:pointer; color:var(--primary); margin-left:4px; display:inline-flex;" onclick="openPhotoPreviewByUrl('${c.photo}')">${svgCamera}</span>` : '';
+            return `<span class="badge neutral" style="font-weight:600; display:inline-flex; align-items:center;">${sizeDisp} ${c.abbr.toUpperCase()} ${photoIcon}</span>`;
+        }).join(' ') : 'None';
         let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger); font-size:12px; font-weight:600;">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
         return `<div style="padding:12px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
     }).join('');
@@ -558,8 +576,8 @@ function renderPublicGallery(ev) {
         (p.catches||[]).forEach(c => {
             if(c.photo) {
                 html += `<div class="gallery-item">
-                    <img src="${c.photo}">
-                    <div class="gallery-meta">${p.name}<br><span style="color:var(--text-muted); font-size:11px;">${c.size} ${c.abbr.toUpperCase()}</span></div>
+                    <img src="${c.photo}" style="cursor:pointer;" onclick="openPhotoPreviewByUrl('${c.photo}')">
+                    <div class="gallery-meta">${p.name}<br><span style="color:var(--text-muted); font-size:11px;">${c.size > 0 ? c.size : 'Pending'} ${c.abbr.toUpperCase()}</span></div>
                 </div>`;
             }
         });
@@ -609,7 +627,7 @@ function renderPublicLeaderboardList(ev) {
     toShow.forEach((p, idx) => {
         let placeBadge = (idx === 0) ? "1st" : (idx === 1) ? "2nd" : (idx === 2) ? "3rd" : `${idx + 1}`;
         let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
-        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;">${svgWarning}</span>` : '';
+        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">${svgWarning}</span>` : '';
         html += `<tr>
             <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
             <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
@@ -707,19 +725,6 @@ function renderPublicHub() {
         </div>`;
     });
     container.innerHTML = html;
-}
-
-// Photo Preview Modal Control
-function openPhotoPreview(pIdx, cIdx) {
-    let p = currentEvent.participants[pIdx];
-    if (!p || !p.catches[cIdx] || !p.catches[cIdx].photo) return;
-    document.getElementById("fullPhotoPreview").src = p.catches[cIdx].photo;
-    document.getElementById("photoPreviewModal").classList.remove("hidden");
-}
-
-function closePhotoPreview() {
-    document.getElementById("photoPreviewModal").classList.add("hidden");
-    document.getElementById("fullPhotoPreview").src = "";
 }
 
 // History Tab for Participants
@@ -1462,7 +1467,6 @@ function executeAddFish(abbr, size) {
         document.getElementById("modalFishSize").focus();
     }
 }
-
 function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
 function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
 
@@ -1507,9 +1511,9 @@ function renderModalCatches() {
         p.catches.map((c, cIdx) => {
             let sizeDisplay = isUserUpload ? 
                 `<b>${c.size > 0 ? c.size + unitText : 'Pending'}</b>` :
-                `<input type="number" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px; margin-right:8px;" onchange="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, this.value)"> <span style="font-size:12px; color:var(--text-muted); margin-right:4px;">${unitText}</span>`;
+                `<div class="flex" style="margin-right:8px;"><input type="number" id="editCatchSize_${cIdx}" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px;"><button class="success icon-btn" style="padding:4px 8px; box-shadow:none;" onclick="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, document.getElementById('editCatchSize_${cIdx}').value)">Save</button></div>`;
 
-            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreview(${activeFishParticipantIndex}, ${cIdx})">${svgCamera}</button>` : '';
+            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreviewByUrl('${c.photo}')">${svgCamera}</button>` : '';
             
             // Allow delete if it's the organizer OR if it's the user and the event is ongoing
             let canDelete = (!isUserUpload) || (isUserUpload && currentEvent.status === 'ongoing');
@@ -1578,16 +1582,21 @@ function showPenaltyReason(pIdx) {
     }
 }
 
+// Points Calculation FIX: Awards 0 points if fish does not match any size tier rules
 function calculateFishPoints(abbr, size, speciesList, measureType) {
     if(measureType === 'weight') return size; 
     let sp = speciesList.find(s => s.abbr === abbr);
-    if (!sp) return size;
+    if (!sp || !sp.tiers || sp.tiers.length === 0) return size;
+    
     let matchingTier = sp.tiers.find(t => {
         let f = t.from === "" ? 0 : parseFloat(t.from);
         if (t.to === 'above') return size >= f;
         return size >= f && size <= (t.to === "" ? Infinity : parseFloat(t.to));
     });
-    let m = (matchingTier && matchingTier.multiplier !== "") ? parseFloat(matchingTier.multiplier) : 1.0;
+    
+    if (!matchingTier) return 0; // If fish doesn't match any tier, it gets 0 points.
+    
+    let m = (matchingTier.multiplier !== "") ? parseFloat(matchingTier.multiplier) : 1.0;
     return size * (isNaN(m) ? 1.0 : m);
 }
 
