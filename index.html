@@ -450,7 +450,7 @@
             finish_warning: "Якщо ви завершите подію зараз, ви більше не зможете нічого змінити.",
             status_finished: "Завершено", status_ongoing: "Триває", place: "Місце", name: "Ім'я", points: "Очки", total_cm: "Всього", biggest_fish: "Найбільша риба", details: "Деталі", generated_on: "Згенеровано",
             tournament_results: "Результати турніру", rank_pts_best5: "Ранг. очок (Кращі 5)", tournaments_played: "Зіграно турнірів", all_placements: "Всі місця", sort_newest: "Спочатку нові", sort_oldest: "Спочатку старі", sort_az: "Ім'я А-Я",
-            penalties: "Штрафи", pts_deduct: "Очки для зняття", reason_desc: "Причина / Опис", add_penalty: "+ Додати штраф"
+            penalties: "Штрафы", pts_deduct: "Очки для зняття", reason_desc: "Причина / Опис", add_penalty: "+ Додати штраф"
         },
         ru: {
             login_title: "Вход / Регистрация", login_desc: "Введите любые имя и пароль.", username: "Имя пользователя", password: "Пароль", login_btn: "Вход / Регистрация",
@@ -602,6 +602,7 @@
 
     function loginSuccess(user) {
         loggedInUser = user;
+        localStorage.setItem("lureboard_user", user); 
         document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.remove("hidden");
         document.getElementById("headerLogoutBtn").classList.remove("hidden");
@@ -614,6 +615,7 @@
     function handleLogout() {
         if (unsubscribeEventsListener) unsubscribeEventsListener();
         loggedInUser = "";
+        localStorage.removeItem("lureboard_user"); 
         document.getElementById("dashboardSection").classList.add("hidden");
         document.getElementById("setupSection").classList.add("hidden");
         document.getElementById("hubSection").classList.add("hidden");
@@ -640,7 +642,6 @@
             });
     }
 
-    /* ---------------- AOTY RANKING ENGINE ---------------- */
     function getEventPlacements(evDetails) {
         let processed = evDetails.participants.map(p => {
             let totalCm = 0; let totalPts = 0; let maxFishCm = 0; let amountCatches = (p.catches || []).length;
@@ -974,10 +975,14 @@
 
     function renderRules() {
         let s = currentEvent.species[activeSpeciesIndex];
-        document.getElementById('rulesModalTitle').innerText = t('edit_rules') + ': ' + s.name;
         
-        let html = '';
-        s.tiers.forEach((tData, tIdx) => {
+        let titleEl = document.getElementById('rulesModalTitle');
+        if(titleEl) titleEl.innerText = t('edit_rules') + ': ' + s.name;
+        
+        let rulesContainer = document.getElementById('rulesContainer');
+        if(!rulesContainer) return;
+
+        rulesContainer.innerHTML = s.tiers.map((tData, tIdx) => {
             let prevTo = (tIdx > 0 && s.tiers[tIdx-1].to !== 'above') ? parseFloat(s.tiers[tIdx-1].to) : -1;
             let minFrom = tIdx > 0 ? prevTo + 1 : 0;
             
@@ -1479,7 +1484,21 @@
     }
     
     // INITIALIZATION
-    changeLanguage(document.getElementById("langSelect").value);
+    let langSelect = document.getElementById("langSelect");
+    if(langSelect) changeLanguage(langSelect.value);
+
+    let savedUser = localStorage.getItem("lureboard_user");
+    if (savedUser) {
+        loginSuccess(savedUser);
+    } else {
+        let loginSection = document.getElementById("loginSection");
+        if(loginSection) loginSection.classList.remove("hidden");
+        
+        let dashboardSection = document.getElementById("dashboardSection");
+        if(dashboardSection) dashboardSection.classList.add("hidden");
+        
+        subscribeToEventsRealtime();
+    }
 </script>
 </body>
 </html>
