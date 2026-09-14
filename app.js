@@ -264,13 +264,18 @@ function openLogin() {
 
 function loginSuccess(user) {
     loggedInUser = user;
+    localStorage.setItem("lureboard_user", user); // Fix added: Persist login
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("dashboardSection").classList.remove("hidden");
     
-    document.getElementById("headerClientAreaBtn").classList.add("hidden");
+    let clientBtn = document.getElementById("headerClientAreaBtn");
+    if(clientBtn) clientBtn.classList.add("hidden");
+    
     document.getElementById("headerLogoutBtn").classList.remove("hidden");
     
-    document.getElementById("dashTabs").classList.remove("hidden");
+    let dashTabs = document.getElementById("dashTabs");
+    if(dashTabs) dashTabs.classList.remove("hidden");
+    
     switchDashboardTab('my');
     
     history.replaceState({view: 'dashboardSection'}, ""); 
@@ -281,16 +286,21 @@ function loginSuccess(user) {
 function handleLogout() {
     if (unsubscribeEventsListener) unsubscribeEventsListener();
     loggedInUser = "";
+    localStorage.removeItem("lureboard_user"); // Fix added: Clear persistence
     document.getElementById("setupSection").classList.add("hidden");
     document.getElementById("hubSection").classList.add("hidden");
     document.getElementById("loginSection").classList.add("hidden");
     
     document.getElementById("dashboardSection").classList.remove("hidden");
     
-    document.getElementById("headerClientAreaBtn").classList.remove("hidden");
+    let clientBtn = document.getElementById("headerClientAreaBtn");
+    if(clientBtn) clientBtn.classList.remove("hidden");
+    
     document.getElementById("headerLogoutBtn").classList.add("hidden");
     
-    document.getElementById("dashTabs").classList.add("hidden");
+    let dashTabs = document.getElementById("dashTabs");
+    if(dashTabs) dashTabs.classList.add("hidden");
+    
     switchDashboardTab('public');
     
     history.replaceState({view: 'dashboardSection'}, "");
@@ -324,23 +334,31 @@ function subscribeToEventsRealtime() {
 }
 
 function switchDashboardTab(tab) {
-    document.getElementById("tabBtnPublic").classList.remove("active");
-    document.getElementById("tabBtnMy").classList.remove("active");
-    document.getElementById("publicHubView").classList.add("hidden");
-    document.getElementById("myEventsView").classList.add("hidden");
+    let tabPub = document.getElementById("tabBtnPublic");
+    let tabMy = document.getElementById("tabBtnMy");
+    if(tabPub) tabPub.classList.remove("active");
+    if(tabMy) tabMy.classList.remove("active");
+    
+    let pubView = document.getElementById("publicHubView");
+    let myView = document.getElementById("myEventsView");
+    
+    if(pubView) pubView.classList.add("hidden");
+    if(myView) myView.classList.add("hidden");
 
     if(tab === 'public') {
-        document.getElementById("tabBtnPublic").classList.add("active");
-        document.getElementById("publicHubView").classList.remove("hidden");
+        if(tabPub) tabPub.classList.add("active");
+        if(pubView) pubView.classList.remove("hidden");
     } else {
-        document.getElementById("tabBtnMy").classList.add("active");
-        document.getElementById("myEventsView").classList.remove("hidden");
+        if(tabMy) tabMy.classList.add("active");
+        if(myView) myView.classList.remove("hidden");
         processDashboard();
     }
 }
 
 function renderPublicHub() {
     let container = document.getElementById("publicEventsList");
+    if(!container) return;
+    
     if (allPublicEvents.length === 0) {
         container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No public tournaments right now.</div>`;
         return;
@@ -428,7 +446,8 @@ function processDashboard() {
     let yearSelect = document.getElementById("yearSelect");
     if(yearSelect) {
         yearSelect.innerHTML = years.map(y => `<option value="${y}" ${String(y) === String(selectedYear) ? 'selected' : ''}>${y}</option>`).join('');
-        document.getElementById("yearFilterContainer").style.display = loadedEvents.length > 0 ? "block" : "none";
+        let yearFilterContainer = document.getElementById("yearFilterContainer");
+        if(yearFilterContainer) yearFilterContainer.style.display = loadedEvents.length > 0 ? "block" : "none";
     }
 
     let rankedFinishedEvents = loadedEvents.filter(e => {
@@ -468,33 +487,35 @@ function processDashboard() {
     });
 
     let aotyContainer = document.getElementById("aotyContainer");
-    if(aotyArray.length > 0) {
-        let medals = ["🥇", "🥈", "🥉"];
-        let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
-            <div class="flex flex-between" style="margin-bottom: 16px;">
-                <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
-                <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">⬇ ${t('download_season_pdf')}</a>
-            </div>`;
-        
-        aotyArray.slice(0, 3).forEach((angler, idx) => {
-            aotyHtml += `
-            <div class="flex flex-between" style="background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 16px; margin-bottom: 8px; backdrop-filter: blur(8px);">
-                <div class="flex" style="gap: 12px;">
-                    <span style="font-size: 20px; font-weight: bold;">${medals[idx]}</span>
-                    <b style="font-size: 16px;">${angler.name}</b>
-                </div>
-                <div style="text-align:right;">
-                    <b style="font-size: 16px;">${angler.totalRankPts} <span style="font-size:12px; font-weight:normal;">${t('rank_pts')}</span></b><br>
-                    <span style="font-size:12px; opacity:0.8;">${angler.validEventsCount} ${t('tournaments')}</span>
-                </div>
-            </div>`;
-        });
-        aotyHtml += `</div>`;
-        aotyContainer.innerHTML = aotyHtml;
-        aotyContainer.classList.remove("hidden");
-    } else {
-        aotyContainer.innerHTML = "";
-        aotyContainer.classList.add("hidden");
+    if(aotyContainer) {
+        if(aotyArray.length > 0) {
+            let medals = ["🥇", "🥈", "🥉"];
+            let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
+                <div class="flex flex-between" style="margin-bottom: 16px;">
+                    <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
+                    <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">⬇ ${t('download_season_pdf')}</a>
+                </div>`;
+            
+            aotyArray.slice(0, 3).forEach((angler, idx) => {
+                aotyHtml += `
+                <div class="flex flex-between" style="background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 16px; margin-bottom: 8px; backdrop-filter: blur(8px);">
+                    <div class="flex" style="gap: 12px;">
+                        <span style="font-size: 20px; font-weight: bold;">${medals[idx]}</span>
+                        <b style="font-size: 16px;">${angler.name}</b>
+                    </div>
+                    <div style="text-align:right;">
+                        <b style="font-size: 16px;">${angler.totalRankPts} <span style="font-size:12px; font-weight:normal;">${t('rank_pts')}</span></b><br>
+                        <span style="font-size:12px; opacity:0.8;">${angler.validEventsCount} ${t('tournaments')}</span>
+                    </div>
+                </div>`;
+            });
+            aotyHtml += `</div>`;
+            aotyContainer.innerHTML = aotyHtml;
+            aotyContainer.classList.remove("hidden");
+        } else {
+            aotyContainer.innerHTML = "";
+            aotyContainer.classList.add("hidden");
+        }
     }
 
     let filteredEvents = loadedEvents.filter(e => {
@@ -512,6 +533,8 @@ function changeYear(y) { selectedYear = y; processDashboard(); }
 
 function renderEventsList(filteredEvents) {
     let container = document.getElementById("eventsList");
+    if(!container) return;
+    
     if (filteredEvents.length === 0) {
         container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No events found in ${selectedYear}.</div>`;
         return;
@@ -551,18 +574,24 @@ function renderEventsList(filteredEvents) {
 
 function setUnit(u) {
     confUnit = u;
-    document.getElementById('unitBtnMetric').className = u === 'metric' ? 'primary-dark' : 'secondary';
-    document.getElementById('unitBtnImperial').className = u === 'imperial' ? 'primary-dark' : 'secondary';
+    let btnMet = document.getElementById('unitBtnMetric');
+    let btnImp = document.getElementById('unitBtnImperial');
+    if(btnMet) btnMet.className = u === 'metric' ? 'primary-dark' : 'secondary';
+    if(btnImp) btnImp.className = u === 'imperial' ? 'primary-dark' : 'secondary';
 }
 function setMeasure(m) {
     confMeasure = m;
-    document.getElementById('measureBtnSize').className = m === 'size' ? 'primary-dark' : 'secondary';
-    document.getElementById('measureBtnWeight').className = m === 'weight' ? 'primary-dark' : 'secondary';
+    let btnSize = document.getElementById('measureBtnSize');
+    let btnWgt = document.getElementById('measureBtnWeight');
+    if(btnSize) btnSize.className = m === 'size' ? 'primary-dark' : 'secondary';
+    if(btnWgt) btnWgt.className = m === 'weight' ? 'primary-dark' : 'secondary';
 }
 function setLimit(l) {
     confLimit = l;
-    document.getElementById('limitBtnAll').className = l === 'all' ? 'primary-dark' : 'secondary';
-    document.getElementById('limitBtnTop5').className = l === 'top5' ? 'primary-dark' : 'secondary';
+    let btnAll = document.getElementById('limitBtnAll');
+    let btnT5 = document.getElementById('limitBtnTop5');
+    if(btnAll) btnAll.className = l === 'all' ? 'primary-dark' : 'secondary';
+    if(btnT5) btnT5.className = l === 'top5' ? 'primary-dark' : 'secondary';
 }
 
 function handleThumbnailUpload(e) {
@@ -581,8 +610,11 @@ function handleThumbnailUpload(e) {
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             let compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
             
-            document.getElementById('thumbnailPreview').src = compressedDataUrl;
-            document.getElementById('thumbnailPreview').style.display = 'block';
+            let preview = document.getElementById('thumbnailPreview');
+            if(preview) {
+                preview.src = compressedDataUrl;
+                preview.style.display = 'block';
+            }
         }
         img.src = event.target.result;
     };
@@ -608,24 +640,35 @@ function openEventEditor(eventObj = null) {
     if (eventObj) {
         currentEvent = JSON.parse(JSON.stringify(eventObj));
         
-        document.getElementById("eventNameInput").value = currentEvent.name || "";
-        document.getElementById("eventDescInput").value = currentEvent.description || "";
-        document.getElementById("isPublicToggle").checked = currentEvent.isPublic === true;
-        document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
+        let evtName = document.getElementById("eventNameInput");
+        if(evtName) evtName.value = currentEvent.name || "";
         
-        if(currentEvent.thumbnail) {
-            document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
-            document.getElementById('thumbnailPreview').style.display = 'block';
-        } else {
-            document.getElementById('thumbnailPreview').style.display = 'none';
-            document.getElementById('thumbnailPreview').src = '';
+        let evtDesc = document.getElementById("eventDescInput");
+        if(evtDesc) evtDesc.value = currentEvent.description || "";
+        
+        let pubToggle = document.getElementById("isPublicToggle");
+        if(pubToggle) pubToggle.checked = currentEvent.isPublic === true;
+        
+        let rankToggle = document.getElementById("isRankedToggle");
+        if(rankToggle) rankToggle.checked = currentEvent.isRanked !== false;
+        
+        let preview = document.getElementById('thumbnailPreview');
+        if(preview) {
+            if(currentEvent.thumbnail) {
+                preview.src = currentEvent.thumbnail;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+                preview.src = '';
+            }
         }
 
         setUnit(currentEvent.unit || 'metric');
         setMeasure(currentEvent.measureType || 'size');
         setLimit(currentEvent.limitType || 'all');
 
-        document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
+        let bulkInput = document.getElementById("bulkParticipantsInput");
+        if(bulkInput) bulkInput.value = currentEvent.participants.map(p => p.name).join("\n");
     } else {
         let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
         let savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser);
@@ -649,13 +692,29 @@ function openEventEditor(eventObj = null) {
             participants: []
         };
         
-        document.getElementById("eventNameInput").value = "";
-        document.getElementById("eventDescInput").value = "";
-        document.getElementById("isPublicToggle").checked = false;
-        document.getElementById("isRankedToggle").checked = true;
-        document.getElementById("eventThumbnailInput").value = "";
-        document.getElementById('thumbnailPreview').style.display = 'none';
-        document.getElementById("bulkParticipantsInput").value = "";
+        let evtName = document.getElementById("eventNameInput");
+        if(evtName) evtName.value = "";
+        
+        let evtDesc = document.getElementById("eventDescInput");
+        if(evtDesc) evtDesc.value = "";
+        
+        let pubToggle = document.getElementById("isPublicToggle");
+        if(pubToggle) pubToggle.checked = false;
+        
+        let rankToggle = document.getElementById("isRankedToggle");
+        if(rankToggle) rankToggle.checked = true;
+        
+        let thumbInput = document.getElementById("eventThumbnailInput");
+        if(thumbInput) thumbInput.value = "";
+        
+        let preview = document.getElementById('thumbnailPreview');
+        if(preview) {
+            preview.style.display = 'none';
+            preview.src = '';
+        }
+        
+        let bulkInput = document.getElementById("bulkParticipantsInput");
+        if(bulkInput) bulkInput.value = "";
         
         setUnit('metric');
         setMeasure('size');
@@ -678,17 +737,25 @@ function deleteEvent(id) {
 }
 
 function updateParticipantCountStatus() {
-    let rawText = document.getElementById("bulkParticipantsInput").value;
-    document.getElementById("participantCountStatus").innerText = parseParticipants(rawText).length;
+    let bulkInput = document.getElementById("bulkParticipantsInput");
+    let statusEl = document.getElementById("participantCountStatus");
+    if(bulkInput && statusEl) {
+        statusEl.innerText = parseParticipants(bulkInput.value).length;
+    }
 }
 
 function addSpecies() {
-    let name = document.getElementById("speciesName").value.trim();
-    let abbr = document.getElementById("speciesAbbr").value.trim().toLowerCase();
+    let nameEl = document.getElementById("speciesName");
+    let abbrEl = document.getElementById("speciesAbbr");
+    if(!nameEl || !abbrEl) return;
+    
+    let name = nameEl.value.trim();
+    let abbr = abbrEl.value.trim().toLowerCase();
     if (!name || !abbr) return;
+    
     currentEvent.species.push({ name, abbr, tiers: [{ from: 0, to: "above", multiplier: 1.0 }] });
-    document.getElementById("speciesName").value = "";
-    document.getElementById("speciesAbbr").value = "";
+    nameEl.value = "";
+    abbrEl.value = "";
     refreshSetupUI();
 }
 
@@ -696,40 +763,47 @@ function removeSpecies(sIdx) { currentEvent.species.splice(sIdx, 1); refreshSetu
 
 function refreshSetupUI() {
     let container = document.getElementById("speciesConfigContainer");
-    container.innerHTML = currentEvent.species.map((s, sIdx) => {
-        let rulesSummary = s.tiers.map(t => {
-            let fromVal = t.from === "" ? 0 : t.from;
-            let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
-            let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
-            return `${fromVal}-${toVal} ${mult}x`;
-        }).join(' | ');
+    if(container) {
+        container.innerHTML = currentEvent.species.map((s, sIdx) => {
+            let rulesSummary = s.tiers.map(t => {
+                let fromVal = t.from === "" ? 0 : t.from;
+                let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
+                let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
+                return `${fromVal}-${toVal} ${mult}x`;
+            }).join(' | ');
 
-        return `
-        <div class="card" style="padding:16px; border:1px solid var(--border); margin-bottom:12px; background:var(--card-bg);">
-            <div class="flex flex-between">
-                <div>
-                    <div class="flex">
-                        <b style="font-size:16px; color:var(--text);">${s.name}</b>
-                        <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${s.abbr.toUpperCase()}</span>
+            return `
+            <div class="card" style="padding:16px; border:1px solid var(--border); margin-bottom:12px; background:var(--card-bg);">
+                <div class="flex flex-between">
+                    <div>
+                        <div class="flex">
+                            <b style="font-size:16px; color:var(--text);">${s.name}</b>
+                            <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${s.abbr.toUpperCase()}</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">${rulesSummary}</div>
                     </div>
-                    <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">${rulesSummary}</div>
+                    <div class="flex">
+                        <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})" style="box-shadow:none;">Rules</button>
+                        <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeSpecies(${sIdx})">✕</button>
+                    </div>
                 </div>
-                <div class="flex">
-                    <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})" style="box-shadow:none;">Rules</button>
-                    <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeSpecies(${sIdx})">✕</button>
-                </div>
-            </div>
-        </div>`;
-    }).join("");
+            </div>`;
+        }).join("");
+    }
 
-    if (currentEvent.isStarted) {
-        document.getElementById("bulkParticipantsInput").disabled = true;
-        document.getElementById("bulkParticipantsOverlay").classList.remove("hidden");
-        document.getElementById("bulkParticipantsOverlay").style.display = "flex";
-    } else {
-        document.getElementById("bulkParticipantsInput").disabled = false;
-        document.getElementById("bulkParticipantsOverlay").classList.add("hidden");
-        document.getElementById("bulkParticipantsOverlay").style.display = "none";
+    let bulkInput = document.getElementById("bulkParticipantsInput");
+    let bulkOverlay = document.getElementById("bulkParticipantsOverlay");
+    
+    if (bulkInput && bulkOverlay) {
+        if (currentEvent.isStarted) {
+            bulkInput.disabled = true;
+            bulkOverlay.classList.remove("hidden");
+            bulkOverlay.style.display = "flex";
+        } else {
+            bulkInput.disabled = false;
+            bulkOverlay.classList.add("hidden");
+            bulkOverlay.style.display = "none";
+        }
     }
 }
 
@@ -778,7 +852,10 @@ function recalcRulesCascading() {
 
 function renderRules() {
     let s = currentEvent.species[activeSpeciesIndex];
-    document.getElementById('rulesContainer').innerHTML = s.tiers.map((tData, tIdx) => {
+    let rulesContainer = document.getElementById('rulesContainer');
+    if(!rulesContainer) return;
+    
+    rulesContainer.innerHTML = s.tiers.map((tData, tIdx) => {
         let minFrom = tIdx > 0 ? (s.tiers[tIdx-1].to !== 'above' ? parseFloat(s.tiers[tIdx-1].to) + 1 : 0) : 0;
         let multOptions = '';
         for(let i = 10; i <= 30; i += 1) { 
@@ -803,13 +880,20 @@ function renderRules() {
     }).join('');
 }
 function goToEventHub() {
-    currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
-    currentEvent.description = document.getElementById("eventDescInput").value.trim();
-    currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
-    let wantsRanked = document.getElementById("isRankedToggle").checked;
+    let nameEl = document.getElementById("eventNameInput");
+    let descEl = document.getElementById("eventDescInput");
+    let pubToggle = document.getElementById("isPublicToggle");
+    let rankToggle = document.getElementById("isRankedToggle");
+    let thumbPreview = document.getElementById('thumbnailPreview');
     
-    let thumbSrc = document.getElementById('thumbnailPreview').src;
-    if(thumbSrc && thumbSrc.startsWith('data:')) currentEvent.thumbnail = thumbSrc;
+    currentEvent.name = nameEl ? nameEl.value.trim() || "Untitled Event" : "Untitled Event";
+    currentEvent.description = descEl ? descEl.value.trim() : "";
+    currentEvent.isPublic = pubToggle ? pubToggle.checked : false;
+    let wantsRanked = rankToggle ? rankToggle.checked : true;
+    
+    if(thumbPreview && thumbPreview.src && thumbPreview.src.startsWith('data:')) {
+        currentEvent.thumbnail = thumbPreview.src;
+    }
 
     currentEvent.unit = confUnit;
     currentEvent.measureType = confMeasure;
@@ -828,13 +912,14 @@ function goToEventHub() {
         if(existingRankedCount >= 7) {
             alert(`Limit reached! You already have 7 ranked tournaments in ${currentEvent.year}. This event will be set as Unranked.`);
             wantsRanked = false;
-            document.getElementById("isRankedToggle").checked = false;
+            if(rankToggle) rankToggle.checked = false;
         }
     }
     currentEvent.isRanked = wantsRanked;
 
     if (!currentEvent.isStarted) {
-        let items = parseParticipants(document.getElementById("bulkParticipantsInput").value);
+        let bulkInput = document.getElementById("bulkParticipantsInput");
+        let items = parseParticipants(bulkInput ? bulkInput.value : "");
         let existingMap = {};
         currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [] });
 
@@ -910,7 +995,8 @@ function openFishModal(pIndexReal) {
     activeFishParticipantIndex = pIndexReal;
     
     let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
-    document.getElementById("modalFishSizeLabel").innerText = `${t('size_cm')} (${unitText})`;
+    let sizeLabel = document.getElementById("modalFishSizeLabel");
+    if(sizeLabel) sizeLabel.innerText = `${t('size_cm')} (${unitText})`;
 
     document.getElementById("modalSpeciesTabs").innerHTML = currentEvent.species.map((s, idx) => `
         <div class="species-tab ${idx === 0 ? 'active' : ''}" onclick="selectModalSpecies('${s.abbr}', this)">${s.abbr}</div>
@@ -959,6 +1045,8 @@ function removeFish(pIndexReal, cIdx) {
 
 function renderModalCatches() {
     let container = document.getElementById("modalCurrentCatches");
+    if(!container) return;
+    
     if (activeFishParticipantIndex === null) return;
     let p = currentEvent.participants[activeFishParticipantIndex];
     if (p.catches.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">${t('no_catches')}</p>`; return; }
@@ -1005,6 +1093,8 @@ function removePenalty(pIndexReal, penIdx) {
 
 function renderModalPenalties() {
     let container = document.getElementById("modalCurrentPenalties");
+    if(!container) return;
+    
     if (activePenaltyParticipantIndex === null) return;
     let p = currentEvent.participants[activePenaltyParticipantIndex];
     if (!p.penalties || p.penalties.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">No penalties.</p>`; return; }
@@ -1041,10 +1131,14 @@ function calculateFishPoints(abbr, size, speciesList, measureType) {
 function renderHubUI() {
     let isFinished = currentEvent.status === 'finished';
     
-    document.getElementById("hubAddNewParticipantBtn").style.display = isFinished ? "none" : "block";
+    let btnAddPart = document.getElementById("hubAddNewParticipantBtn");
+    if(btnAddPart) btnAddPart.style.display = isFinished ? "none" : "block";
 
-    let query = document.getElementById("searchParticipant").value.toLowerCase();
+    let searchInput = document.getElementById("searchParticipant");
+    let query = searchInput ? searchInput.value.toLowerCase() : "";
     let container = document.getElementById("participantsHubContainer");
+    if(!container) return;
+    
     let addRemoveText = t("add_remove_fish");
 
     let countEl = document.getElementById("hubParticipantCount");
@@ -1089,9 +1183,13 @@ function renderLeaderboard(isPublicView = false, overrideEvent = null) {
     let ev = overrideEvent || currentEvent;
     if(!ev) return;
 
-    let mode = isPublicView ? 'points' : document.getElementById("rankingMode").value;
+    let modeDropdown = document.getElementById("rankingMode");
+    let mode = isPublicView ? 'points' : (modeDropdown ? modeDropdown.value : 'points');
+    
     let container = document.getElementById(isPublicView ? "pubLeaderboard" : "leaderboardContainer");
     let topSummaryContainer = document.getElementById(isPublicView ? "pubTopSummary" : "leaderboardTopSummary"); 
+    
+    if(!container) return;
     
     let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
 
@@ -1353,14 +1451,29 @@ function downloadSeasonChart() {
 }
 
 // INITIALIZATION
-changeLanguage(document.getElementById("langSelect").value);
+let langSelect = document.getElementById("langSelect");
+if(langSelect) changeLanguage(langSelect.value);
 
-// Default load to Public Hub
-document.getElementById("loginSection").classList.add("hidden");
-document.getElementById("dashboardSection").classList.remove("hidden");
-document.getElementById("dashTabs").classList.add("hidden");
-document.getElementById("myEventsView").classList.add("hidden");
-document.getElementById("publicHubView").classList.remove("hidden");
+let savedUser = localStorage.getItem("lureboard_user");
+if (savedUser) {
+    loginSuccess(savedUser);
+} else {
+    // Default load to Public Hub
+    let loginSection = document.getElementById("loginSection");
+    if(loginSection) loginSection.classList.add("hidden");
+    
+    let dashboardSection = document.getElementById("dashboardSection");
+    if(dashboardSection) dashboardSection.classList.remove("hidden");
+    
+    let dashTabs = document.getElementById("dashTabs");
+    if(dashTabs) dashTabs.classList.add("hidden");
+    
+    let myEventsView = document.getElementById("myEventsView");
+    if(myEventsView) myEventsView.classList.add("hidden");
+    
+    let pubHubView = document.getElementById("publicHubView");
+    if(pubHubView) pubHubView.classList.remove("hidden");
 
-history.replaceState({view: 'dashboardSection'}, "");
-subscribeToEventsRealtime();
+    history.replaceState({view: 'dashboardSection'}, "");
+    subscribeToEventsRealtime();
+}
