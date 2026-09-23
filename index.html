@@ -530,13 +530,13 @@
                 el.innerText = translations[lang][key];
             }
         });
-        if(!document.getElementById("setupSection").classList.contains("hidden")) refreshSetupUI();
-        if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
-        if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
-        if(!document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
-        if(!document.getElementById("dashboardSection").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
+        if(document.getElementById("setupSection") && !document.getElementById("setupSection").classList.contains("hidden")) refreshSetupUI();
+        if(document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
+        if(document.getElementById("rulesModal") && !document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
+        if(document.getElementById("fishModal") && !document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
+        if(document.getElementById("dashboardSection") && !document.getElementById("dashboardSection").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
     }
-    
+
     function t(key) { return translations[currentLang] ? (translations[currentLang][key] || translations['en'][key] || key) : key; }
 
     function handleOverlayClick(e, modalId) {
@@ -562,17 +562,17 @@
         
         let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
         
-        document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("dashboardSection").classList.add("hidden");
-        document.getElementById("setupSection").classList.add("hidden");
-        document.getElementById("hubSection").classList.add("hidden");
+        if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.add("hidden");
+        if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
+        if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
+        if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.add("hidden");
         
-        document.getElementById(view).classList.remove("hidden");
+        if(document.getElementById(view)) document.getElementById(view).classList.remove("hidden");
         window.scrollTo(0, 0);
     });
 
     function getEvTime(ev) { return parseInt(ev.id.replace('ev_', '')) || 0; }
-    
+
     function sortEventsArray(eventsArr, sortMode) {
         return eventsArr.sort((a, b) => {
             if (sortMode === 'newest') return getEvTime(b) - getEvTime(a);
@@ -582,8 +582,12 @@
     }
 
     function handleLoginRegister() {
-        let user = document.getElementById("usernameInput").value.trim().toLowerCase();
-        let pass = document.getElementById("passwordInput").value.trim();
+        let userInput = document.getElementById("usernameInput");
+        let passInput = document.getElementById("passwordInput");
+        if(!userInput || !passInput) return;
+
+        let user = userInput.value.trim().toLowerCase();
+        let pass = passInput.value.trim();
         if (!user || !pass) { alert("Please enter both username and password."); return; }
 
         const userRef = db.collection("users").doc(user);
@@ -602,10 +606,11 @@
 
     function loginSuccess(user) {
         loggedInUser = user;
-        localStorage.setItem("lureboard_user", user); 
-        document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("dashboardSection").classList.remove("hidden");
-        document.getElementById("headerLogoutBtn").classList.remove("hidden");
+        try { localStorage.setItem("lureboard_user", user); } catch(e) {}
+        
+        if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.add("hidden");
+        if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.remove("hidden");
+        if(document.getElementById("headerLogoutBtn")) document.getElementById("headerLogoutBtn").classList.remove("hidden");
         
         history.replaceState({view: 'dashboardSection'}, ""); 
         
@@ -615,12 +620,13 @@
     function handleLogout() {
         if (unsubscribeEventsListener) unsubscribeEventsListener();
         loggedInUser = "";
-        localStorage.removeItem("lureboard_user"); 
-        document.getElementById("dashboardSection").classList.add("hidden");
-        document.getElementById("setupSection").classList.add("hidden");
-        document.getElementById("hubSection").classList.add("hidden");
-        document.getElementById("loginSection").classList.remove("hidden");
-        document.getElementById("headerLogoutBtn").classList.add("hidden");
+        try { localStorage.removeItem("lureboard_user"); } catch(e) {}
+        
+        if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
+        if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
+        if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.add("hidden");
+        if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
+        if(document.getElementById("headerLogoutBtn")) document.getElementById("headerLogoutBtn").classList.add("hidden");
     }
 
     function subscribeToEventsRealtime() {
@@ -632,7 +638,7 @@
                 snapshot.forEach(doc => { loadedEvents.push({ id: doc.id, ...doc.data() }); });
                 processDashboard();
 
-                if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) {
+                if (currentEvent && document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) {
                     let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
                     if (activeUpdated) {
                         currentEvent = activeUpdated.details;
@@ -690,7 +696,8 @@
         let yearSelect = document.getElementById("yearSelect");
         if(yearSelect) {
             yearSelect.innerHTML = years.map(y => `<option value="${y}" ${String(y) === String(selectedYear) ? 'selected' : ''}>${y}</option>`).join('');
-            document.getElementById("yearFilterContainer").style.display = loadedEvents.length > 0 ? "block" : "none";
+            let filterContainer = document.getElementById("yearFilterContainer");
+            if(filterContainer) filterContainer.style.display = loadedEvents.length > 0 ? "block" : "none";
         }
 
         let rankedFinishedEvents = loadedEvents.filter(e => {
@@ -730,33 +737,35 @@
         });
 
         let aotyContainer = document.getElementById("aotyContainer");
-        if(aotyArray.length > 0) {
-            let medals = ["🥇", "🥈", "🥉"];
-            let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
-                <div class="flex flex-between" style="margin-bottom: 16px;">
-                    <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
-                    <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">⬇ ${t('download_season_pdf')}</a>
-                </div>`;
-            
-            aotyArray.slice(0, 3).forEach((angler, idx) => {
-                aotyHtml += `
-                <div class="flex flex-between" style="background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 16px; margin-bottom: 8px; backdrop-filter: blur(8px);">
-                    <div class="flex" style="gap: 12px;">
-                        <span style="font-size: 20px; font-weight: bold;">${medals[idx]}</span>
-                        <b style="font-size: 16px;">${angler.name}</b>
-                    </div>
-                    <div style="text-align:right;">
-                        <b style="font-size: 16px;">${angler.totalRankPts} <span style="font-size:12px; font-weight:normal;">${t('rank_pts')}</span></b><br>
-                        <span style="font-size:12px; opacity:0.8;">${angler.validEventsCount} ${t('tournaments')}</span>
-                    </div>
-                </div>`;
-            });
-            aotyHtml += `</div>`;
-            aotyContainer.innerHTML = aotyHtml;
-            aotyContainer.classList.remove("hidden");
-        } else {
-            aotyContainer.innerHTML = "";
-            aotyContainer.classList.add("hidden");
+        if(aotyContainer) {
+            if(aotyArray.length > 0) {
+                let medals = ["🥇", "🥈", "🥉"];
+                let aotyHtml = `<div class="card" style="background: var(--primary-gradient); color: white; border:none; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
+                    <div class="flex flex-between" style="margin-bottom: 16px;">
+                        <h3 style="color:white; margin:0; font-size:18px;">🏆 ${t('angler_of_year')} (${selectedYear})</h3>
+                        <a href="javascript:void(0)" onclick="downloadSeasonChart()" style="color: white; font-size: 14px; font-weight: 600; text-decoration: underline; background: transparent; border: none; padding: 4px;">⬇ ${t('download_season_pdf')}</a>
+                    </div>`;
+                
+                aotyArray.slice(0, 3).forEach((angler, idx) => {
+                    aotyHtml += `
+                    <div class="flex flex-between" style="background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 16px; margin-bottom: 8px; backdrop-filter: blur(8px);">
+                        <div class="flex" style="gap: 12px;">
+                            <span style="font-size: 20px; font-weight: bold;">${medals[idx]}</span>
+                            <b style="font-size: 16px;">${angler.name}</b>
+                        </div>
+                        <div style="text-align:right;">
+                            <b style="font-size: 16px;">${angler.totalRankPts} <span style="font-size:12px; font-weight:normal;">${t('rank_pts')}</span></b><br>
+                            <span style="font-size:12px; opacity:0.8;">${angler.validEventsCount} ${t('tournaments')}</span>
+                        </div>
+                    </div>`;
+                });
+                aotyHtml += `</div>`;
+                aotyContainer.innerHTML = aotyHtml;
+                aotyContainer.classList.remove("hidden");
+            } else {
+                aotyContainer.innerHTML = "";
+                aotyContainer.classList.add("hidden");
+            }
         }
 
         let filteredEvents = loadedEvents.filter(e => {
@@ -764,7 +773,8 @@
             return eYear === String(selectedYear);
         });
         
-        let sortMode = document.getElementById("myEventsSort") ? document.getElementById("myEventsSort").value : "newest";
+        let sortEl = document.getElementById("myEventsSort");
+        let sortMode = sortEl ? sortEl.value : "newest";
         let sortedEvents = sortEventsArray([...filteredEvents], sortMode);
         
         renderEventsList(sortedEvents);
@@ -774,6 +784,8 @@
 
     function renderEventsList(filteredEvents) {
         let container = document.getElementById("eventsList");
+        if(!container) return;
+
         if (filteredEvents.length === 0) {
             container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No events found in ${selectedYear}.</div>`;
             return;
@@ -812,17 +824,17 @@
     }
 
     function showDashboard() {
-        document.getElementById("setupSection").classList.add("hidden");
-        document.getElementById("hubSection").classList.add("hidden");
-        document.getElementById("dashboardSection").classList.remove("hidden");
+        if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
+        if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.add("hidden");
+        if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.remove("hidden");
         window.scrollTo(0, 0);
         
         history.pushState({view: 'dashboardSection'}, "");
     }
 
     function openEventEditor(eventObj = null) {
-        document.getElementById("dashboardSection").classList.add("hidden");
-        document.getElementById("setupSection").classList.remove("hidden");
+        if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
+        if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.remove("hidden");
         window.scrollTo(0, 0);
 
         history.pushState({view: 'setupSection'}, "");
@@ -832,12 +844,13 @@
             if(currentEvent.isStarted === undefined) currentEvent.isStarted = true;
             if(!currentEvent.status) currentEvent.status = "finished";
             
-            document.getElementById("eventNameInput").value = currentEvent.name;
-            document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
-            document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
+            if(document.getElementById("eventNameInput")) document.getElementById("eventNameInput").value = currentEvent.name;
+            if(document.getElementById("bulkParticipantsInput")) document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
+            if(document.getElementById("isRankedToggle")) document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         } else {
             let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
-            let savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser);
+            let savedDefaults = null;
+            try { savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser); } catch(e) {}
             if (savedDefaults) { try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {} }
             
             currentEvent = {
@@ -851,9 +864,9 @@
                 species: defaultSpecies,
                 participants: []
             };
-            document.getElementById("eventNameInput").value = "";
-            document.getElementById("bulkParticipantsInput").value = "";
-            document.getElementById("isRankedToggle").checked = true;
+            if(document.getElementById("eventNameInput")) document.getElementById("eventNameInput").value = "";
+            if(document.getElementById("bulkParticipantsInput")) document.getElementById("bulkParticipantsInput").value = "";
+            if(document.getElementById("isRankedToggle")) document.getElementById("isRankedToggle").checked = true;
         }
         
         updateParticipantCountStatus();
@@ -872,18 +885,24 @@
     }
 
     function updateParticipantCountStatus() {
-        let rawText = document.getElementById("bulkParticipantsInput").value;
-        let items = parseParticipants(rawText);
-        document.getElementById("participantCountStatus").innerText = items.length;
+        let bulkInput = document.getElementById("bulkParticipantsInput");
+        let statusEl = document.getElementById("participantCountStatus");
+        if(bulkInput && statusEl) {
+            statusEl.innerText = parseParticipants(bulkInput.value).length;
+        }
     }
 
     function addSpecies() {
-        let name = document.getElementById("speciesName").value.trim();
-        let abbr = document.getElementById("speciesAbbr").value.trim().toLowerCase();
+        let nameEl = document.getElementById("speciesName");
+        let abbrEl = document.getElementById("speciesAbbr");
+        if(!nameEl || !abbrEl) return;
+
+        let name = nameEl.value.trim();
+        let abbr = abbrEl.value.trim().toLowerCase();
         if (!name || !abbr) return;
         currentEvent.species.push({ name, abbr, tiers: [{ from: 0, to: "above", multiplier: 1.0 }] });
-        document.getElementById("speciesName").value = "";
-        document.getElementById("speciesAbbr").value = "";
+        nameEl.value = "";
+        abbrEl.value = "";
         refreshSetupUI();
     }
 
@@ -891,47 +910,53 @@
 
     function refreshSetupUI() {
         let container = document.getElementById("speciesConfigContainer");
-        container.innerHTML = currentEvent.species.map((s, sIdx) => {
-            let rulesSummary = s.tiers.map(t => {
-                let fromVal = t.from === "" ? 0 : t.from;
-                let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
-                let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
-                return `${fromVal}-${toVal}cm ${mult}x`;
-            }).join(' | ');
+        if(container) {
+            container.innerHTML = currentEvent.species.map((s, sIdx) => {
+                let rulesSummary = s.tiers.map(t => {
+                    let fromVal = t.from === "" ? 0 : t.from;
+                    let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
+                    let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
+                    return `${fromVal}-${toVal}cm ${mult}x`;
+                }).join(' | ');
 
-            return `
-            <div class="card" style="padding:16px; border:1px solid var(--border); margin-bottom:12px; background:var(--card-bg);">
-                <div class="flex flex-between">
-                    <div>
+                return `
+                <div class="card" style="padding:16px; border:1px solid var(--border); margin-bottom:12px; background:var(--card-bg);">
+                    <div class="flex flex-between">
+                        <div>
+                            <div class="flex">
+                                <b style="font-size:16px; color:var(--text);">${s.name}</b>
+                                <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${s.abbr.toUpperCase()}</span>
+                            </div>
+                            <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">
+                                ${rulesSummary}
+                            </div>
+                        </div>
                         <div class="flex">
-                            <b style="font-size:16px; color:var(--text);">${s.name}</b>
-                            <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${s.abbr.toUpperCase()}</span>
-                        </div>
-                        <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">
-                            ${rulesSummary}
+                            <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})" style="box-shadow:none;">${t('edit_rules')}</button>
+                            <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeSpecies(${sIdx})">✕</button>
                         </div>
                     </div>
-                    <div class="flex">
-                        <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})" style="box-shadow:none;">${t('edit_rules')}</button>
-                        <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeSpecies(${sIdx})">✕</button>
-                    </div>
-                </div>
-            </div>`;
-        }).join("");
+                </div>`;
+            }).join("");
+        }
 
-        if (currentEvent.isStarted) {
-            document.getElementById("bulkParticipantsInput").disabled = true;
-            document.getElementById("bulkParticipantsOverlay").classList.remove("hidden");
-            document.getElementById("bulkParticipantsOverlay").style.display = "flex";
-        } else {
-            document.getElementById("bulkParticipantsInput").disabled = false;
-            document.getElementById("bulkParticipantsOverlay").classList.add("hidden");
-            document.getElementById("bulkParticipantsOverlay").style.display = "none";
+        let bulkInput = document.getElementById("bulkParticipantsInput");
+        let bulkOverlay = document.getElementById("bulkParticipantsOverlay");
+        if (bulkInput && bulkOverlay) {
+            if (currentEvent.isStarted) {
+                bulkInput.disabled = true;
+                bulkOverlay.classList.remove("hidden");
+                bulkOverlay.style.display = "flex";
+            } else {
+                bulkInput.disabled = false;
+                bulkOverlay.classList.add("hidden");
+                bulkOverlay.style.display = "none";
+            }
         }
     }
 
-    function openRulesModal(sIdx) { activeSpeciesIndex = sIdx; document.getElementById("rulesModal").classList.remove("hidden"); renderRules(); }
-    function closeRulesModal() { document.getElementById("rulesModal").classList.add("hidden"); activeSpeciesIndex = null; refreshSetupUI(); }
+    function openRulesModal(sIdx) { activeSpeciesIndex = sIdx; if(document.getElementById("rulesModal")) document.getElementById("rulesModal").classList.remove("hidden"); renderRules(); }
+    function closeRulesModal() { if(document.getElementById("rulesModal")) document.getElementById("rulesModal").classList.add("hidden"); activeSpeciesIndex = null; refreshSetupUI(); }
 
     function addNewRule() {
         let s = currentEvent.species[activeSpeciesIndex];
@@ -1015,7 +1040,7 @@
         if (!currentEvent.status) currentEvent.status = "ongoing";
 
         const eventPayload = { username: loggedInUser, name: currentEvent.name, details: currentEvent, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species));
+        try { localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species)); } catch(e){}
 
         return db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
             if(redirect) showDashboard(); 
@@ -1027,23 +1052,10 @@
 
     async function goToEventHub() {
         let nameEl = document.getElementById("eventNameInput");
-        let descEl = document.getElementById("eventDescInput");
-        let pubToggle = document.getElementById("isPublicToggle");
         let rankToggle = document.getElementById("isRankedToggle");
-        let thumbPreview = document.getElementById('thumbnailPreview');
         
-        currentEvent.name = nameEl ? nameEl.value.trim() || "Untitled Event" : "Untitled Event";
-        currentEvent.description = descEl ? descEl.value.trim() : "";
-        currentEvent.isPublic = pubToggle ? pubToggle.checked : false;
+        currentEvent.name = nameEl && nameEl.value.trim() !== "" ? nameEl.value.trim() : "Untitled Event";
         let wantsRanked = rankToggle ? rankToggle.checked : true;
-        
-        if(thumbPreview && thumbPreview.src && thumbPreview.src.startsWith('data:')) {
-            currentEvent.thumbnail = thumbPreview.src;
-        }
-
-        currentEvent.unit = confUnit;
-        currentEvent.measureType = confMeasure;
-        currentEvent.limitType = confLimit;
         
         if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
         if(!currentEvent.status) currentEvent.status = "ongoing";
@@ -1084,8 +1096,8 @@
         
         await saveCurrentEvent(false);
         
-        document.getElementById("setupSection").classList.add("hidden");
-        document.getElementById("hubSection").classList.remove("hidden");
+        if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
+        if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.remove("hidden");
         window.scrollTo(0, 0);
         
         history.pushState({view: 'hubSection'}, "");
@@ -1093,8 +1105,8 @@
     }
 
     function backToSetup() {
-        document.getElementById("hubSection").classList.add("hidden");
-        document.getElementById("setupSection").classList.remove("hidden");
+        if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.add("hidden");
+        if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.remove("hidden");
         window.scrollTo(0, 0);
         
         history.pushState({view: 'setupSection'}, "");
@@ -1110,15 +1122,17 @@
 
     function openAddParticipantModal() {
         if(currentEvent.status === 'finished') return;
-        document.getElementById("modalParticipantName").value = "";
-        document.getElementById("participantModal").classList.remove("hidden");
-        setTimeout(() => document.getElementById("modalParticipantName").focus(), 100);
+        if(document.getElementById("modalParticipantName")) document.getElementById("modalParticipantName").value = "";
+        if(document.getElementById("participantModal")) document.getElementById("participantModal").classList.remove("hidden");
+        setTimeout(() => { if(document.getElementById("modalParticipantName")) document.getElementById("modalParticipantName").focus(); }, 100);
     }
 
-    function closeAddParticipantModal() { document.getElementById("participantModal").classList.add("hidden"); }
+    function closeAddParticipantModal() { if(document.getElementById("participantModal")) document.getElementById("participantModal").classList.add("hidden"); }
 
     function confirmAddParticipantModal() {
-        let parsedNames = parseParticipants(document.getElementById("modalParticipantName").value);
+        let inputEl = document.getElementById("modalParticipantName");
+        if(!inputEl) return;
+        let parsedNames = parseParticipants(inputEl.value);
         if (parsedNames.length === 0) return;
         parsedNames.forEach(name => { currentEvent.participants.push({ id: 'p_' + Math.random().toString(36).substr(2, 9), name: name, catches: [], penalties: [] }); });
         closeAddParticipantModal(); renderHubUI();
@@ -1144,22 +1158,27 @@
     function openFishModal(pIndexReal) {
         if(currentEvent.status === 'finished') return;
         activeFishParticipantIndex = pIndexReal;
-        document.getElementById("modalSpeciesTabs").innerHTML = currentEvent.species.map((s, idx) => `
-            <div class="species-tab ${idx === 0 ? 'active' : ''}" onclick="selectModalSpecies('${s.abbr}', this)">${s.abbr}</div>
-        `).join("");
+        let modalSpeciesTabs = document.getElementById("modalSpeciesTabs");
+        if(modalSpeciesTabs) {
+            modalSpeciesTabs.innerHTML = currentEvent.species.map((s, idx) => `
+                <div class="species-tab ${idx === 0 ? 'active' : ''}" onclick="selectModalSpecies('${s.abbr}', this)">${s.abbr}</div>
+            `).join("");
+        }
         
         selectedModalSpecies = currentEvent.species.length > 0 ? currentEvent.species[0].abbr : "";
-        document.getElementById("modalFishSize").value = "";
-        document.getElementById("fishModal").classList.remove("hidden");
+        if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").value = "";
+        if(document.getElementById("fishModal")) document.getElementById("fishModal").classList.remove("hidden");
         renderModalCatches();
-        setTimeout(() => document.getElementById("modalFishSize").focus(), 100);
+        setTimeout(() => { if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").focus(); }, 100);
     }
 
-    function closeFishModal() { document.getElementById("fishModal").classList.add("hidden"); activeFishParticipantIndex = null; selectedModalSpecies = ""; }
+    function closeFishModal() { if(document.getElementById("fishModal")) document.getElementById("fishModal").classList.add("hidden"); activeFishParticipantIndex = null; selectedModalSpecies = ""; }
 
     function confirmAddFishModal() {
         if (activeFishParticipantIndex === null || !selectedModalSpecies) return;
-        let size = parseFloat(document.getElementById("modalFishSize").value.replace(',', '.'));
+        let inputEl = document.getElementById("modalFishSize");
+        if(!inputEl) return;
+        let size = parseFloat(inputEl.value.replace(',', '.'));
         if (isNaN(size) || size <= 0) return;
 
         let sp = currentEvent.species.find(s => s.abbr === selectedModalSpecies);
@@ -1167,7 +1186,7 @@
             let firstFrom = parseFloat(sp.tiers[0].from);
             if (!isNaN(firstFrom) && size < firstFrom) {
                 pendingSmallFish = { abbr: selectedModalSpecies, size };
-                document.getElementById("smallFishWarningModal").classList.remove("hidden");
+                if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.remove("hidden");
                 return;
             }
         }
@@ -1176,11 +1195,15 @@
 
     function executeAddFish(abbr, size) {
         currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
-        document.getElementById("modalFishSize").value = ""; renderModalCatches(); renderHubUI(); document.getElementById("modalFishSize").focus();
+        if(document.getElementById("modalFishSize")) {
+            document.getElementById("modalFishSize").value = ""; 
+            document.getElementById("modalFishSize").focus();
+        }
+        renderModalCatches(); renderHubUI(); 
     }
 
-    function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
-    function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
+    function cancelSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").focus(); }
+    function ignoreSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
 
     function removeFish(pIndexReal, cIdx) {
         currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
@@ -1190,6 +1213,8 @@
 
     function renderModalCatches() {
         let container = document.getElementById("modalCurrentCatches");
+        if(!container) return;
+        
         if (activeFishParticipantIndex === null) return;
         let p = currentEvent.participants[activeFishParticipantIndex];
         if (p.catches.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">${t('no_catches')}</p>`; return; }
@@ -1206,25 +1231,29 @@
     function openPenaltyModal(pIndexReal) {
         if(currentEvent.status === 'finished') return;
         activePenaltyParticipantIndex = pIndexReal;
-        document.getElementById("modalPenaltyPoints").value = "";
-        document.getElementById("modalPenaltyReason").value = "";
-        document.getElementById("penaltyModal").classList.remove("hidden");
+        if(document.getElementById("modalPenaltyPoints")) document.getElementById("modalPenaltyPoints").value = "";
+        if(document.getElementById("modalPenaltyReason")) document.getElementById("modalPenaltyReason").value = "";
+        if(document.getElementById("penaltyModal")) document.getElementById("penaltyModal").classList.remove("hidden");
         renderModalPenalties();
     }
-    function closePenaltyModal() { document.getElementById("penaltyModal").classList.add("hidden"); activePenaltyParticipantIndex = null; }
+    function closePenaltyModal() { if(document.getElementById("penaltyModal")) document.getElementById("penaltyModal").classList.add("hidden"); activePenaltyParticipantIndex = null; }
     
     function confirmAddPenalty() {
         if(activePenaltyParticipantIndex === null) return;
-        let pts = parseFloat(document.getElementById("modalPenaltyPoints").value);
-        let reason = document.getElementById("modalPenaltyReason").value.trim();
+        let ptsEl = document.getElementById("modalPenaltyPoints");
+        let rsnEl = document.getElementById("modalPenaltyReason");
+        if(!ptsEl || !rsnEl) return;
+        
+        let pts = parseFloat(ptsEl.value);
+        let reason = rsnEl.value.trim();
         if(isNaN(pts) || pts <= 0 || !reason) { alert("Enter valid points and reason."); return; }
         
         let p = currentEvent.participants[activePenaltyParticipantIndex];
         if(!p.penalties) p.penalties = [];
         p.penalties.push({ points: pts, reason: reason });
         
-        document.getElementById("modalPenaltyPoints").value = "";
-        document.getElementById("modalPenaltyReason").value = "";
+        ptsEl.value = "";
+        rsnEl.value = "";
         renderModalPenalties(); renderHubUI();
     }
     
@@ -1236,6 +1265,8 @@
 
     function renderModalPenalties() {
         let container = document.getElementById("modalCurrentPenalties");
+        if(!container) return;
+        
         if (activePenaltyParticipantIndex === null) return;
         let p = currentEvent.participants[activePenaltyParticipantIndex];
         if (!p.penalties || p.penalties.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">No penalties.</p>`; return; }
@@ -1270,10 +1301,14 @@
 
     function renderHubUI() {
         let isFinished = currentEvent.status === 'finished';
-        document.getElementById("hubAddNewParticipantBtn").style.display = isFinished ? "none" : "block";
+        let btnAddPart = document.getElementById("hubAddNewParticipantBtn");
+        if(btnAddPart) btnAddPart.style.display = isFinished ? "none" : "block";
 
-        let query = document.getElementById("searchParticipant").value.toLowerCase();
+        let searchInput = document.getElementById("searchParticipant");
+        let query = searchInput ? searchInput.value.toLowerCase() : "";
         let container = document.getElementById("participantsHubContainer");
+        if(!container) return;
+        
         let addRemoveText = t("add_remove_fish");
 
         let countEl = document.getElementById("hubParticipantCount");
@@ -1313,9 +1348,12 @@
     }
 
     function renderLeaderboard() {
-        let mode = document.getElementById("rankingMode").value;
+        let modeDropdown = document.getElementById("rankingMode");
+        let mode = modeDropdown ? modeDropdown.value : 'points';
         let container = document.getElementById("leaderboardContainer");
         let topSummaryContainer = document.getElementById("leaderboardTopSummary");
+        
+        if(!container) return;
 
         let processed = currentEvent.participants.map(p => {
             let totalCm = 0; let totalPts = 0; let maxFishCm = 0; let maxFishAbbr = ""; let amountCatches = p.catches.length;
@@ -1344,20 +1382,22 @@
         
         let sortedByBiggest = [...processed].sort((a, b) => b.maxFishCm - a.maxFishCm);
 
-        if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishCm > 0) {
-            topSummaryContainer.innerHTML = `
-                <div class="flex flex-between">
-                    <div>
-                        <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase; letter-spacing: 0.5px;">🏆 ${t('biggest_fish')}</div>
-                        <div style="font-weight:700; font-size:18px; color:var(--text); margin-top:4px;">${sortedByBiggest[0].name}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishCm}</span> cm
-                        <div class="badge" style="background:#fef08a; color:#b45309; display:inline-block; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
-                    </div>
-                </div>`;
-            topSummaryContainer.classList.remove('hidden');
-        } else { topSummaryContainer.classList.add('hidden'); }
+        if (topSummaryContainer) {
+            if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishCm > 0) {
+                topSummaryContainer.innerHTML = `
+                    <div class="flex flex-between">
+                        <div>
+                            <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase; letter-spacing: 0.5px;">🏆 ${t('biggest_fish')}</div>
+                            <div style="font-weight:700; font-size:18px; color:var(--text); margin-top:4px;">${sortedByBiggest[0].name}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishCm}</span> cm
+                            <div class="badge" style="background:#fef08a; color:#b45309; display:inline-block; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
+                        </div>
+                    </div>`;
+                topSummaryContainer.classList.remove('hidden');
+            } else { topSummaryContainer.classList.add('hidden'); }
+        }
 
         let html = `<table><tr><th style="width:50px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
         sortedByMain.forEach((p, idx) => {
@@ -1511,15 +1551,16 @@
     let langSelect = document.getElementById("langSelect");
     if(langSelect) changeLanguage(langSelect.value);
 
-    let savedUser = localStorage.getItem("lureboard_user");
+    let savedUser = null;
+    try { savedUser = localStorage.getItem("lureboard_user"); } catch(e) {}
+
     if (savedUser) {
         loginSuccess(savedUser);
     } else {
-        let loginSection = document.getElementById("loginSection");
-        if(loginSection) loginSection.classList.remove("hidden");
-        
-        let dashboardSection = document.getElementById("dashboardSection");
-        if(dashboardSection) dashboardSection.classList.add("hidden");
-        
+        if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
+        if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
         subscribeToEventsRealtime();
     }
+</script>
+</body>
+</html>
