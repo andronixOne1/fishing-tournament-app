@@ -17,162 +17,135 @@ let unsubscribeEventsListener = null;
 
 let currentEvent = null;
 let loggedInUser = "";
-let loadedEvents = [];     
-let allPublicEvents = [];  
-
+let loadedEvents = [];
 let activeFishParticipantIndex = null;
 let activePenaltyParticipantIndex = null;
 let activeSpeciesIndex = null;
+
 let selectedModalSpecies = "";
 let pendingSmallFish = null;
-
 let currentLang = "en";
 let selectedYear = new Date().getFullYear().toString();
-
-let confUnit = 'metric';
-let confMeasure = 'size';
-let confLimit = 'all';
 
 const translations = {
     en: {
         login_title: "Login / Register", login_desc: "Enter any username and password.", username: "Username", password: "Password", login_btn: "Login / Register",
-        your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back", client_area: "Client Area", public_hub: "Public Hub", my_events: "My Events",
+        your_events: "Your Events", logout: "Logout", create_event: "+ Create New Event", step1_title: "Step 1: Setup", back: "← Back", home: "Home",
         tourn_name: "Tournament Name", ranked_tourn: "Ranked Tournament", ranked_desc: "Include in Yearly Leaderboard (Max 7/year)", bulk_part: "Participants List",
         bulk_desc: "Paste names. Symbols/brackets are auto-removed.", fish_species_title: "Species & Multipliers", add_species: "+ Add Species", start_event: "Start Event", next_btn: "Next",
         hub_title: "Tournament Hub", edit_setup: "← Setup", manage_part: "Participants", add_new: "+ Add", leaderboard: "Leaderboard", mode_pts: "Rank by Points",
-        mode_cm: "Rank by Size/Weight", save_event: "Save Event", finish_event: "Finish Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
-        add_remove_fish: "Add / Remove Catch", species_sel: "Species", size_cm: "Measurement", save: "Save", add_fish_btn: "+ Add Catch", edit_rules: "Edit Rules",
+        mode_cm: "Rank by Centimeters", save_event: "Save Event", finish_event: "Finish Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
+        add_remove_fish: "Add / Remove Catch", species_sel: "Species", size_cm: "Size (cm)", save: "Save", add_fish_btn: "+ Add Catch", edit_rules: "Edit Rules",
         add_rule: "+ Add New Rule", done: "Done", rule_from: "From", rule_to: "To", rule_mult: "Multiplier", download_chart: "PDF", download_season_pdf: "Season PDF",
         season_results: "Season Results", current_catches: "Current Catches", no_catches: "No catches logged.", too_small_title: "Fish Too Small", 
         too_small_desc: "The fish is too small based on the rules.", ok: "OK", ignore: "Ignore", angler_of_year: "Angler of the Year", edit_name: "Edit Name", 
         unranked_badge: "UNRANKED", rank_pts: "Rank Pts", tournaments: "tournaments", editing_disabled: "Editing this is disabled, please edit participant list on the next page",
         finish_warning: "If you finish the event now you will not be able to change anything anymore and the event will be officially finished.",
-        status_finished: "Finished", status_ongoing: "Ongoing",
-        place: "Place", name: "Name", points: "Points", total_cm: "Total", biggest_fish: "Biggest", details: "Details", generated_on: "Generated on", 
+        status_finished: "Finished", status_ongoing: "Ongoing", place: "Place", name: "Name", points: "Points", total_cm: "Total", biggest_fish: "Biggest Fish", details: "Details", generated_on: "Generated on", 
         tournament_results: "Tournament Results", rank_pts_best5: "Rank Pts (Best 5)", tournaments_played: "Tournaments Played", all_placements: "All Placements", sort_newest: "Newest First", sort_oldest: "Oldest First", sort_az: "Name A-Z",
-        thumbnail_img: "Thumbnail / Header Image", desc_rules: "Description & Rules", public_desc: "Make visible to everyone", tourn_format: "Tournament Format",
-        meas_unit: "Measurement Unit", score_meth: "Scoring Method", catch_lim: "Catch Limits", lim_all: "All Fish", lim_top5: "Top 5 Counted",
-        penalties: "Penalties", pts_deduct: "Points to Deduct", reason_desc: "Reason / Description", add_penalty: "+ Add Penalty", part_detailed: "Participants Detailed"
+        penalties: "Penalties", pts_deduct: "Points to Deduct", reason_desc: "Reason / Description", add_penalty: "+ Add Penalty"
     },
     ka: {
         login_title: "შესვლა / რეგისტრაცია", login_desc: "შეიყვანეთ ნებისმიერი სახელი და პაროლი.", username: "მომხმარებელი", password: "პაროლი", login_btn: "შესვლა / რეგისტრაცია",
-        your_events: "თქვენი ღონისძიებები", logout: "გასვლა", create_event: "+ ახალი ღონისძიების შექმნა", step1_title: "ნაბიჯი 1: პარამეტრები", back: "← უკან", client_area: "კლიენტის სივრცე", public_hub: "საჯარო ჰაბი", my_events: "ჩემი ტურნირები",
+        your_events: "თქვენი ღონისძიებები", logout: "გასვლა", create_event: "+ ახალი ღონისძიების შექმნა", step1_title: "ნაბიჯი 1: პარამეტრები", back: "← უკან", home: "მთავარი",
         tourn_name: "ტურნირის სახელი", ranked_tourn: "სარეიტინგო ტურნირი", ranked_desc: "წლიურ რეიტინგში დამატება (მაქს 7/წელს)", bulk_part: "მონაწილეთა სია",
         bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.", fish_species_title: "სახეობები და კოეფიციენტები", add_species: "+ სახეობის დამატება", start_event: "ტურნირის დაწყება", next_btn: "შემდეგი",
         hub_title: "ტურნირის ჰაბი", edit_setup: "← პარამეტრები", manage_part: "მონაწილეები", add_new: "+ დამატება", leaderboard: "ლიდერბორდი", mode_pts: "ქულებით რეიტინგი",
-        mode_cm: "ზომით/წონით რეიტინგი", save_event: "ტურნირის შენახვა", finish_event: "ტურნირის დასრულება", modal_add_title: "მონაწილის დამატება", close: "გაუქმება", add: "დამატება",
-        add_remove_fish: "თევზის დამატება/წაშლა", species_sel: "სახეობა", size_cm: "ზომა", save: "შენახვა", add_fish_btn: "+ დამატება", edit_rules: "წესები",
+        mode_cm: "სანტიმეტრებით რეიტინგი", save_event: "ტურნირის შენახვა", finish_event: "ტურნირის დასრულება", modal_add_title: "მონაწილის დამატება", close: "გაუქმება", add: "დამატება",
+        add_remove_fish: "თევზის დამატება/წაშლა", species_sel: "სახეობა", size_cm: "ზომა (სმ)", save: "შენახვა", add_fish_btn: "+ დამატება", edit_rules: "წესები",
         add_rule: "+ ახალი წესი", done: "მზადაა", rule_from: "-დან", rule_to: "-მდე", rule_mult: "კოეფიციენტი", download_chart: "PDF", download_season_pdf: "სეზონის PDF",
         season_results: "სეზონის შედეგები", current_catches: "მიმდინარე თევზები", no_catches: "თევზი არ არის.", too_small_title: "თევზი ძალიან პატარაა", 
         too_small_desc: "წესების მიხედვით თევზი ძალიან პატარაა.", ok: "OK", ignore: "იგნორირება", angler_of_year: "წლის მეთევზე", edit_name: "სახელის შეცვლა", 
         unranked_badge: "არასარეიტინგო", rank_pts: "სარეიტინგო ქულა", tournaments: "ტურნირი", editing_disabled: "რედაქტირება გამორთულია, გთხოვთ შეცვალოთ მონაწილეთა სია შემდეგ გვერდზე",
         finish_warning: "თუ ახლა დაასრულებთ ტურნირს, ვეღარაფერს შეცვლით და ტურნირი ოფიციალურად დასრულდება.",
-        status_finished: "დასრულებულია", status_ongoing: "მიმდინარე",
-        place: "ადგილი", name: "სახელი", points: "ქულა", total_cm: "ჯამი", biggest_fish: "ყველაზე დიდი", details: "დეტალები", generated_on: "გენერირებულია",
+        status_finished: "დასრულებულია", status_ongoing: "მიმდინარე", place: "ადგილი", name: "სახელი", points: "ქულა", total_cm: "ჯამი", biggest_fish: "ყველაზე დიდი", details: "დეტალები", generated_on: "გენერირებულია",
         tournament_results: "ტურნირის შედეგები", rank_pts_best5: "სარეიტინგო ქულა (საუკ. 5)", tournaments_played: "ჩატარებული ტურნირები", all_placements: "ყველა პოზიცია", sort_newest: "ახლები ჯერ", sort_oldest: "ძველები ჯერ", sort_az: "სახელი ა-ჰ",
-        thumbnail_img: "მთავარი ფოტო", desc_rules: "აღწერა და წესები", public_desc: "საჯაროდ გამოჩენა", tourn_format: "ტურნირის ფორმატი",
-        meas_unit: "საზომი ერთეული", score_meth: "ქულების დათვლა", catch_lim: "თევზების ლიმიტი", lim_all: "ყველა", lim_top5: "საუკეთესო 5",
-        penalties: "ჯარიმები", pts_deduct: "დასაკლები ქულა", reason_desc: "მიზეზი / აღწერა", add_penalty: "+ ჯარიმის დამატება", part_detailed: "მონაწილეები დეტალურად"
+        penalties: "ჯარიმები", pts_deduct: "დასაკლები ქულა", reason_desc: "მიზეზი / აღწერა", add_penalty: "+ ჯარიმის დამატება"
     },
     uk: {
         login_title: "Вхід / Реєстрація", login_desc: "Введіть будь-яке ім'я та пароль.", username: "Користувач", password: "Пароль", login_btn: "Вхід / Реєстрація",
-        your_events: "Ваші події", logout: "Вийти", create_event: "+ Створити нову подію", step1_title: "Крок 1: Налаштування", back: "← Назад", client_area: "Клієнтська зона", public_hub: "Публічний хаб", my_events: "Мої події",
+        your_events: "Ваші події", logout: "Вийти", create_event: "+ Створити нову подію", step1_title: "Крок 1: Налаштування", back: "← Назад", home: "Головна",
         tourn_name: "Назва турніру", ranked_tourn: "Рейтинговий турнір", ranked_desc: "Включити в річний рейтинг (макс 7/рік)", bulk_part: "Список учасників",
         bulk_desc: "Вставте імена. Дужки та символи видаляються.", fish_species_title: "Види та коефіцієнти", add_species: "+ Додати вид", start_event: "Почати подію", next_btn: "Далі",
         hub_title: "Хаб турніру", edit_setup: "← Налаштування", manage_part: "Учасники", add_new: "+ Додати", leaderboard: "Таблиця лідерів", mode_pts: "Рейтинг за балами",
-        mode_cm: "Рейтинг за розміром/вагою", save_event: "Зберегти подію", finish_event: "Завершити подію", modal_add_title: "Додати учасника", close: "Скасувати", add: "Додати",
-        add_remove_fish: "Додати/Видалити рибу", species_sel: "Вид", size_cm: "Розмір", save: "Зберегти", add_fish_btn: "+ Додати рибу", edit_rules: "Правила",
+        mode_cm: "Рейтинг за сантиметрами", save_event: "Зберегти подію", finish_event: "Завершити подію", modal_add_title: "Додати учасника", close: "Скасувати", add: "Додати",
+        add_remove_fish: "Додати/Видалити рибу", species_sel: "Вид", size_cm: "Розмір (см)", save: "Зберегти", add_fish_btn: "+ Додати рибу", edit_rules: "Правила",
         add_rule: "+ Нове правило", done: "Готово", rule_from: "Від", rule_to: "До", rule_mult: "Множник", download_chart: "PDF", download_season_pdf: "PDF сезону",
         season_results: "Результати сезону", current_catches: "Поточний улов", no_catches: "Немає улову.", too_small_title: "Риба занадто мала", 
         too_small_desc: "За правилами риба занадто мала.", ok: "OK", ignore: "Ігнорувати", angler_of_year: "Рибалка року", edit_name: "Редагувати ім'я", 
         unranked_badge: "БЕЗ РЕЙТИНГУ", rank_pts: "Ранг. очок", tournaments: "турнірів", editing_disabled: "Редагування вимкнено, редагуйте список на наступній сторінці",
         finish_warning: "Якщо ви завершите подію зараз, ви більше не зможете нічого змінити.",
-        status_finished: "Завершено", status_ongoing: "Триває",
-        place: "Місце", name: "Ім'я", points: "Очки", total_cm: "Всього", biggest_fish: "Найбільша", details: "Деталі", generated_on: "Згенеровано",
+        status_finished: "Завершено", status_ongoing: "Триває", place: "Місце", name: "Ім'я", points: "Очки", total_cm: "Всього", biggest_fish: "Найбільша риба", details: "Деталі", generated_on: "Згенеровано",
         tournament_results: "Результати турніру", rank_pts_best5: "Ранг. очок (Кращі 5)", tournaments_played: "Зіграно турнірів", all_placements: "Всі місця", sort_newest: "Спочатку нові", sort_oldest: "Спочатку старі", sort_az: "Ім'я А-Я",
-        thumbnail_img: "Головне фото", desc_rules: "Опис та правила", public_desc: "Зробити публічним", tourn_format: "Формат турніру",
-        meas_unit: "Одиниця виміру", score_meth: "Метод підрахунку", catch_lim: "Ліміт риби", lim_all: "Всі", lim_top5: "Кращі 5",
-        penalties: "Штрафы", pts_deduct: "Очки для зняття", reason_desc: "Причина / Опис", add_penalty: "+ Додати штраф", part_detailed: "Деталі учасників"
+        penalties: "Штрафи", pts_deduct: "Очки для зняття", reason_desc: "Причина / Опис", add_penalty: "+ Додати штраф"
     },
     ru: {
         login_title: "Вход / Регистрация", login_desc: "Введите любые имя и пароль.", username: "Имя пользователя", password: "Пароль", login_btn: "Вход / Регистрация",
-        your_events: "Ваши события", logout: "Выйти", create_event: "+ Создать событие", step1_title: "Шаг 1: Настройка", back: "← Назад", client_area: "Клиентская зона", public_hub: "Публичный хаб", my_events: "Мои события",
+        your_events: "Ваши события", logout: "Выйти", create_event: "+ Создать событие", step1_title: "Шаг 1: Настройка", back: "← Назад", home: "Главная",
         tourn_name: "Название турнира", ranked_tourn: "Рейтинговый турнир", ranked_desc: "Включить в годовой рейтинг (макс 7/год)", bulk_part: "Список участников",
         bulk_desc: "Вставьте имена. Скобки и символы удалятся.", fish_species_title: "Виды и коэффициенты", add_species: "+ Добавить вид", start_event: "Начать событие", next_btn: "Далее",
         hub_title: "Хаб турнира", edit_setup: "← Настройка", manage_part: "Участники", add_new: "+ Добавить", leaderboard: "Таблица лидеров", mode_pts: "Рейтинг по очкам",
-        mode_cm: "Рейтинг по размеру/весу", save_event: "Сохранить событие", finish_event: "Завершить событие", modal_add_title: "Добавить участника", close: "Отмена", add: "Добавить",
-        add_remove_fish: "Добавить/Удалить рыбу", species_sel: "Вид", size_cm: "Размер", save: "Сохранить", add_fish_btn: "+ Добавить рыбу", edit_rules: "Правила",
+        mode_cm: "Рейтинг по см", save_event: "Сохранить событие", finish_event: "Завершить событие", modal_add_title: "Добавить участника", close: "Отмена", add: "Добавить",
+        add_remove_fish: "Добавить/Удалить рыбу", species_sel: "Вид", size_cm: "Размер (см)", save: "Сохранить", add_fish_btn: "+ Добавить рыбу", edit_rules: "Правила",
         add_rule: "+ Новое правило", done: "Готово", rule_from: "От", rule_to: "До", rule_mult: "Множитель", download_chart: "PDF", download_season_pdf: "PDF сезона",
         season_results: "Результаты сезона", current_catches: "Текущий улов", no_catches: "Нет улова.", too_small_title: "Рыба слишком мала", 
         too_small_desc: "По правилам рыба слишком мала.", ok: "OK", ignore: "Игнорировать", angler_of_year: "Рыболов года", edit_name: "Изменить имя", 
         unranked_badge: "ВНЕ РЕЙТИНГА", rank_pts: "Ранг. очков", tournaments: "турниров", editing_disabled: "Редактирование отключено, измените список на следующей странице",
         finish_warning: "Если вы завершите турнир сейчас, вы больше не сможете ничего изменить.",
-        status_finished: "Завершен", status_ongoing: "Идет",
-        place: "Место", name: "Имя", points: "Очки", total_cm: "Всего", biggest_fish: "Самая большая", details: "Детали", generated_on: "Сгенерировано",
+        status_finished: "Завершен", status_ongoing: "Идет", place: "Место", name: "Имя", points: "Очки", total_cm: "Всего", biggest_fish: "Самая большая", details: "Детали", generated_on: "Сгенерировано",
         tournament_results: "Результаты турнира", rank_pts_best5: "Ранг. очков (Топ 5)", tournaments_played: "Сыграно турниров", all_placements: "Все места", sort_newest: "Сначала новые", sort_oldest: "Сначала старые", sort_az: "Имя А-Я",
-        thumbnail_img: "Главное фото", desc_rules: "Описание и правила", public_desc: "Сделать публичным", tourn_format: "Формат турнира",
-        meas_unit: "Единица измерения", score_meth: "Метод подсчета", catch_lim: "Лимит рыбы", lim_all: "Вся", lim_top5: "Лучшие 5",
-        penalties: "Штрафы", pts_deduct: "Очки для снятия", reason_desc: "Причина / Описание", add_penalty: "+ Добавить штраф", part_detailed: "Детали участников"
+        penalties: "Штрафы", pts_deduct: "Очки для снятия", reason_desc: "Причина / Описание", add_penalty: "+ Добавить штраф"
     },
     fr: {
         login_title: "Connexion / Inscription", login_desc: "Entrez un nom d'utilisateur et un mot de passe.", username: "Utilisateur", password: "Mot de passe", login_btn: "Connexion / Inscription",
-        your_events: "Vos Événements", logout: "Déconnexion", create_event: "+ Créer Événement", step1_title: "Étape 1 : Config", back: "← Retour", client_area: "Espace Client", public_hub: "Hub Public", my_events: "Mes Événements",
+        your_events: "Vos Événements", logout: "Déconnexion", create_event: "+ Créer Événement", step1_title: "Étape 1 : Config", back: "← Retour", home: "Accueil",
         tourn_name: "Nom du Tournoi", ranked_tourn: "Tournoi Classé", ranked_desc: "Inclure dans le classement annuel (Max 7/an)", bulk_part: "Participants",
         bulk_desc: "Collez les noms. Les symboles sont ignorés.", fish_species_title: "Espèces & Multiplicateurs", add_species: "+ Espèce", start_event: "Démarrer", next_btn: "Suivant",
         hub_title: "Hub du Tournoi", edit_setup: "← Config", manage_part: "Participants", add_new: "+ Ajouter", leaderboard: "Classement", mode_pts: "Par Points",
-        mode_cm: "Par Taille/Poids", save_event: "Enregistrer", finish_event: "Terminer", modal_add_title: "Ajouter Participant", close: "Annuler", add: "Ajouter",
-        add_remove_fish: "Ajouter/Retirer Prise", species_sel: "Espèce", size_cm: "Mesure", save: "Enregistrer", add_fish_btn: "+ Ajouter Prise", edit_rules: "Règles",
+        mode_cm: "Par Centimètres", save_event: "Enregistrer", finish_event: "Terminer", modal_add_title: "Ajouter Participant", close: "Annuler", add: "Ajouter",
+        add_remove_fish: "Ajouter/Retirer Prise", species_sel: "Espèce", size_cm: "Taille (cm)", save: "Enregistrer", add_fish_btn: "+ Ajouter Prise", edit_rules: "Règles",
         add_rule: "+ Nouvelle Règle", done: "Terminé", rule_from: "De", rule_to: "À", rule_mult: "Multiplicateur", download_chart: "PDF", download_season_pdf: "PDF de la Saison",
         season_results: "Résultats de la Saison", current_catches: "Prises Actuelles", no_catches: "Aucune prise.", too_small_title: "Poisson trop petit", 
         too_small_desc: "Le poisson est trop petit selon les règles.", ok: "OK", ignore: "Ignorer", angler_of_year: "Pêcheur de l'Année", edit_name: "Modifier le nom", 
         unranked_badge: "NON CLASSÉ", rank_pts: "Pts Class.", tournaments: "tournois", editing_disabled: "Modification désactivée, veuillez modifier la liste sur la page suivante",
         finish_warning: "Si vous terminez l'événement maintenant, vous ne pourrez plus rien modifier.",
-        status_finished: "Terminé", status_ongoing: "En cours",
-        place: "Place", name: "Nom", points: "Points", total_cm: "Total", biggest_fish: "Plus gros", details: "Détails", generated_on: "Généré le",
+        status_finished: "Terminé", status_ongoing: "En cours", place: "Place", name: "Nom", points: "Points", total_cm: "Total", biggest_fish: "Plus gros", details: "Détails", generated_on: "Généré le",
         tournament_results: "Résultats du Tournoi", rank_pts_best5: "Pts Class. (Top 5)", tournaments_played: "Tournois joués", all_placements: "Tous les classements", sort_newest: "Plus récents", sort_oldest: "Plus anciens", sort_az: "Nom A-Z",
-        thumbnail_img: "Image / Miniature", desc_rules: "Description et Règles", public_desc: "Rendre visible par tous", tourn_format: "Format du Tournoi",
-        meas_unit: "Unité de Mesure", score_meth: "Méthode de Calcul", catch_lim: "Limite de Prises", lim_all: "Toutes", lim_top5: "Top 5",
-        penalties: "Pénalités", pts_deduct: "Points à déduire", reason_desc: "Raison / Description", add_penalty: "+ Ajouter Pénalité", part_detailed: "Participants Détaillés"
+        penalties: "Pénalités", pts_deduct: "Points à déduire", reason_desc: "Raison / Description", add_penalty: "+ Ajouter Pénalité"
     },
     it: {
         login_title: "Accesso / Registrazione", login_desc: "Inserisci utente e password.", username: "Utente", password: "Password", login_btn: "Accedi / Registrati",
-        your_events: "I tuoi Eventi", logout: "Esci", create_event: "+ Crea Evento", step1_title: "Passo 1: Config", back: "← Indietro", client_area: "Area Clienti", public_hub: "Hub Pubblico", my_events: "I Miei Eventi",
+        your_events: "I tuoi Eventi", logout: "Esci", create_event: "+ Crea Evento", step1_title: "Passo 1: Config", back: "← Indietro", home: "Home",
         tourn_name: "Nome Torneo", ranked_tourn: "Torneo Classificato", ranked_desc: "Includi nella classifica annuale (Max 7/anno)", bulk_part: "Partecipanti",
         bulk_desc: "Incolla i nomi. I simboli vengono rimossi.", fish_species_title: "Specie & Moltiplicatori", add_species: "+ Specie", start_event: "Inizia Evento", next_btn: "Avanti",
         hub_title: "Hub del Torneo", edit_setup: "← Config", manage_part: "Partecipanti", add_new: "+ Aggiungi", leaderboard: "Classifica", mode_pts: "Per Punti",
-        mode_cm: "Per Misura/Peso", save_event: "Salva Evento", finish_event: "Termina Evento", modal_add_title: "Aggiungi Partecipante", close: "Annulla", add: "Aggiungi",
-        add_remove_fish: "Aggiungi/Rimuovi Pesce", species_sel: "Specie", size_cm: "Misura", save: "Salva", add_fish_btn: "+ Aggiungi Pesce", edit_rules: "Regole",
+        mode_cm: "Per Centimetri", save_event: "Salva Evento", finish_event: "Termina Evento", modal_add_title: "Aggiungi Partecipante", close: "Annulla", add: "Aggiungi",
+        add_remove_fish: "Aggiungi/Rimuovi Pesce", species_sel: "Specie", size_cm: "Misura (cm)", save: "Salva", add_fish_btn: "+ Aggiungi Pesce", edit_rules: "Regole",
         add_rule: "+ Nuova Regola", done: "Fatto", rule_from: "Da", rule_to: "A", rule_mult: "Moltiplicatore", download_chart: "PDF", download_season_pdf: "PDF Stagione",
         season_results: "Risultati Stagione", current_catches: "Catture Attuali", no_catches: "Nessuna cattura.", too_small_title: "Pesce troppo piccolo", 
         too_small_desc: "Il pesce è troppo piccolo secondo le regole.", ok: "OK", ignore: "Ignora", angler_of_year: "Pescatore dell'Anno", edit_name: "Modifica Nome", 
         unranked_badge: "NON CLASSIFICATO", rank_pts: "Pti Class.", tournaments: "tornei", editing_disabled: "Modifica disabilitata, per favore modifica la lista nella pagina successiva",
         finish_warning: "Se termini l'evento ora, non potrai più modificare nulla.",
-        status_finished: "Finito", status_ongoing: "In corso",
-        place: "Posto", name: "Nome", points: "Punti", total_cm: "Totale", biggest_fish: "Pesce più grande", details: "Dettagli", generated_on: "Generato il",
+        status_finished: "Finito", status_ongoing: "In corso", place: "Posto", name: "Nome", points: "Punti", total_cm: "Totale", biggest_fish: "Pesce più grande", details: "Dettagli", generated_on: "Generato il",
         tournament_results: "Risultati del Torneo", rank_pts_best5: "Pti Class. (Migliori 5)", tournaments_played: "Tornei giocati", all_placements: "Tutti i piazzamenti", sort_newest: "Più recenti", sort_oldest: "Più vecchi", sort_az: "Nome A-Z",
-        thumbnail_img: "Immagine Copertina", desc_rules: "Descrizione e Regole", public_desc: "Rendi visibile a tutti", tourn_format: "Formato del Torneo",
-        meas_unit: "Unità di Misura", score_meth: "Metodo di Punteggio", catch_lim: "Limite Catture", lim_all: "Tutti", lim_top5: "Migliori 5",
-        penalties: "Penalità", pts_deduct: "Punti da dedurre", reason_desc: "Motivo / Descrizione", add_penalty: "+ Aggiungi Penalità", part_detailed: "Dettagli Partecipanti"
+        penalties: "Penalità", pts_deduct: "Punti da dedurre", reason_desc: "Motivo / Descrizione", add_penalty: "+ Aggiungi Penalità"
     },
     de: {
         login_title: "Anmeldung / Registrierung", login_desc: "Benutzername und Passwort eingeben.", username: "Benutzer", password: "Passwort", login_btn: "Anmelden / Registrieren",
-        your_events: "Ihre Events", logout: "Abmelden", create_event: "+ Neues Event", step1_title: "Schritt 1: Setup", back: "← Zurück", client_area: "Kundenbereich", public_hub: "Öffentlicher Hub", my_events: "Meine Events",
+        your_events: "Ihre Events", logout: "Abmelden", create_event: "+ Neues Event", step1_title: "Schritt 1: Setup", back: "← Zurück", home: "Startseite",
         tourn_name: "Turniername", ranked_tourn: "Gewertetes Turnier", ranked_desc: "In Jahresbestenliste aufnehmen (Max 7/Jahr)", bulk_part: "Teilnehmer",
         bulk_desc: "Namen einfügen. Symbole werden entfernt.", fish_species_title: "Arten & Multiplikatoren", add_species: "+ Art", start_event: "Event starten", next_btn: "Weiter",
         hub_title: "Turnier-Hub", edit_setup: "← Setup", manage_part: "Teilnehmer", add_new: "+ Neu", leaderboard: "Bestenliste", mode_pts: "Nach Punkten",
-        mode_cm: "Nach Größe/Gewicht", save_event: "Event speichern", finish_event: "Event beenden", modal_add_title: "Teilnehmer hinzufügen", close: "Abbrechen", add: "Hinzufügen",
-        add_remove_fish: "Fisch Hinzufügen/Entfernen", species_sel: "Art", size_cm: "Größe", save: "Speichern", add_fish_btn: "+ Fisch Hinzufügen", edit_rules: "Regeln",
+        mode_cm: "Nach Zentimetern", save_event: "Event speichern", finish_event: "Event beenden", modal_add_title: "Teilnehmer hinzufügen", close: "Abbrechen", add: "Hinzufügen",
+        add_remove_fish: "Fisch Hinzufügen/Entfernen", species_sel: "Art", size_cm: "Größe (cm)", save: "Speichern", add_fish_btn: "+ Fisch Hinzufügen", edit_rules: "Regeln",
         add_rule: "+ Neue Regel", done: "Fertig", rule_from: "Von", rule_to: "Bis", rule_mult: "Multiplikator", download_chart: "PDF", download_season_pdf: "Saison-PDF",
         season_results: "Saisonergebnisse", current_catches: "Aktuelle Fänge", no_catches: "Keine Fänge.", too_small_title: "Fisch zu klein", 
         too_small_desc: "Der Fisch ist nach den Regeln zu klein.", ok: "OK", ignore: "Ignorieren", angler_of_year: "Angler des Jahres", edit_name: "Name bearbeiten", 
         unranked_badge: "NICHT GEWERTET", rank_pts: "Rang-Pkt", tournaments: "turniere", editing_disabled: "Bearbeitung deaktiviert, bitte auf der nächsten Seite bearbeiten",
         finish_warning: "Wenn Sie das Event jetzt beenden, können Sie nichts mehr ändern.",
-        status_finished: "Beendet", status_ongoing: "Laufend",
-        place: "Platz", name: "Name", points: "Punkte", total_cm: "Gesamt", biggest_fish: "Größter", details: "Details", generated_on: "Erstellt am",
+        status_finished: "Beendet", status_ongoing: "Laufend", place: "Platz", name: "Name", points: "Punkte", total_cm: "Gesamt", biggest_fish: "Größter Fisch", details: "Details", generated_on: "Erstellt am",
         tournament_results: "Turnierergebnisse", rank_pts_best5: "Rang-Pkt (Top 5)", tournaments_played: "Gespielte Turniere", all_placements: "Alle Platzierungen", sort_newest: "Neueste zuerst", sort_oldest: "Älteste zuerst", sort_az: "Name A-Z",
-        thumbnail_img: "Vorschaubild", desc_rules: "Beschreibung und Regeln", public_desc: "Für alle sichtbar machen", tourn_format: "Turnierformat",
-        meas_unit: "Maßeinheit", score_meth: "Wertungsmethode", catch_lim: "Fanglimit", lim_all: "Alle", lim_top5: "Top 5",
-        penalties: "Strafen", pts_deduct: "Abzuziehende Punkte", reason_desc: "Grund / Beschreibung", add_penalty: "+ Strafe hinzufügen", part_detailed: "Teilnehmer-Details"
+        penalties: "Strafen", pts_deduct: "Abzuziehende Punkte", reason_desc: "Grund / Beschreibung", add_penalty: "+ Strafe hinzufügen"
     }
 };
 
@@ -184,23 +157,11 @@ function changeLanguage(lang) {
             el.innerText = translations[lang][key];
         }
     });
-    let setupSec = document.getElementById("setupSection");
-    if(setupSec && !setupSec.classList.contains("hidden")) refreshSetupUI();
-    
-    let hubSec = document.getElementById("hubSection");
-    if(hubSec && !hubSec.classList.contains("hidden")) renderHubUI();
-    
-    let rulesMod = document.getElementById("rulesModal");
-    if(rulesMod && !rulesMod.classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
-    
-    let fishMod = document.getElementById("fishModal");
-    if(fishMod && !fishMod.classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
-    
-    let dashSec = document.getElementById("dashboardSection");
-    if(dashSec && !dashSec.classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
-    
-    let pubEventMod = document.getElementById("publicEventModal");
-    if(pubEventMod && !pubEventMod.classList.contains("hidden")) renderLeaderboard(true);
+    if(document.getElementById("setupSection") && !document.getElementById("setupSection").classList.contains("hidden")) refreshSetupUI();
+    if(document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
+    if(document.getElementById("rulesModal") && !document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
+    if(document.getElementById("fishModal") && !document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
+    if(document.getElementById("dashboardSection") && !document.getElementById("dashboardSection").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
 }
 
 function t(key) { return translations[currentLang] ? (translations[currentLang][key] || translations['en'][key] || key) : key; }
@@ -212,7 +173,6 @@ function handleOverlayClick(e, modalId) {
         if (modalId === 'penaltyModal') closePenaltyModal();
         if (modalId === 'rulesModal') closeRulesModal();
         if (modalId === 'smallFishWarningModal') cancelSmallFish();
-        if (modalId === 'publicEventModal') closePublicEventModal();
     }
 }
 
@@ -224,12 +184,16 @@ function parseParticipants(rawText) {
 }
 
 window.addEventListener("popstate", (event) => {
+    if (!loggedInUser) return;
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+    
     let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
+    
     if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.add("hidden");
     if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
     if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
     if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.add("hidden");
+    
     if(document.getElementById(view)) document.getElementById(view).classList.remove("hidden");
     window.scrollTo(0, 0);
 });
@@ -245,12 +209,8 @@ function sortEventsArray(eventsArr, sortMode) {
 }
 
 function handleLoginRegister() {
-    let userInput = document.getElementById("usernameInput");
-    let passInput = document.getElementById("passwordInput");
-    if(!userInput || !passInput) return;
-
-    let user = userInput.value.trim().toLowerCase();
-    let pass = passInput.value.trim();
+    let user = document.getElementById("usernameInput").value.trim().toLowerCase();
+    let pass = document.getElementById("passwordInput").value.trim();
     if (!user || !pass) { alert("Please enter both username and password."); return; }
 
     const userRef = db.collection("users").doc(user);
@@ -263,15 +223,8 @@ function handleLoginRegister() {
         }
     }).catch(err => {
         console.error(err);
-        alert("Database connection error. Please check configuration.");
+        alert("Database connection error. Please check configuration and database rules.");
     });
-}
-
-function openLogin() {
-    if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
-    if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
-    window.scrollTo(0, 0);
-    history.pushState({view: 'loginSection'}, "");
 }
 
 function loginSuccess(user) {
@@ -280,14 +233,10 @@ function loginSuccess(user) {
     
     if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.add("hidden");
     if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.remove("hidden");
-    
-    if(document.getElementById("headerClientAreaBtn")) document.getElementById("headerClientAreaBtn").classList.add("hidden");
     if(document.getElementById("headerLogoutBtn")) document.getElementById("headerLogoutBtn").classList.remove("hidden");
     
-    if(document.getElementById("dashTabs")) document.getElementById("dashTabs").classList.remove("hidden");
-    switchDashboardTab('my');
-    
     history.replaceState({view: 'dashboardSection'}, ""); 
+    
     subscribeToEventsRealtime();
 }
 
@@ -296,125 +245,53 @@ function handleLogout() {
     loggedInUser = "";
     try { localStorage.removeItem("lureboard_user"); } catch(e) {}
     
+    if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
     if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
     if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.add("hidden");
-    if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.add("hidden");
-    if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.remove("hidden");
-    
-    if(document.getElementById("headerClientAreaBtn")) document.getElementById("headerClientAreaBtn").classList.remove("hidden");
+    if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
     if(document.getElementById("headerLogoutBtn")) document.getElementById("headerLogoutBtn").classList.add("hidden");
-    if(document.getElementById("dashTabs")) document.getElementById("dashTabs").classList.add("hidden");
-    
-    switchDashboardTab('public');
-    history.replaceState({view: 'dashboardSection'}, "");
-    subscribeToEventsRealtime(); 
 }
 
 function subscribeToEventsRealtime() {
     if (unsubscribeEventsListener) unsubscribeEventsListener();
-    
-    unsubscribeEventsListener = db.collection("events").onSnapshot(snapshot => {
-        loadedEvents = [];
-        allPublicEvents = [];
-        
-        snapshot.forEach(doc => { 
-            let data = { id: doc.id, ...doc.data() };
-            if (loggedInUser && data.username === loggedInUser) loadedEvents.push(data);
-            if (data.details && data.details.isPublic) allPublicEvents.push(data);
-        });
-        
-        if (loggedInUser) processDashboard();
-        renderPublicHub();
+    unsubscribeEventsListener = db.collection("events")
+        .where("username", "==", loggedInUser)
+        .onSnapshot(snapshot => {
+            loadedEvents = [];
+            snapshot.forEach(doc => { loadedEvents.push({ id: doc.id, ...doc.data() }); });
+            processDashboard();
 
-        if (currentEvent && document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) {
-            let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
-            if (activeUpdated) {
-                currentEvent = activeUpdated.details;
-                renderHubUI();
+            if (currentEvent && document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) {
+                let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
+                if (activeUpdated) {
+                    currentEvent = activeUpdated.details;
+                    renderHubUI();
+                }
             }
-        }
-    });
-}
-
-function switchDashboardTab(tab) {
-    if(document.getElementById("tabBtnPublic")) document.getElementById("tabBtnPublic").classList.remove("active");
-    if(document.getElementById("tabBtnMy")) document.getElementById("tabBtnMy").classList.remove("active");
-    if(document.getElementById("publicHubView")) document.getElementById("publicHubView").classList.add("hidden");
-    if(document.getElementById("myEventsView")) document.getElementById("myEventsView").classList.add("hidden");
-
-    if(tab === 'public') {
-        if(document.getElementById("tabBtnPublic")) document.getElementById("tabBtnPublic").classList.add("active");
-        if(document.getElementById("publicHubView")) document.getElementById("publicHubView").classList.remove("hidden");
-    } else {
-        if(document.getElementById("tabBtnMy")) document.getElementById("tabBtnMy").classList.add("active");
-        if(document.getElementById("myEventsView")) document.getElementById("myEventsView").classList.remove("hidden");
-        processDashboard();
-    }
-}
-
-function renderPublicHub() {
-    let container = document.getElementById("publicEventsList");
-    if(!container) return;
-
-    if (allPublicEvents.length === 0) {
-        container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No public tournaments right now.</div>`;
-        return;
-    }
-
-    allPublicEvents.sort((a, b) => b.id.localeCompare(a.id));
-    let html = "";
-    allPublicEvents.forEach(ev => {
-        let pCount = ev.details.participants.length;
-        let cCount = ev.details.participants.reduce((sum, p) => sum + p.catches.length, 0);
-        let thumb = ev.details.thumbnail ? `<img src="${ev.details.thumbnail}" class="event-hub-thumb">` : '';
-        let statusColor = ev.details.status === 'finished' ? 'background:#e2e8f0; color:#475569;' : 'background:#d1fae5; color:#059669;';
-        let statusText = ev.details.status === 'finished' ? t('status_finished') : t('status_ongoing');
-
-        html += `
-        <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
-            ${thumb}
-            <div class="flex flex-between" style="align-items:flex-start;">
-                <div>
-                    <h3 style="margin-bottom:4px;">${ev.name}</h3>
-                    <div style="font-size:12px; color:var(--text-muted);">Host: <b>${ev.username}</b></div>
-                </div>
-                <span class="badge" style="${statusColor} box-shadow:none;">${statusText}</span>
-            </div>
-            <div style="margin-top:12px; font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
-                <span>👥 ${pCount} Participants</span>
-                <span>🎣 ${cCount} Catches</span>
-            </div>
-        </div>`;
-    });
-    container.innerHTML = html;
+        });
 }
 
 function getEventPlacements(evDetails) {
     let processed = evDetails.participants.map(p => {
-        let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; 
-        let countedCatches = evDetails.limitType === 'top5' ? [...p.catches].sort((a,b)=>b.size-a.size).slice(0,5) : p.catches;
-        let amountCatches = countedCatches.length;
-        
-        countedCatches.forEach(c => {
-            totalMeasure += c.size;
-            if (c.size > maxFishMeasure) maxFishMeasure = c.size;
-            totalPts += calculateFishPoints(c.abbr, c.size, evDetails.species || [], evDetails.measureType);
+        let totalCm = 0; let totalPts = 0; let maxFishCm = 0; let amountCatches = (p.catches || []).length;
+        (p.catches || []).forEach(c => {
+            totalCm += c.size;
+            if (c.size > maxFishCm) maxFishCm = c.size;
+            totalPts += calculateFishPoints(c.abbr, c.size, evDetails.species || []);
         });
-        
         let penPts = 0;
         if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
         totalPts -= penPts;
-
-        return { name: p.name, normName: (p.name || "unknown").toLowerCase().trim(), totalPts, totalMeasure, maxFishMeasure, amountCatches };
+        return { name: p.name, normName: (p.name || "unknown").toLowerCase().trim(), totalPts, totalCm, maxFishCm, amountCatches };
     });
 
     let caught = processed.filter(p => p.amountCatches > 0 && p.totalPts > 0);
     let zero = processed.filter(p => p.amountCatches === 0 || p.totalPts <= 0);
 
     caught.sort((a, b) => {
-        if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts; 
+        if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
         if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
-        return b.maxFishMeasure - a.maxFishMeasure; 
+        return b.maxFishCm - a.maxFishCm; 
     });
 
     let placements = {};
@@ -426,7 +303,6 @@ function getEventPlacements(evDetails) {
         let zeroRank = Math.floor(((M + 1) + T) / 2);
         zero.forEach(p => { placements[p.normName] = zeroRank; });
     }
-
     return placements;
 }
 
@@ -443,8 +319,8 @@ function processDashboard() {
     let yearSelect = document.getElementById("yearSelect");
     if(yearSelect) {
         yearSelect.innerHTML = years.map(y => `<option value="${y}" ${String(y) === String(selectedYear) ? 'selected' : ''}>${y}</option>`).join('');
-        let yearFilterContainer = document.getElementById("yearFilterContainer");
-        if(yearFilterContainer) yearFilterContainer.style.display = loadedEvents.length > 0 ? "block" : "none";
+        let filterContainer = document.getElementById("yearFilterContainer");
+        if(filterContainer) filterContainer.style.display = loadedEvents.length > 0 ? "block" : "none";
     }
 
     let rankedFinishedEvents = loadedEvents.filter(e => {
@@ -469,7 +345,11 @@ function processDashboard() {
         let sortedScores = [...angler.scores].sort((a, b) => a - b);
         let best5 = sortedScores.slice(0, 5); 
         let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
-        return { name: angler.name, validEventsCount: angler.scores.length, totalRankPts: totalRankPts };
+        return {
+            name: angler.name,
+            validEventsCount: angler.scores.length,
+            totalRankPts: totalRankPts
+        };
     }).filter(a => a.validEventsCount > 0);
 
     aotyArray.sort((a, b) => {
@@ -516,8 +396,8 @@ function processDashboard() {
         return eYear === String(selectedYear);
     });
     
-    let myEventsSort = document.getElementById("myEventsSort");
-    let sortMode = myEventsSort ? myEventsSort.value : "newest";
+    let sortEl = document.getElementById("myEventsSort");
+    let sortMode = sortEl ? sortEl.value : "newest";
     let sortedEvents = sortEventsArray([...filteredEvents], sortMode);
     
     renderEventsList(sortedEvents);
@@ -528,7 +408,7 @@ function changeYear(y) { selectedYear = y; processDashboard(); }
 function renderEventsList(filteredEvents) {
     let container = document.getElementById("eventsList");
     if(!container) return;
-    
+
     if (filteredEvents.length === 0) {
         container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No events found in ${selectedYear}.</div>`;
         return;
@@ -566,60 +446,12 @@ function renderEventsList(filteredEvents) {
     container.innerHTML = html;
 }
 
-function setUnit(u) {
-    confUnit = u;
-    let btnMet = document.getElementById('unitBtnMetric');
-    let btnImp = document.getElementById('unitBtnImperial');
-    if(btnMet) btnMet.className = u === 'metric' ? 'primary-dark' : 'secondary';
-    if(btnImp) btnImp.className = u === 'imperial' ? 'primary-dark' : 'secondary';
-}
-function setMeasure(m) {
-    confMeasure = m;
-    let btnSize = document.getElementById('measureBtnSize');
-    let btnWgt = document.getElementById('measureBtnWeight');
-    if(btnSize) btnSize.className = m === 'size' ? 'primary-dark' : 'secondary';
-    if(btnWgt) btnWgt.className = m === 'weight' ? 'primary-dark' : 'secondary';
-}
-function setLimit(l) {
-    confLimit = l;
-    let btnAll = document.getElementById('limitBtnAll');
-    let btnT5 = document.getElementById('limitBtnTop5');
-    if(btnAll) btnAll.className = l === 'all' ? 'primary-dark' : 'secondary';
-    if(btnT5) btnT5.className = l === 'top5' ? 'primary-dark' : 'secondary';
-}
-
-function handleThumbnailUpload(e) {
-    let file = e.target.files[0];
-    if(!file) return;
-    let reader = new FileReader();
-    reader.onload = function(event) {
-        let img = new Image();
-        img.onload = function() {
-            let canvas = document.createElement('canvas');
-            let ctx = canvas.getContext('2d');
-            let maxW = 800;
-            let scale = img.width > maxW ? maxW / img.width : 1;
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            let compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            
-            let preview = document.getElementById('thumbnailPreview');
-            if(preview) {
-                preview.src = compressedDataUrl;
-                preview.style.display = 'block';
-            }
-        }
-        img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
 function showDashboard() {
     if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
     if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.add("hidden");
     if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.remove("hidden");
     window.scrollTo(0, 0);
+    
     history.pushState({view: 'dashboardSection'}, "");
 }
 
@@ -627,6 +459,7 @@ function openEventEditor(eventObj = null) {
     if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
     if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.remove("hidden");
     window.scrollTo(0, 0);
+
     history.pushState({view: 'setupSection'}, "");
 
     if (eventObj) {
@@ -634,39 +467,13 @@ function openEventEditor(eventObj = null) {
         if(currentEvent.isStarted === undefined) currentEvent.isStarted = true;
         if(!currentEvent.status) currentEvent.status = "finished";
         
-        let evtName = document.getElementById("eventNameInput");
-        if(evtName) evtName.value = currentEvent.name || "";
-        
-        let evtDesc = document.getElementById("eventDescInput");
-        if(evtDesc) evtDesc.value = currentEvent.description || "";
-        
-        let pubToggle = document.getElementById("isPublicToggle");
-        if(pubToggle) pubToggle.checked = currentEvent.isPublic === true;
-        
-        let rankToggle = document.getElementById("isRankedToggle");
-        if(rankToggle) rankToggle.checked = currentEvent.isRanked !== false;
-        
-        let preview = document.getElementById('thumbnailPreview');
-        if(preview) {
-            if(currentEvent.thumbnail) {
-                preview.src = currentEvent.thumbnail;
-                preview.style.display = 'block';
-            } else {
-                preview.style.display = 'none';
-                preview.src = '';
-            }
-        }
-
-        setUnit(currentEvent.unit || 'metric');
-        setMeasure(currentEvent.measureType || 'size');
-        setLimit(currentEvent.limitType || 'all');
-
-        let bulkInput = document.getElementById("bulkParticipantsInput");
-        if(bulkInput) bulkInput.value = currentEvent.participants.map(p => p.name).join("\n");
+        if(document.getElementById("eventNameInput")) document.getElementById("eventNameInput").value = currentEvent.name;
+        if(document.getElementById("bulkParticipantsInput")) document.getElementById("bulkParticipantsInput").value = currentEvent.participants.map(p => p.name).join("\n");
+        if(document.getElementById("isRankedToggle")) document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
     } else {
         let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
         let savedDefaults = null;
-        try { savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser); } catch(e){}
+        try { savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser); } catch(e) {}
         if (savedDefaults) { try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {} }
         
         currentEvent = {
@@ -676,34 +483,13 @@ function openEventEditor(eventObj = null) {
             year: new Date().getFullYear().toString(),
             status: "ongoing",
             isRanked: true,
-            isPublic: false,
             isStarted: false,
-            unit: 'metric',
-            measureType: 'size',
-            limitType: 'all',
-            description: "",
-            thumbnail: "",
             species: defaultSpecies,
             participants: []
         };
-        
         if(document.getElementById("eventNameInput")) document.getElementById("eventNameInput").value = "";
-        if(document.getElementById("eventDescInput")) document.getElementById("eventDescInput").value = "";
-        if(document.getElementById("isPublicToggle")) document.getElementById("isPublicToggle").checked = false;
-        if(document.getElementById("isRankedToggle")) document.getElementById("isRankedToggle").checked = true;
-        if(document.getElementById("eventThumbnailInput")) document.getElementById("eventThumbnailInput").value = "";
-        
-        let preview = document.getElementById('thumbnailPreview');
-        if(preview) {
-            preview.style.display = 'none';
-            preview.src = '';
-        }
-        
         if(document.getElementById("bulkParticipantsInput")) document.getElementById("bulkParticipantsInput").value = "";
-        
-        setUnit('metric');
-        setMeasure('size');
-        setLimit('all');
+        if(document.getElementById("isRankedToggle")) document.getElementById("isRankedToggle").checked = true;
     }
     
     updateParticipantCountStatus();
@@ -733,11 +519,10 @@ function addSpecies() {
     let nameEl = document.getElementById("speciesName");
     let abbrEl = document.getElementById("speciesAbbr");
     if(!nameEl || !abbrEl) return;
-    
+
     let name = nameEl.value.trim();
     let abbr = abbrEl.value.trim().toLowerCase();
     if (!name || !abbr) return;
-    
     currentEvent.species.push({ name, abbr, tiers: [{ from: 0, to: "above", multiplier: 1.0 }] });
     nameEl.value = "";
     abbrEl.value = "";
@@ -754,7 +539,7 @@ function refreshSetupUI() {
                 let fromVal = t.from === "" ? 0 : t.from;
                 let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
                 let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
-                return `${fromVal}-${toVal} ${mult}x`;
+                return `${fromVal}-${toVal}cm ${mult}x`;
             }).join(' | ');
 
             return `
@@ -765,10 +550,12 @@ function refreshSetupUI() {
                             <b style="font-size:16px; color:var(--text);">${s.name}</b>
                             <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${s.abbr.toUpperCase()}</span>
                         </div>
-                        <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">${rulesSummary}</div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:6px; font-weight:600;">
+                            ${rulesSummary}
+                        </div>
                     </div>
                     <div class="flex">
-                        <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})" style="box-shadow:none;">Rules</button>
+                        <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})" style="box-shadow:none;">${t('edit_rules')}</button>
                         <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeSpecies(${sIdx})">✕</button>
                     </div>
                 </div>
@@ -778,7 +565,6 @@ function refreshSetupUI() {
 
     let bulkInput = document.getElementById("bulkParticipantsInput");
     let bulkOverlay = document.getElementById("bulkParticipantsOverlay");
-    
     if (bulkInput && bulkOverlay) {
         if (currentEvent.isStarted) {
             bulkInput.disabled = true;
@@ -889,23 +675,10 @@ function saveCurrentEvent(redirect = true) {
 
 async function goToEventHub() {
     let nameEl = document.getElementById("eventNameInput");
-    let descEl = document.getElementById("eventDescInput");
-    let pubToggle = document.getElementById("isPublicToggle");
     let rankToggle = document.getElementById("isRankedToggle");
-    let thumbPreview = document.getElementById('thumbnailPreview');
     
     currentEvent.name = nameEl && nameEl.value.trim() !== "" ? nameEl.value.trim() : "Untitled Event";
-    currentEvent.description = descEl ? descEl.value.trim() : "";
-    currentEvent.isPublic = pubToggle ? pubToggle.checked : false;
     let wantsRanked = rankToggle ? rankToggle.checked : true;
-    
-    if(thumbPreview && thumbPreview.src && thumbPreview.src.startsWith('data:')) {
-        currentEvent.thumbnail = thumbPreview.src;
-    }
-
-    currentEvent.unit = confUnit;
-    currentEvent.measureType = confMeasure;
-    currentEvent.limitType = confLimit;
     
     if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
     if(!currentEvent.status) currentEvent.status = "ongoing";
@@ -1008,11 +781,6 @@ function selectModalSpecies(abbr, element) {
 function openFishModal(pIndexReal) {
     if(currentEvent.status === 'finished') return;
     activeFishParticipantIndex = pIndexReal;
-    
-    let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
-    let sizeLabel = document.getElementById("modalFishSizeLabel");
-    if(sizeLabel) sizeLabel.innerText = `${t('size_cm')} (${unitText})`;
-
     let modalSpeciesTabs = document.getElementById("modalSpeciesTabs");
     if(modalSpeciesTabs) {
         modalSpeciesTabs.innerHTML = currentEvent.species.map((s, idx) => `
@@ -1074,11 +842,10 @@ function renderModalCatches() {
     let p = currentEvent.participants[activeFishParticipantIndex];
     if (p.catches.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">${t('no_catches')}</p>`; return; }
     
-    let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
-    container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">${t('current_catches')}:</label>` + 
+    container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">${t('current_catches')}:</label>` +
         p.catches.map((c, cIdx) => `
         <div class="flex flex-between" style="padding:12px 0; border-bottom:1px solid var(--border);">
-            <span><b>${c.size}</b>${unitText} <span class="badge" style="background:#f1f5f9; box-shadow:none;">${c.abbr.toUpperCase()}</span></span>
+            <span><b>${c.size}</b>cm <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${c.abbr.toUpperCase()}</span></span>
             <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">✕</button>
         </div>`).join('');
 }
@@ -1143,8 +910,7 @@ function showPenaltyReason(pIdx) {
     }
 }
 
-function calculateFishPoints(abbr, size, speciesList, measureType) {
-    if(measureType === 'weight') return size; 
+function calculateFishPoints(abbr, size, speciesList) {
     let sp = speciesList.find(s => s.abbr === abbr);
     if (!sp) return size;
     let matchingTier = sp.tiers.find(t => {
@@ -1158,7 +924,6 @@ function calculateFishPoints(abbr, size, speciesList, measureType) {
 
 function renderHubUI() {
     let isFinished = currentEvent.status === 'finished';
-    
     let btnAddPart = document.getElementById("hubAddNewParticipantBtn");
     if(btnAddPart) btnAddPart.style.display = isFinished ? "none" : "block";
 
@@ -1172,14 +937,12 @@ function renderHubUI() {
     let countEl = document.getElementById("hubParticipantCount");
     if(countEl) countEl.innerText = currentEvent.participants.length;
 
-    let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
-
     let filteredHtml = "";
     currentEvent.participants.forEach((p, pIndexReal) => {
         if (!p.name.toLowerCase().includes(query)) return;
 
         let catchesText = p.catches.length > 0 
-            ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') 
+            ? p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ') 
             : `<span style="color:var(--text-muted); opacity: 0.7; font-style:italic;">${t('no_catches')}</span>`;
 
         let penBadge = (p.penalties && p.penalties.length > 0) ? `<button onclick="showPenaltyReason(${pIndexReal})" class="danger icon-btn" style="padding:2px 6px; border-radius:50%; box-shadow:none; font-size:10px;" title="Has Penalties">❗</button>` : '';
@@ -1207,71 +970,68 @@ function renderHubUI() {
     renderLeaderboard();
 }
 
-function renderLeaderboard(isPublicView = false, overrideEvent = null) {
-    let ev = overrideEvent || currentEvent;
-    if(!ev) return;
-
+function renderLeaderboard() {
     let modeDropdown = document.getElementById("rankingMode");
-    let mode = isPublicView ? 'points' : (modeDropdown ? modeDropdown.value : 'points');
-    
-    let container = document.getElementById(isPublicView ? "pubLeaderboard" : "leaderboardContainer");
-    let topSummaryContainer = document.getElementById(isPublicView ? "pubTopSummary" : "leaderboardTopSummary"); 
+    let mode = modeDropdown ? modeDropdown.value : 'points';
+    let container = document.getElementById("leaderboardContainer");
+    let topSummaryContainer = document.getElementById("leaderboardTopSummary");
     
     if(!container) return;
-    
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
 
-    let processed = ev.participants.map(p => {
-        let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
-        let countedCatches = p.catches;
-        
-        if(ev.limitType === 'top5') {
-            countedCatches = [...p.catches].sort((a,b) => b.size - a.size).slice(0,5);
-        }
-
-        countedCatches.forEach(c => {
-            totalMeasure += c.size;
-            if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
-            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+    let processed = currentEvent.participants.map(p => {
+        let totalCm = 0; let totalPts = 0; let maxFishCm = 0; let maxFishAbbr = ""; let amountCatches = p.catches.length;
+        p.catches.forEach(c => {
+            totalCm += c.size;
+            if (c.size > maxFishCm) { maxFishCm = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, currentEvent.species);
         });
-        
         let penPts = 0;
         if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
         totalPts -= penPts;
-
-        return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
+        return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches, penPts, hasPenalty: penPts > 0 };
     });
 
-    let sortedByMain = [...processed].sort((a, b) => mode === 'points' ? b.totalPts - a.totalPts : b.totalMeasure - a.totalMeasure);
-    let sortedByBiggest = [...processed].sort((a, b) => b.maxFishMeasure - a.maxFishMeasure);
+    let sortedByMain = [...processed].sort((a, b) => {
+        if(mode === 'points') {
+            if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+            if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
+            return b.maxFishCm - a.maxFishCm; 
+        } else {
+            if(b.totalCm !== a.totalCm) return b.totalCm - a.totalCm;
+            if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches;
+            return b.maxFishCm - a.maxFishCm;
+        }
+    });
+    
+    let sortedByBiggest = [...processed].sort((a, b) => b.maxFishCm - a.maxFishCm);
 
-    if (!isPublicView && topSummaryContainer) {
-        if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishMeasure > 0) {
+    if (topSummaryContainer) {
+        if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishCm > 0) {
             topSummaryContainer.innerHTML = `
                 <div class="flex flex-between">
                     <div>
-                        <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase;">🏆 ${t('biggest_fish')}</div>
+                        <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase; letter-spacing: 0.5px;">🏆 ${t('biggest_fish')}</div>
                         <div style="font-weight:700; font-size:18px; color:var(--text); margin-top:4px;">${sortedByBiggest[0].name}</div>
                     </div>
                     <div style="text-align:right;">
-                        <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishMeasure}</span> ${unitText}
-                        <div class="badge" style="background:#fef08a; color:#b45309; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
+                        <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishCm}</span> cm
+                        <div class="badge" style="background:#fef08a; color:#b45309; display:inline-block; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
                     </div>
                 </div>`;
             topSummaryContainer.classList.remove('hidden');
         } else { topSummaryContainer.classList.add('hidden'); }
     }
 
-    let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
+    let html = `<table><tr><th style="width:50px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
     sortedByMain.forEach((p, idx) => {
         let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
-        let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
+        let maxDisplay = p.maxFishCm > 0 ? `${p.maxFishCm}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
         let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
         html += `<tr>
             <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
             <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
             <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
-            <td>${p.totalMeasure.toFixed(1)}</td>
+            <td>${p.totalCm.toFixed(1)}</td>
             <td>${p.amountCatches}</td>
             <td>${maxDisplay}</td>
         </tr>`;
@@ -1280,128 +1040,70 @@ function renderLeaderboard(isPublicView = false, overrideEvent = null) {
     container.innerHTML = html;
 }
 
-function openPublicEvent(eventId) {
-    let evData = allPublicEvents.find(e => e.id === eventId);
-    if(!evData) return;
-    let ev = evData.details;
-
-    if(document.getElementById("pubTitle")) document.getElementById("pubTitle").innerText = evData.name;
-    if(document.getElementById("pubHost")) document.getElementById("pubHost").innerText = `Hosted by ${evData.username} | ${ev.date}`;
-    
-    if(ev.thumbnail && document.getElementById("pubThumb")) {
-        document.getElementById("pubThumb").src = ev.thumbnail;
-        document.getElementById("pubThumb").classList.remove("hidden");
-    } else if (document.getElementById("pubThumb")) {
-        document.getElementById("pubThumb").classList.add("hidden");
-    }
-
-    if(document.getElementById("pubDesc")) document.getElementById("pubDesc").innerText = ev.description || "No description provided.";
-    
-    let limitTxt = ev.limitType === 'top5' ? "Top 5 Counted" : "All Fish Counted";
-    let measureTxt = ev.measureType === 'weight' ? "Weighted" : "Size/Points";
-    let rulesHtml = `<div style="margin-bottom:12px;"><b>Format:</b> ${measureTxt} | ${limitTxt}</div>`;
-    
-    rulesHtml += ev.species.map(s => {
-        let trs = s.tiers.map(t => `${t.from}-${t.to} (${parseFloat(t.multiplier||1).toFixed(1)}x)`).join(', ');
-        return `<div><b>${s.name} (${s.abbr.toUpperCase()}):</b> ${trs}</div>`;
-    }).join('');
-    if(document.getElementById("pubRules")) document.getElementById("pubRules").innerHTML = rulesHtml;
-
-    renderLeaderboard(true, ev);
-
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
-    if(document.getElementById("pubParticipantsDetail")) {
-        document.getElementById("pubParticipantsDetail").innerHTML = ev.participants.map((p, i) => {
-            let catches = p.catches.length > 0 ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') : 'None';
-            let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger);">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
-            return `<div style="padding:8px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
-        }).join('');
-    }
-
-    if(document.getElementById("publicEventModal")) document.getElementById("publicEventModal").classList.remove("hidden");
-}
-
-function closePublicEventModal() { if(document.getElementById("publicEventModal")) document.getElementById("publicEventModal").classList.add("hidden"); }
-
 function downloadChart(eventId = null) {
     let ev = currentEvent;
     if (eventId) { let found = loadedEvents.find(e => e.id === eventId); if (found) ev = found.details; }
     if (!ev || ev.participants.length === 0) { alert("No data to download."); return; }
 
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
-
     let processed = ev.participants.map(p => {
-        let totalM = 0, totalPts = 0, maxFishM = 0, maxFishAbbr = "";
-        let countedCatches = ev.limitType === 'top5' ? [...p.catches].sort((a,b)=>b.size-a.size).slice(0,5) : p.catches;
-        
-        countedCatches.forEach(c => {
-            totalM += c.size;
-            if (c.size > maxFishM) { maxFishM = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
-            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+        let totalCm = 0, totalPts = 0, maxFishCm = 0, maxFishAbbr = "";
+        p.catches.forEach(c => {
+            totalCm += c.size;
+            if (c.size > maxFishCm) { maxFishCm = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species);
         });
-        
         let penPts = 0; let penStr = "";
         if(p.penalties && p.penalties.length > 0) {
             p.penalties.forEach(pn => penPts += parseFloat(pn.points));
             penStr = ` (Penalty: -${penPts})`;
         }
         totalPts -= penPts;
-
-        let allCatchesStr = p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') || "-";
-        return { name: p.name, totalM, totalPts, maxFishM, maxFishAbbr, amountCatches: countedCatches.length, allCatchesStr, penStr };
+        return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches: p.catches.length, allCatchesStr: p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ') || "-" };
     });
 
     processed.sort((a, b) => {
         if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
         if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
-        return b.maxFishM - a.maxFishM; 
+        return b.maxFishCm - a.maxFishCm; 
     });
 
     let htmlContent = `
         <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
             <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">${t('tournament_results')}: ${ev.name}</h2>
-            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()} | Format: ${ev.limitType==='top5'?'Top 5 Counted':'All Fish'}</p>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
             <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                 <thead><tr style="background-color: #4f46e5; color: #ffffff;">
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('points')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Total ${unitText.toUpperCase()}</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('total_cm')}</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Amt</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('biggest_fish')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 35%;">${t('details')}</th>
-                </tr></thead><tbody>
-                    ${processed.map((p, i) => `
-                        <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${i + 1}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalPts.toFixed(1)}${p.penStr ? `<br><span style="color:#e11d48; font-size:11px;">${p.penStr}</span>` : ''}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.totalM.toFixed(1)}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.amountCatches}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.maxFishM > 0 ? `${p.maxFishM}${unitText} ${p.maxFishAbbr}` : '-'}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px; line-height: 1.4;">${p.allCatchesStr}</td>
-                        </tr>`).join('')}
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 40%;">${t('details')}</th>
+                </tr></thead>
+                <tbody>${processed.map((p, i) => `
+                    <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${i + 1}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalPts.toFixed(1)}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.totalCm.toFixed(1)}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.amountCatches}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.maxFishCm > 0 ? `${p.maxFishCm}cm ${p.maxFishAbbr}` : '-'}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px; line-height: 1.4;">${p.allCatchesStr}</td>
+                    </tr>`).join('')}
                 </tbody>
             </table>
         </div>`;
 
-    let opt = {
-        margin: 0.3, filename: `${ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`,
-        image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
-    };
-    let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent;
-    html2pdf().set(opt).from(tempDiv).save();
+    let opt = { margin: 0.3, filename: `${ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } };
+    let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
 }
 
 function downloadSeasonChart() {
-    let dashMode = "standard"; 
-
     let rankedFinishedEvents = loadedEvents.filter(e => {
         let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
         let status = e.details.status || 'finished';
-        let mode = e.details.mode || 'standard';
-        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished' && mode === dashMode;
+        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
     });
 
     if (rankedFinishedEvents.length === 0) {
@@ -1480,5 +1182,4 @@ if (savedUser) {
 } else {
     if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
     if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
-    subscribeToEventsRealtime();
 }
