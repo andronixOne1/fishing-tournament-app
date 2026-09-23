@@ -101,7 +101,7 @@ const translations = {
         bulk_desc: "Вставьте имена. Скобки и символы удалятся.", fish_species_title: "Виды и коэффициенты", add_species: "+ Добавить вид", start_event: "Начать событие", next_btn: "Далее",
         hub_title: "Хаб турнира", edit_setup: "← Настройка", manage_part: "Участники", add_new: "+ Добавить", leaderboard: "Таблица лидеров", mode_pts: "Рейтинг по очкам",
         mode_cm: "Рейтинг по размеру/весу", save_event: "Сохранить событие", finish_event: "Завершить событие", modal_add_title: "Добавить участника", close: "Отмена", add: "Добавить",
-        add_remove_fish: "Добавить/Удалить рыбу", species_sel: "Вид", size_cm: "Размер", save: "Сохранить", add_fish_btn: "+ Добавить рыбу", edit_rules: "Правила",
+        add_remove_fish: "Додати/Удалить рыбу", species_sel: "Вид", size_cm: "Размер", save: "Сохранить", add_fish_btn: "+ Добавить рыбу", edit_rules: "Правила",
         add_rule: "+ Новое правило", done: "Готово", rule_from: "От", rule_to: "До", rule_mult: "Множитель", download_chart: "PDF", download_season_pdf: "PDF сезона",
         season_results: "Результаты сезона", current_catches: "Текущий улов", no_catches: "Нет улова.", too_small_title: "Рыба слишком мала", 
         too_small_desc: "По правилам рыба слишком мала.", ok: "OK", ignore: "Игнорировать", angler_of_year: "Рыболов года", edit_name: "Изменить имя", 
@@ -264,7 +264,7 @@ function openLogin() {
 
 function loginSuccess(user) {
     loggedInUser = user;
-    localStorage.setItem("lureboard_user", user); // Fix added: Persist login
+    localStorage.setItem("lureboard_user", user); 
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("dashboardSection").classList.remove("hidden");
     
@@ -286,7 +286,7 @@ function loginSuccess(user) {
 function handleLogout() {
     if (unsubscribeEventsListener) unsubscribeEventsListener();
     loggedInUser = "";
-    localStorage.removeItem("lureboard_user"); // Fix added: Clear persistence
+    localStorage.removeItem("lureboard_user"); 
     document.getElementById("setupSection").classList.add("hidden");
     document.getElementById("hubSection").classList.add("hidden");
     document.getElementById("loginSection").classList.add("hidden");
@@ -392,6 +392,7 @@ function renderPublicHub() {
     });
     container.innerHTML = html;
 }
+
 function getEventPlacements(evDetails) {
     let processed = evDetails.participants.map(p => {
         let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; 
@@ -852,11 +853,17 @@ function recalcRulesCascading() {
 
 function renderRules() {
     let s = currentEvent.species[activeSpeciesIndex];
+    
+    let titleEl = document.getElementById('rulesModalTitle');
+    if(titleEl) titleEl.innerText = t('edit_rules') + ': ' + s.name;
+    
     let rulesContainer = document.getElementById('rulesContainer');
     if(!rulesContainer) return;
-    
+
     rulesContainer.innerHTML = s.tiers.map((tData, tIdx) => {
-        let minFrom = tIdx > 0 ? (s.tiers[tIdx-1].to !== 'above' ? parseFloat(s.tiers[tIdx-1].to) + 1 : 0) : 0;
+        let prevTo = (tIdx > 0 && s.tiers[tIdx-1].to !== 'above') ? parseFloat(s.tiers[tIdx-1].to) : -1;
+        let minFrom = tIdx > 0 ? prevTo + 1 : 0;
+        
         let multOptions = '';
         for(let i = 10; i <= 30; i += 1) { 
             let v = (i/10).toFixed(1);
@@ -879,6 +886,7 @@ function renderRules() {
         </div>`;
     }).join('');
 }
+
 function goToEventHub() {
     let nameEl = document.getElementById("eventNameInput");
     let descEl = document.getElementById("eventDescInput");
@@ -920,6 +928,7 @@ function goToEventHub() {
     if (!currentEvent.isStarted) {
         let bulkInput = document.getElementById("bulkParticipantsInput");
         let items = parseParticipants(bulkInput ? bulkInput.value : "");
+        
         let existingMap = {};
         currentEvent.participants.forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [] });
 
@@ -941,6 +950,9 @@ function goToEventHub() {
     
     history.pushState({view: 'hubSection'}, "");
     renderHubUI();
+    
+    // Auto-save the event when entering the Hub
+    saveCurrentEvent(false);
 }
 
 function backToSetup() {
@@ -969,8 +981,9 @@ function openAddParticipantModal() {
 function closeAddParticipantModal() { document.getElementById("participantModal").classList.add("hidden"); }
 
 function confirmAddParticipantModal() {
-    let items = parseParticipants(document.getElementById("modalParticipantName").value);
-    items.forEach(name => currentEvent.participants.push({ id: 'p_'+Math.random().toString(36).substr(2,9), name: name, catches: [], penalties: [] }));
+    let parsedNames = parseParticipants(document.getElementById("modalParticipantName").value);
+    if (parsedNames.length === 0) return;
+    parsedNames.forEach(name => { currentEvent.participants.push({ id: 'p_' + Math.random().toString(36).substr(2, 9), name: name, catches: [], penalties: [] }); });
     closeAddParticipantModal(); renderHubUI();
 }
 
