@@ -386,6 +386,14 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    
+    // ENABLE OFFLINE PERSISTENCE: Prevents data loss on rapid reloads
+    try {
+        db.enablePersistence().catch(err => console.warn("Persistence warning:", err));
+    } catch(e) {
+        console.warn("Persistence setup error:", e);
+    }
+
     let unsubscribeEventsListener = null;
 
     let currentEvent = null;
@@ -1039,10 +1047,18 @@
         if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
         if (!currentEvent.status) currentEvent.status = "ongoing";
 
-        const eventPayload = { username: loggedInUser, name: currentEvent.name, details: currentEvent, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-        try { localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(currentEvent.species)); } catch(e){}
+        // Create a deep copy to prevent snapshot listener reference mutation bugs
+        const safeEvent = JSON.parse(JSON.stringify(currentEvent));
 
-        return db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
+        const eventPayload = { 
+            username: loggedInUser, 
+            name: safeEvent.name, 
+            details: safeEvent, 
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+        };
+        try { localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeEvent.species)); } catch(e){}
+
+        return db.collection("events").doc(safeEvent.id).set(eventPayload).then(() => { 
             if(redirect) showDashboard(); 
         }).catch(err => { 
             console.error("Save error:", err); 
@@ -1129,23 +1145,25 @@
 
     function closeAddParticipantModal() { if(document.getElementById("participantModal")) document.getElementById("participantModal").classList.add("hidden"); }
 
-    function confirmAddParticipantModal() {
+    async function confirmAddParticipantModal() {
         let inputEl = document.getElementById("modalParticipantName");
         if(!inputEl) return;
         let parsedNames = parseParticipants(inputEl.value);
         if (parsedNames.length === 0) return;
         parsedNames.forEach(name => { currentEvent.participants.push({ id: 'p_' + Math.random().toString(36).substr(2, 9), name: name, catches: [], penalties: [] }); });
-        closeAddParticipantModal(); renderHubUI();
+        closeAddParticipantModal(); 
+        renderHubUI();
+        await saveCurrentEvent(false);
     }
 
-    function editParticipantName(index) {
+    async function editParticipantName(index) {
         if(currentEvent.status === 'finished') return;
         let p = currentEvent.participants[index];
         let newName = prompt(t('edit_name') + ":", p.name);
         if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
             p.name = newName.trim();
             renderHubUI();
-            saveCurrentEvent(false);
+            await saveCurrentEvent(false);
         }
     }
 
@@ -1193,16 +1211,14 @@
         executeAddFish(selectedModalSpecies, size);
     }
 
-    function executeAddFish(abbr, size) {
+    async function executeAddFish(abbr, size) {
         currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
         if(document.getElementById("modalFishSize")) {
             document.getElementById("modalFishSize").value = ""; 
             document.getElementById("modalFishSize").focus();
         }
         renderModalCatches(); renderHubUI(); 
-        
-        // AUTO-SAVE FIX: Background save immediately when a fish is added
-        saveCurrentEvent(false);
+        await saveCurrentEvent(false);
     }
 
     function cancelSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").focus(); }
@@ -1215,13 +1231,11 @@
         } 
     }
 
-    function removeFish(pIndexReal, cIdx) {
+    async function removeFish(pIndexReal, cIdx) {
         currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
         if(activeFishParticipantIndex !== null) renderModalCatches();
         renderHubUI();
-        
-        // AUTO-SAVE FIX: Background save immediately when a fish is removed
-        saveCurrentEvent(false);
+        await saveCurrentEvent(false);
     }
 
     function renderModalCatches() {
@@ -1251,7 +1265,7 @@
     }
     function closePenaltyModal() { if(document.getElementById("penaltyModal")) document.getElementById("penaltyModal").classList.add("hidden"); activePenaltyParticipantIndex = null; }
     
-    function confirmAddPenalty() {
+    async function confirmAddPenalty() {
         if(activePenaltyParticipantIndex === null) return;
         let ptsEl = document.getElementById("modalPenaltyPoints");
         let rsnEl = document.getElementById("modalPenaltyReason");
@@ -1268,12 +1282,14 @@
         ptsEl.value = "";
         rsnEl.value = "";
         renderModalPenalties(); renderHubUI();
+        await saveCurrentEvent(false);
     }
     
-    function removePenalty(pIndexReal, penIdx) {
+    async function removePenalty(pIndexReal, penIdx) {
         currentEvent.participants[pIndexReal].penalties.splice(penIdx, 1);
         if(activePenaltyParticipantIndex !== null) renderModalPenalties();
         renderHubUI();
+        await saveCurrentEvent(false);
     }
 
     function renderModalPenalties() {
