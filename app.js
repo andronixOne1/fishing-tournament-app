@@ -22,12 +22,19 @@ try {
 }
 
 let unsubscribeEventsListener = null;
+let isSaving = false;
+
+// PREVENT REFRESH IF SAVING IS PENDING
+window.addEventListener('beforeunload', function (e) {
+    if (isSaving) {
+        e.preventDefault();
+        e.returnValue = 'Data is still saving to the cloud. Please wait...';
+    }
+});
 
 let currentEvent = null;
 let loggedInUser = "";
 let loadedEvents = [];
-let allPublicEvents = [];
-
 let activeFishParticipantIndex = null;
 let activePenaltyParticipantIndex = null;
 let activeSpeciesIndex = null;
@@ -176,7 +183,6 @@ function changeLanguage(lang) {
     if(document.getElementById("rulesModal") && !document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
     if(document.getElementById("fishModal") && !document.getElementById("fishModal").classList.contains("hidden") && activeFishParticipantIndex !== null) renderModalCatches();
     if(document.getElementById("dashboardSection") && !document.getElementById("dashboardSection").classList.contains("hidden") && loadedEvents.length > 0) processDashboard();
-    if(document.getElementById("publicEventModal") && !document.getElementById("publicEventModal").classList.contains("hidden")) renderLeaderboard(true);
 }
 
 function t(key) { return translations[currentLang] ? (translations[currentLang][key] || translations['en'][key] || key) : key; }
@@ -188,7 +194,6 @@ function handleOverlayClick(e, modalId) {
         if (modalId === 'penaltyModal') closePenaltyModal();
         if (modalId === 'rulesModal') closeRulesModal();
         if (modalId === 'smallFishWarningModal') cancelSmallFish();
-        if (modalId === 'publicEventModal') closePublicEventModal();
     }
 }
 
@@ -247,27 +252,16 @@ function handleLoginRegister() {
     });
 }
 
-function openLogin() {
-    if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
-    if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
-    window.scrollTo(0, 0);
-    history.pushState({view: 'loginSection'}, "");
-}
-
 function loginSuccess(user) {
     loggedInUser = user;
     try { localStorage.setItem("lureboard_user", user); } catch(e) {}
     
     if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.add("hidden");
     if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.remove("hidden");
-    
-    if(document.getElementById("headerClientAreaBtn")) document.getElementById("headerClientAreaBtn").classList.add("hidden");
     if(document.getElementById("headerLogoutBtn")) document.getElementById("headerLogoutBtn").classList.remove("hidden");
     
-    if(document.getElementById("dashTabs")) document.getElementById("dashTabs").classList.remove("hidden");
-    switchDashboardTab('my');
-    
     history.replaceState({view: 'dashboardSection'}, ""); 
+    
     subscribeToEventsRealtime();
 }
 
@@ -279,122 +273,50 @@ function handleLogout() {
     if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
     if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
     if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.add("hidden");
-    if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.add("hidden");
-    
-    if(document.getElementById("headerClientAreaBtn")) document.getElementById("headerClientAreaBtn").classList.remove("hidden");
+    if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
     if(document.getElementById("headerLogoutBtn")) document.getElementById("headerLogoutBtn").classList.add("hidden");
-    if(document.getElementById("dashTabs")) document.getElementById("dashTabs").classList.add("hidden");
-    
-    switchDashboardTab('public');
-    history.replaceState({view: 'dashboardSection'}, "");
-    subscribeToEventsRealtime(); 
 }
 
 function subscribeToEventsRealtime() {
     if (unsubscribeEventsListener) unsubscribeEventsListener();
-    
-    unsubscribeEventsListener = db.collection("events").onSnapshot(snapshot => {
-        loadedEvents = [];
-        allPublicEvents = [];
-        
-        snapshot.forEach(doc => { 
-            let data = { id: doc.id, ...doc.data() };
-            if (loggedInUser && data.username === loggedInUser) loadedEvents.push(data);
-            if (data.details && data.details.isPublic) allPublicEvents.push(data);
-        });
-        
-        if (loggedInUser) processDashboard();
-        renderPublicHub();
+    unsubscribeEventsListener = db.collection("events")
+        .where("username", "==", loggedInUser)
+        .onSnapshot(snapshot => {
+            loadedEvents = [];
+            snapshot.forEach(doc => { loadedEvents.push({ id: doc.id, ...doc.data() }); });
+            processDashboard();
 
-        if (currentEvent && document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) {
-            let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
-            if (activeUpdated) {
-                currentEvent = activeUpdated.details;
-                renderHubUI();
+            if (currentEvent && document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) {
+                let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
+                if (activeUpdated) {
+                    currentEvent = activeUpdated.details;
+                    renderHubUI();
+                }
             }
-        }
-    });
-}
-
-function switchDashboardTab(tab) {
-    if(document.getElementById("tabBtnPublic")) document.getElementById("tabBtnPublic").classList.remove("active");
-    if(document.getElementById("tabBtnMy")) document.getElementById("tabBtnMy").classList.remove("active");
-    if(document.getElementById("publicHubView")) document.getElementById("publicHubView").classList.add("hidden");
-    if(document.getElementById("myEventsView")) document.getElementById("myEventsView").classList.add("hidden");
-
-    if(tab === 'public') {
-        if(document.getElementById("tabBtnPublic")) document.getElementById("tabBtnPublic").classList.add("active");
-        if(document.getElementById("publicHubView")) document.getElementById("publicHubView").classList.remove("hidden");
-    } else {
-        if(document.getElementById("tabBtnMy")) document.getElementById("tabBtnMy").classList.add("active");
-        if(document.getElementById("myEventsView")) document.getElementById("myEventsView").classList.remove("hidden");
-        processDashboard();
-    }
-}
-
-function renderPublicHub() {
-    let container = document.getElementById("publicEventsList");
-    if(!container) return;
-
-    if (allPublicEvents.length === 0) {
-        container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No public tournaments right now.</div>`;
-        return;
-    }
-
-    allPublicEvents.sort((a, b) => b.id.localeCompare(a.id));
-    let html = "";
-    allPublicEvents.forEach(ev => {
-        let pCount = ev.details.participants.length;
-        let cCount = ev.details.participants.reduce((sum, p) => sum + p.catches.length, 0);
-        let thumb = ev.details.thumbnail ? `<img src="${ev.details.thumbnail}" class="event-hub-thumb">` : '';
-        let statusColor = ev.details.status === 'finished' ? 'background:#e2e8f0; color:#475569;' : 'background:#d1fae5; color:#059669;';
-        let statusText = ev.details.status === 'finished' ? t('status_finished') : t('status_ongoing');
-
-        html += `
-        <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
-            ${thumb}
-            <div class="flex flex-between" style="align-items:flex-start;">
-                <div>
-                    <h3 style="margin-bottom:4px;">${ev.name}</h3>
-                    <div style="font-size:12px; color:var(--text-muted);">Host: <b>${ev.username}</b></div>
-                </div>
-                <span class="badge" style="${statusColor} box-shadow:none;">${statusText}</span>
-            </div>
-            <div style="margin-top:12px; font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
-                <span>👥 ${pCount} Participants</span>
-                <span>🎣 ${cCount} Catches</span>
-            </div>
-        </div>`;
-    });
-    container.innerHTML = html;
+        });
 }
 
 function getEventPlacements(evDetails) {
     let processed = evDetails.participants.map(p => {
-        let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; 
-        let countedCatches = evDetails.limitType === 'top5' ? [...p.catches].sort((a,b)=>b.size-a.size).slice(0,5) : p.catches;
-        let amountCatches = countedCatches.length;
-        
-        countedCatches.forEach(c => {
-            totalMeasure += c.size;
-            if (c.size > maxFishMeasure) maxFishMeasure = c.size;
-            totalPts += calculateFishPoints(c.abbr, c.size, evDetails.species || [], evDetails.measureType);
+        let totalCm = 0; let totalPts = 0; let maxFishCm = 0; let amountCatches = (p.catches || []).length;
+        (p.catches || []).forEach(c => {
+            totalCm += c.size;
+            if (c.size > maxFishCm) maxFishCm = c.size;
+            totalPts += calculateFishPoints(c.abbr, c.size, evDetails.species || []);
         });
-        
         let penPts = 0;
         if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
         totalPts -= penPts;
-
-        return { name: p.name, normName: (p.name || "unknown").toLowerCase().trim(), totalPts, totalMeasure, maxFishMeasure, amountCatches };
+        return { name: p.name, normName: (p.name || "unknown").toLowerCase().trim(), totalPts, totalCm, maxFishCm, amountCatches };
     });
 
     let caught = processed.filter(p => p.amountCatches > 0 && p.totalPts > 0);
     let zero = processed.filter(p => p.amountCatches === 0 || p.totalPts <= 0);
 
     caught.sort((a, b) => {
-        if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts; 
+        if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
         if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
-        return b.maxFishMeasure - a.maxFishMeasure; 
+        return b.maxFishCm - a.maxFishCm; 
     });
 
     let placements = {};
@@ -406,7 +328,6 @@ function getEventPlacements(evDetails) {
         let zeroRank = Math.floor(((M + 1) + T) / 2);
         zero.forEach(p => { placements[p.normName] = zeroRank; });
     }
-
     return placements;
 }
 
@@ -449,7 +370,11 @@ function processDashboard() {
         let sortedScores = [...angler.scores].sort((a, b) => a - b);
         let best5 = sortedScores.slice(0, 5); 
         let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
-        return { name: angler.name, validEventsCount: angler.scores.length, totalRankPts: totalRankPts };
+        return {
+            name: angler.name,
+            validEventsCount: angler.scores.length,
+            totalRankPts: totalRankPts
+        };
     }).filter(a => a.validEventsCount > 0);
 
     aotyArray.sort((a, b) => {
@@ -544,55 +469,6 @@ function renderEventsList(filteredEvents) {
         </div>`;
     });
     container.innerHTML = html;
-}
-
-function setUnit(u) {
-    confUnit = u;
-    let btnMet = document.getElementById('unitBtnMetric');
-    let btnImp = document.getElementById('unitBtnImperial');
-    if(btnMet) btnMet.className = u === 'metric' ? 'primary-dark' : 'secondary';
-    if(btnImp) btnImp.className = u === 'imperial' ? 'primary-dark' : 'secondary';
-}
-function setMeasure(m) {
-    confMeasure = m;
-    let btnSize = document.getElementById('measureBtnSize');
-    let btnWgt = document.getElementById('measureBtnWeight');
-    if(btnSize) btnSize.className = m === 'size' ? 'primary-dark' : 'secondary';
-    if(btnWgt) btnWgt.className = m === 'weight' ? 'primary-dark' : 'secondary';
-}
-function setLimit(l) {
-    confLimit = l;
-    let btnAll = document.getElementById('limitBtnAll');
-    let btnT5 = document.getElementById('limitBtnTop5');
-    if(btnAll) btnAll.className = l === 'all' ? 'primary-dark' : 'secondary';
-    if(btnT5) btnT5.className = l === 'top5' ? 'primary-dark' : 'secondary';
-}
-
-function handleThumbnailUpload(e) {
-    let file = e.target.files[0];
-    if(!file) return;
-    let reader = new FileReader();
-    reader.onload = function(event) {
-        let img = new Image();
-        img.onload = function() {
-            let canvas = document.createElement('canvas');
-            let ctx = canvas.getContext('2d');
-            let maxW = 800;
-            let scale = img.width > maxW ? maxW / img.width : 1;
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            let compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            
-            let preview = document.getElementById('thumbnailPreview');
-            if(preview) {
-                preview.src = compressedDataUrl;
-                preview.style.display = 'block';
-            }
-        }
-        img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
 }
 
 function showDashboard() {
@@ -811,22 +687,34 @@ function saveCurrentEvent(redirect = true) {
     if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
     if (!currentEvent.status) currentEvent.status = "ongoing";
 
-    // Create a deep copy to prevent snapshot listener reference mutation bugs
-    const safeEvent = JSON.parse(JSON.stringify(currentEvent));
+    isSaving = true;
+    let indicator = document.getElementById("saveIndicator");
+    if (indicator) indicator.classList.remove("hidden");
 
+    const safeEvent = JSON.parse(JSON.stringify(currentEvent));
     const eventPayload = { 
         username: loggedInUser, 
         name: safeEvent.name, 
         details: safeEvent, 
         updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
     };
+    
     try { localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeEvent.species)); } catch(e){}
 
-    return db.collection("events").doc(safeEvent.id).set(eventPayload).then(() => { 
-        if(redirect) showDashboard(); 
+    return db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                isSaving = false;
+                if (indicator) indicator.classList.add("hidden");
+                if (redirect) showDashboard(); 
+                resolve();
+            }, 400); 
+        });
     }).catch(err => { 
+        isSaving = false;
+        if (indicator) indicator.classList.add("hidden");
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud. Check your database rules."); 
+        alert("Failed to save event to cloud. Check your connection and database rules."); 
     });
 }
 
@@ -892,11 +780,11 @@ function backToSetup() {
     history.pushState({view: 'setupSection'}, "");
 }
 
-function promptFinishEvent() {
+async function promptFinishEvent() {
     if(currentEvent.status === 'finished') return;
     if (confirm(t('finish_warning'))) {
         currentEvent.status = "finished";
-        saveCurrentEvent(true);
+        await saveCurrentEvent(true);
     }
 }
 
@@ -956,7 +844,7 @@ function openFishModal(pIndexReal) {
 
 function closeFishModal() { if(document.getElementById("fishModal")) document.getElementById("fishModal").classList.add("hidden"); activeFishParticipantIndex = null; selectedModalSpecies = ""; }
 
-function confirmAddFishModal() {
+async function confirmAddFishModal() {
     if (activeFishParticipantIndex === null || !selectedModalSpecies) return;
     let inputEl = document.getElementById("modalFishSize");
     if(!inputEl) return;
@@ -972,7 +860,7 @@ function confirmAddFishModal() {
             return;
         }
     }
-    executeAddFish(selectedModalSpecies, size);
+    await executeAddFish(selectedModalSpecies, size);
 }
 
 async function executeAddFish(abbr, size) {
@@ -987,10 +875,10 @@ async function executeAddFish(abbr, size) {
 
 function cancelSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").focus(); }
 
-function ignoreSmallFish() { 
+async function ignoreSmallFish() { 
     if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); 
     if (pendingSmallFish) { 
-        executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); 
+        await executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); 
         pendingSmallFish = null; 
     } 
 }
@@ -1010,11 +898,10 @@ function renderModalCatches() {
     let p = currentEvent.participants[activeFishParticipantIndex];
     if (p.catches.length === 0) { container.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center;">${t('no_catches')}</p>`; return; }
     
-    let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
     container.innerHTML = `<label style="font-size:13px; color:var(--text-muted); margin-bottom:8px; display:block;">${t('current_catches')}:</label>` +
         p.catches.map((c, cIdx) => `
         <div class="flex flex-between" style="padding:12px 0; border-bottom:1px solid var(--border);">
-            <span><b>${c.size}</b>${unitText} <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${c.abbr.toUpperCase()}</span></span>
+            <span><b>${c.size}</b>cm <span class="badge" style="background:#f1f5f9; color:#0284c7; box-shadow:none;">${c.abbr.toUpperCase()}</span></span>
             <button class="danger icon-btn" style="padding:6px 10px; box-shadow:none;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">✕</button>
         </div>`).join('');
 }
@@ -1081,8 +968,7 @@ function showPenaltyReason(pIdx) {
     }
 }
 
-function calculateFishPoints(abbr, size, speciesList, measureType) {
-    if(measureType === 'weight') return size; 
+function calculateFishPoints(abbr, size, speciesList) {
     let sp = speciesList.find(s => s.abbr === abbr);
     if (!sp) return size;
     let matchingTier = sp.tiers.find(t => {
@@ -1109,14 +995,12 @@ function renderHubUI() {
     let countEl = document.getElementById("hubParticipantCount");
     if(countEl) countEl.innerText = currentEvent.participants.length;
 
-    let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
-
     let filteredHtml = "";
     currentEvent.participants.forEach((p, pIndexReal) => {
         if (!p.name.toLowerCase().includes(query)) return;
 
         let catchesText = p.catches.length > 0 
-            ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') 
+            ? p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ') 
             : `<span style="color:var(--text-muted); opacity: 0.7; font-style:italic;">${t('no_catches')}</span>`;
 
         let penBadge = (p.penalties && p.penalties.length > 0) ? `<button onclick="showPenaltyReason(${pIndexReal})" class="danger icon-btn" style="padding:2px 6px; border-radius:50%; box-shadow:none; font-size:10px;" title="Has Penalties">❗</button>` : '';
@@ -1144,71 +1028,68 @@ function renderHubUI() {
     renderLeaderboard();
 }
 
-function renderLeaderboard(isPublicView = false, overrideEvent = null) {
-    let ev = overrideEvent || currentEvent;
-    if(!ev) return;
-
+function renderLeaderboard() {
     let modeDropdown = document.getElementById("rankingMode");
-    let mode = isPublicView ? 'points' : (modeDropdown ? modeDropdown.value : 'points');
-    
-    let container = document.getElementById(isPublicView ? "pubLeaderboard" : "leaderboardContainer");
-    let topSummaryContainer = document.getElementById(isPublicView ? "pubTopSummary" : "leaderboardTopSummary"); 
+    let mode = modeDropdown ? modeDropdown.value : 'points';
+    let container = document.getElementById("leaderboardContainer");
+    let topSummaryContainer = document.getElementById("leaderboardTopSummary");
     
     if(!container) return;
-    
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
 
-    let processed = ev.participants.map(p => {
-        let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
-        let countedCatches = p.catches;
-        
-        if(ev.limitType === 'top5') {
-            countedCatches = [...p.catches].sort((a,b) => b.size - a.size).slice(0,5);
-        }
-
-        countedCatches.forEach(c => {
-            totalMeasure += c.size;
-            if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
-            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+    let processed = currentEvent.participants.map(p => {
+        let totalCm = 0; let totalPts = 0; let maxFishCm = 0; let maxFishAbbr = ""; let amountCatches = p.catches.length;
+        p.catches.forEach(c => {
+            totalCm += c.size;
+            if (c.size > maxFishCm) { maxFishCm = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, currentEvent.species);
         });
-        
         let penPts = 0;
         if(p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
         totalPts -= penPts;
-
-        return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
+        return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches, penPts, hasPenalty: penPts > 0 };
     });
 
-    let sortedByMain = [...processed].sort((a, b) => mode === 'points' ? b.totalPts - a.totalPts : b.totalMeasure - a.totalMeasure);
-    let sortedByBiggest = [...processed].sort((a, b) => b.maxFishMeasure - a.maxFishMeasure);
+    let sortedByMain = [...processed].sort((a, b) => {
+        if(mode === 'points') {
+            if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+            if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
+            return b.maxFishCm - a.maxFishCm; 
+        } else {
+            if(b.totalCm !== a.totalCm) return b.totalCm - a.totalCm;
+            if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches;
+            return b.maxFishCm - a.maxFishCm;
+        }
+    });
+    
+    let sortedByBiggest = [...processed].sort((a, b) => b.maxFishCm - a.maxFishCm);
 
-    if (!isPublicView && topSummaryContainer) {
-        if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishMeasure > 0) {
+    if (topSummaryContainer) {
+        if (sortedByBiggest.length > 0 && sortedByBiggest[0].maxFishCm > 0) {
             topSummaryContainer.innerHTML = `
                 <div class="flex flex-between">
                     <div>
-                        <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase;">🏆 ${t('biggest_fish')}</div>
+                        <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase; letter-spacing: 0.5px;">🏆 ${t('biggest_fish')}</div>
                         <div style="font-weight:700; font-size:18px; color:var(--text); margin-top:4px;">${sortedByBiggest[0].name}</div>
                     </div>
                     <div style="text-align:right;">
-                        <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishMeasure}</span> ${unitText}
-                        <div class="badge" style="background:#fef08a; color:#b45309; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
+                        <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishCm}</span> cm
+                        <div class="badge" style="background:#fef08a; color:#b45309; display:inline-block; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
                     </div>
                 </div>`;
             topSummaryContainer.classList.remove('hidden');
         } else { topSummaryContainer.classList.add('hidden'); }
     }
 
-    let html = `<table><tr><th style="width:40px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
+    let html = `<table><tr><th style="width:50px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
     sortedByMain.forEach((p, idx) => {
         let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
-        let maxDisplay = p.maxFishMeasure > 0 ? `${p.maxFishMeasure}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
+        let maxDisplay = p.maxFishCm > 0 ? `${p.maxFishCm}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
         let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
         html += `<tr>
             <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
             <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
             <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
-            <td>${p.totalMeasure.toFixed(1)}</td>
+            <td>${p.totalCm.toFixed(1)}</td>
             <td>${p.amountCatches}</td>
             <td>${maxDisplay}</td>
         </tr>`;
@@ -1217,128 +1098,70 @@ function renderLeaderboard(isPublicView = false, overrideEvent = null) {
     container.innerHTML = html;
 }
 
-function openPublicEvent(eventId) {
-    let evData = allPublicEvents.find(e => e.id === eventId);
-    if(!evData) return;
-    let ev = evData.details;
-
-    if(document.getElementById("pubTitle")) document.getElementById("pubTitle").innerText = evData.name;
-    if(document.getElementById("pubHost")) document.getElementById("pubHost").innerText = `Hosted by ${evData.username} | ${ev.date}`;
-    
-    if(ev.thumbnail && document.getElementById("pubThumb")) {
-        document.getElementById("pubThumb").src = ev.thumbnail;
-        document.getElementById("pubThumb").classList.remove("hidden");
-    } else if (document.getElementById("pubThumb")) {
-        document.getElementById("pubThumb").classList.add("hidden");
-    }
-
-    if(document.getElementById("pubDesc")) document.getElementById("pubDesc").innerText = ev.description || "No description provided.";
-    
-    let limitTxt = ev.limitType === 'top5' ? "Top 5 Counted" : "All Fish Counted";
-    let measureTxt = ev.measureType === 'weight' ? "Weighted" : "Size/Points";
-    let rulesHtml = `<div style="margin-bottom:12px;"><b>Format:</b> ${measureTxt} | ${limitTxt}</div>`;
-    
-    rulesHtml += ev.species.map(s => {
-        let trs = s.tiers.map(t => `${t.from}-${t.to} (${parseFloat(t.multiplier||1).toFixed(1)}x)`).join(', ');
-        return `<div><b>${s.name} (${s.abbr.toUpperCase()}):</b> ${trs}</div>`;
-    }).join('');
-    if(document.getElementById("pubRules")) document.getElementById("pubRules").innerHTML = rulesHtml;
-
-    renderLeaderboard(true, ev);
-
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
-    if(document.getElementById("pubParticipantsDetail")) {
-        document.getElementById("pubParticipantsDetail").innerHTML = ev.participants.map((p, i) => {
-            let catches = p.catches.length > 0 ? p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') : 'None';
-            let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger);">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
-            return `<div style="padding:8px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${p.name}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
-        }).join('');
-    }
-
-    if(document.getElementById("publicEventModal")) document.getElementById("publicEventModal").classList.remove("hidden");
-}
-
-function closePublicEventModal() { if(document.getElementById("publicEventModal")) document.getElementById("publicEventModal").classList.add("hidden"); }
-
 function downloadChart(eventId = null) {
     let ev = currentEvent;
     if (eventId) { let found = loadedEvents.find(e => e.id === eventId); if (found) ev = found.details; }
     if (!ev || ev.participants.length === 0) { alert("No data to download."); return; }
 
-    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
-
     let processed = ev.participants.map(p => {
-        let totalM = 0, totalPts = 0, maxFishM = 0, maxFishAbbr = "";
-        let countedCatches = ev.limitType === 'top5' ? [...p.catches].sort((a,b)=>b.size-a.size).slice(0,5) : p.catches;
-        
-        countedCatches.forEach(c => {
-            totalM += c.size;
-            if (c.size > maxFishM) { maxFishM = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
-            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+        let totalCm = 0, totalPts = 0, maxFishCm = 0, maxFishAbbr = "";
+        p.catches.forEach(c => {
+            totalCm += c.size;
+            if (c.size > maxFishCm) { maxFishCm = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species);
         });
-        
         let penPts = 0; let penStr = "";
         if(p.penalties && p.penalties.length > 0) {
             p.penalties.forEach(pn => penPts += parseFloat(pn.points));
             penStr = ` (Penalty: -${penPts})`;
         }
         totalPts -= penPts;
-
-        let allCatchesStr = p.catches.map(c => `${c.size}${unitText} ${c.abbr.toUpperCase()}`).join(', ') || "-";
-        return { name: p.name, totalM, totalPts, maxFishM, maxFishAbbr, amountCatches: countedCatches.length, allCatchesStr, penStr };
+        return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches: p.catches.length, allCatchesStr: p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ') || "-" };
     });
 
     processed.sort((a, b) => {
         if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
         if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
-        return b.maxFishM - a.maxFishM; 
+        return b.maxFishCm - a.maxFishCm; 
     });
 
     let htmlContent = `
         <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
             <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">${t('tournament_results')}: ${ev.name}</h2>
-            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()} | Format: ${ev.limitType==='top5'?'Top 5 Counted':'All Fish'}</p>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
             <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                 <thead><tr style="background-color: #4f46e5; color: #ffffff;">
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('points')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Total ${unitText.toUpperCase()}</th>
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('total_cm')}</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Amt</th>
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('biggest_fish')}</th>
-                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 35%;">${t('details')}</th>
-                </tr></thead><tbody>
-                    ${processed.map((p, i) => `
-                        <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${i + 1}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalPts.toFixed(1)}${p.penStr ? `<br><span style="color:#e11d48; font-size:11px;">${p.penStr}</span>` : ''}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.totalM.toFixed(1)}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.amountCatches}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.maxFishM > 0 ? `${p.maxFishM}${unitText} ${p.maxFishAbbr}` : '-'}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px; line-height: 1.4;">${p.allCatchesStr}</td>
-                        </tr>`).join('')}
+                    <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 40%;">${t('details')}</th>
+                </tr></thead>
+                <tbody>${processed.map((p, i) => `
+                    <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${i + 1}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalPts.toFixed(1)}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.totalCm.toFixed(1)}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.amountCatches}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.maxFishCm > 0 ? `${p.maxFishCm}cm ${p.maxFishAbbr}` : '-'}</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px; line-height: 1.4;">${p.allCatchesStr}</td>
+                    </tr>`).join('')}
                 </tbody>
             </table>
         </div>`;
 
-    let opt = {
-        margin: 0.3, filename: `${ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`,
-        image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
-    };
-    let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent;
-    html2pdf().set(opt).from(tempDiv).save();
+    let opt = { margin: 0.3, filename: `${ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } };
+    let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
 }
 
 function downloadSeasonChart() {
-    let dashMode = "standard"; 
-
     let rankedFinishedEvents = loadedEvents.filter(e => {
         let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
         let status = e.details.status || 'finished';
-        let mode = e.details.mode || 'standard';
-        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished' && mode === dashMode;
+        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
     });
 
     if (rankedFinishedEvents.length === 0) {
