@@ -1200,15 +1200,28 @@
             document.getElementById("modalFishSize").focus();
         }
         renderModalCatches(); renderHubUI(); 
+        
+        // AUTO-SAVE FIX: Background save immediately when a fish is added
+        saveCurrentEvent(false);
     }
 
     function cancelSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").focus(); }
-    function ignoreSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
+    
+    function ignoreSmallFish() { 
+        if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); 
+        if (pendingSmallFish) { 
+            executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); 
+            pendingSmallFish = null; 
+        } 
+    }
 
     function removeFish(pIndexReal, cIdx) {
         currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
         if(activeFishParticipantIndex !== null) renderModalCatches();
         renderHubUI();
+        
+        // AUTO-SAVE FIX: Background save immediately when a fish is removed
+        saveCurrentEvent(false);
     }
 
     function renderModalCatches() {
