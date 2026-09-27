@@ -14,7 +14,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ENABLE OFFLINE PERSISTENCE: Prevents data loss on rapid reloads
+// ENABLE OFFLINE PERSISTENCE
 try {
     db.enablePersistence().catch(err => console.warn("Persistence warning:", err));
 } catch(e) {
@@ -24,7 +24,7 @@ try {
 let unsubscribeEventsListener = null;
 let isSaving = false;
 
-// PREVENT REFRESH IF SAVING IS PENDING
+// PREVENT TAB CLOSE IF SAVING IS PENDING
 window.addEventListener('beforeunload', function (e) {
     if (isSaving) {
         e.preventDefault();
@@ -35,6 +35,8 @@ window.addEventListener('beforeunload', function (e) {
 let currentEvent = null;
 let loggedInUser = "";
 let loadedEvents = [];
+let allPublicEvents = [];
+
 let activeFishParticipantIndex = null;
 let activePenaltyParticipantIndex = null;
 let activeSpeciesIndex = null;
@@ -170,6 +172,32 @@ const translations = {
     }
 };
 
+// DYNAMIC UI INJECTION: Ensures the saving animation exists and works
+function showSavingIndicator() {
+    let indicator = document.getElementById("lureboardSaveIndicator");
+    if (!indicator) {
+        indicator = document.createElement("div");
+        indicator.id = "lureboardSaveIndicator";
+        indicator.innerHTML = "Saving...";
+        Object.assign(indicator.style, {
+            position: "fixed", top: "16px", left: "50%", transform: "translateX(-50%)",
+            background: "#10b981", color: "white", padding: "6px 16px",
+            borderRadius: "20px", fontSize: "14px", fontWeight: "bold",
+            zIndex: "9999", boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+            transition: "opacity 0.2s ease-in-out", opacity: "0", pointerEvents: "none"
+        });
+        document.body.appendChild(indicator);
+    }
+    // Force DOM reflow so the transition plays smoothly
+    void indicator.offsetWidth;
+    indicator.style.opacity = "1";
+}
+
+function hideSavingIndicator() {
+    let indicator = document.getElementById("lureboardSaveIndicator");
+    if (indicator) indicator.style.opacity = "0";
+}
+
 function changeLanguage(lang) {
     currentLang = lang;
     document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -283,8 +311,39 @@ function subscribeToEventsRealtime() {
         .where("username", "==", loggedInUser)
         .onSnapshot(snapshot => {
             loadedEvents = [];
-            snapshot.forEach(doc => { loadedEvents.push({ id: doc.id, ...doc.data() }); });
-            processDashboard();
+            allPublicEvents = [];
+            
+            snapshot.forEach(doc => { 
+                let serverData = { id: doc.id, ...doc.data() };
+
+                // AUTO-RECOVERY FAIL-SAFE:
+                // Compare server data with our local backup to prevent dropped writes
+                try {
+                    let backupStr = localStorage.getItem("lureboard_backup_" + doc.id);
+                    if (backupStr) {
+                        let backupData = JSON.parse(backupStr);
+                        // Calculate total catches dynamically to see which version is newer
+                        let sCatches = serverData.details.participants.reduce((sum, p) => sum + (p.catches ? p.catches.length : 0), 0);
+                        let bCatches = backupData.details.participants.reduce((sum, p) => sum + (p.catches ? p.catches.length : 0), 0);
+                        
+                        if (bCatches > sCatches) {
+                            console.log("Recovered an aborted catch from local storage!");
+                            serverData = { id: doc.id, ...backupData };
+                            // Push the recovered data back to Firebase
+                            db.collection("events").doc(doc.id).set(backupData);
+                        } else {
+                            // The server successfully synced, so we can clear the backup
+                            localStorage.removeItem("lureboard_backup_" + doc.id);
+                        }
+                    }
+                } catch(e) {}
+
+                if (loggedInUser && serverData.username === loggedInUser) loadedEvents.push(serverData);
+                if (serverData.details && serverData.details.isPublic) allPublicEvents.push(serverData);
+            });
+            
+            if (loggedInUser) processDashboard();
+            renderPublicHub();
 
             if (currentEvent && document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) {
                 let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
@@ -688,8 +747,7 @@ function saveCurrentEvent(redirect = true) {
     if (!currentEvent.status) currentEvent.status = "ongoing";
 
     isSaving = true;
-    let indicator = document.getElementById("saveIndicator");
-    if (indicator) indicator.classList.remove("hidden");
+    showSavingIndicator();
 
     const safeEvent = JSON.parse(JSON.stringify(currentEvent));
     const eventPayload = { 
@@ -699,23 +757,28 @@ function saveCurrentEvent(redirect = true) {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
     };
     
-    try { localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeEvent.species)); } catch(e){}
+    // EMERGENCY BACKUP: Sync to local storage to protect against premature reloads
+    try { 
+        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeEvent.species)); 
+        localStorage.setItem("lureboard_backup_" + safeEvent.id, JSON.stringify(eventPayload));
+    } catch(e){}
 
-    return db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => {
-        return new Promise(resolve => {
-            setTimeout(() => {
-                isSaving = false;
-                if (indicator) indicator.classList.add("hidden");
-                if (redirect) showDashboard(); 
-                resolve();
-            }, 400); 
-        });
+    // We do NOT block on the promise return here internally. 
+    // We let Firebase sync to the cloud in the background while updating the UI immediately.
+    let savePromise = db.collection("events").doc(currentEvent.id).set(eventPayload);
+    
+    savePromise.then(() => {
+        isSaving = false;
+        hideSavingIndicator();
+        try { localStorage.removeItem("lureboard_backup_" + safeEvent.id); } catch(e) {}
+        if (redirect) showDashboard(); 
     }).catch(err => { 
         isSaving = false;
-        if (indicator) indicator.classList.add("hidden");
+        hideSavingIndicator();
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud. Check your connection and database rules."); 
     });
+    
+    return savePromise;
 }
 
 async function goToEventHub() {
@@ -762,7 +825,7 @@ async function goToEventHub() {
         currentEvent.isStarted = true;
     }
     
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
     
     if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
     if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.remove("hidden");
@@ -780,11 +843,11 @@ function backToSetup() {
     history.pushState({view: 'setupSection'}, "");
 }
 
-async function promptFinishEvent() {
+function promptFinishEvent() {
     if(currentEvent.status === 'finished') return;
     if (confirm(t('finish_warning'))) {
         currentEvent.status = "finished";
-        await saveCurrentEvent(true);
+        saveCurrentEvent(true);
     }
 }
 
@@ -797,7 +860,7 @@ function openAddParticipantModal() {
 
 function closeAddParticipantModal() { if(document.getElementById("participantModal")) document.getElementById("participantModal").classList.add("hidden"); }
 
-async function confirmAddParticipantModal() {
+function confirmAddParticipantModal() {
     let inputEl = document.getElementById("modalParticipantName");
     if(!inputEl) return;
     let parsedNames = parseParticipants(inputEl.value);
@@ -805,17 +868,17 @@ async function confirmAddParticipantModal() {
     parsedNames.forEach(name => { currentEvent.participants.push({ id: 'p_' + Math.random().toString(36).substr(2, 9), name: name, catches: [], penalties: [] }); });
     closeAddParticipantModal(); 
     renderHubUI();
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
-async function editParticipantName(index) {
+function editParticipantName(index) {
     if(currentEvent.status === 'finished') return;
     let p = currentEvent.participants[index];
     let newName = prompt(t('edit_name') + ":", p.name);
     if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
         p.name = newName.trim();
         renderHubUI();
-        await saveCurrentEvent(false);
+        saveCurrentEvent(false);
     }
 }
 
@@ -844,7 +907,7 @@ function openFishModal(pIndexReal) {
 
 function closeFishModal() { if(document.getElementById("fishModal")) document.getElementById("fishModal").classList.add("hidden"); activeFishParticipantIndex = null; selectedModalSpecies = ""; }
 
-async function confirmAddFishModal() {
+function confirmAddFishModal() {
     if (activeFishParticipantIndex === null || !selectedModalSpecies) return;
     let inputEl = document.getElementById("modalFishSize");
     if(!inputEl) return;
@@ -860,34 +923,34 @@ async function confirmAddFishModal() {
             return;
         }
     }
-    await executeAddFish(selectedModalSpecies, size);
+    executeAddFish(selectedModalSpecies, size);
 }
 
-async function executeAddFish(abbr, size) {
+function executeAddFish(abbr, size) {
     currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
     if(document.getElementById("modalFishSize")) {
         document.getElementById("modalFishSize").value = ""; 
         document.getElementById("modalFishSize").focus();
     }
     renderModalCatches(); renderHubUI(); 
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
 function cancelSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").focus(); }
 
-async function ignoreSmallFish() { 
+function ignoreSmallFish() { 
     if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); 
     if (pendingSmallFish) { 
-        await executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); 
+        executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); 
         pendingSmallFish = null; 
     } 
 }
 
-async function removeFish(pIndexReal, cIdx) {
+function removeFish(pIndexReal, cIdx) {
     currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
     if(activeFishParticipantIndex !== null) renderModalCatches();
     renderHubUI();
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
 function renderModalCatches() {
@@ -917,7 +980,7 @@ function openPenaltyModal(pIndexReal) {
 }
 function closePenaltyModal() { if(document.getElementById("penaltyModal")) document.getElementById("penaltyModal").classList.add("hidden"); activePenaltyParticipantIndex = null; }
 
-async function confirmAddPenalty() {
+function confirmAddPenalty() {
     if(activePenaltyParticipantIndex === null) return;
     let ptsEl = document.getElementById("modalPenaltyPoints");
     let rsnEl = document.getElementById("modalPenaltyReason");
@@ -934,14 +997,14 @@ async function confirmAddPenalty() {
     ptsEl.value = "";
     rsnEl.value = "";
     renderModalPenalties(); renderHubUI();
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
-async function removePenalty(pIndexReal, penIdx) {
+function removePenalty(pIndexReal, penIdx) {
     currentEvent.participants[pIndexReal].penalties.splice(penIdx, 1);
     if(activePenaltyParticipantIndex !== null) renderModalPenalties();
     renderHubUI();
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
 function renderModalPenalties() {
