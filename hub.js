@@ -54,6 +54,18 @@ const svgCamera = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" f
 
 const translations = { en: {}, ka: { login_btn: "შესვლა" } };
 
+// Auto-Save UI Handler
+function showSaveStatus(text, bg) {
+    let el = document.getElementById("globalSaveBadge");
+    if (!el) return;
+    el.innerText = text;
+    el.style.background = bg;
+    el.style.display = "inline-block";
+    if (bg === "#10b981") { // Green / Success
+        setTimeout(() => { el.style.display = "none"; }, 2000);
+    }
+}
+
 function changeLanguage(lang) {
     currentLang = lang;
     if(!document.getElementById("setupSection").classList.contains("hidden")) refreshSetupUI();
@@ -216,11 +228,6 @@ function saveProfile() {
     });
 }
 
-function handleClientAreaClick() {
-    if (loggedInUser) showProfilePage();
-    else openLogin();
-}
-
 // AUTHENTICATION
 function toggleAuth(view) {
     hideAllSections();
@@ -355,10 +362,8 @@ function subscribeToEventsRealtime() {
         snapshot.forEach(doc => { 
             let data = { id: doc.id, ...doc.data() };
             if (!data.details) data.details = {};
-            
-            // Fix undefined IDs for older databases
             data.details.id = doc.id; 
-
+            
             // AUTOMATIC 7-DAY PHOTO CLEANUP FOR FINISHED EVENTS
             let evDet = data.details;
             if (evDet.status === 'finished' && evDet.finishedAt) {
@@ -592,7 +597,7 @@ function toggleFullLeaderboard() {
 
 function renderPublicLeaderboardList(ev) {
     if(!ev) return;
-    let unitText = ev.unit === 'imperial' ? (currentEvent && currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
 
     let processed = (ev.participants||[]).map(p => {
         let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
@@ -634,7 +639,7 @@ function renderPublicLeaderboardList(ev) {
     if(toggleBtn) toggleBtn.style.display = processed.length > 3 ? "inline-block" : "none";
 }
 
-function joinEventDirectly() {
+async function joinEventDirectly() {
     let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
     let ev = evData.details;
     if(!ev.participants) ev.participants = [];
@@ -647,10 +652,15 @@ function joinEventDirectly() {
             ev.participants = ev.participants.filter(p => p.name.toLowerCase() !== myName.toLowerCase());
             
             let safeDetails = JSON.parse(JSON.stringify(ev));
-            db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
+            showSaveStatus("Updating...", "#f59e0b");
+            try {
+                await db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
+                showSaveStatus("✓ Saved", "#10b981");
                 alert("You have left the event.");
                 openPublicEvent(currentParticipationEventId);
-            });
+            } catch(e) {
+                showSaveStatus("✕ Error", "#ef4444");
+            }
         }
     } else {
         ev.participants.push({
@@ -658,10 +668,15 @@ function joinEventDirectly() {
             name: myName, catches: [], penalties: [], registeredBy: loggedInUser
         });
         let safeDetails = JSON.parse(JSON.stringify(ev));
-        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
+        showSaveStatus("Updating...", "#f59e0b");
+        try {
+            await db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
+            showSaveStatus("✓ Saved", "#10b981");
             alert("Successfully joined the event!");
             openPublicEvent(currentParticipationEventId);
-        });
+        } catch(e) {
+            showSaveStatus("✕ Error", "#ef4444");
+        }
     }
 }
 
@@ -1242,7 +1257,7 @@ function renderRules() {
     document.getElementById('rulesContainer').innerHTML = html;
 }
 
-function goToEventHub() {
+async function goToEventHub() {
     currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
     currentEvent.description = document.getElementById("eventDescInput").value.trim();
     currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
@@ -1292,6 +1307,8 @@ function goToEventHub() {
         };
     });
     
+    await saveCurrentEvent(false);
+    
     hideAllSections();
     document.getElementById("hubSection").classList.remove("hidden");
     window.scrollTo(0, 0);
@@ -1300,28 +1317,20 @@ function goToEventHub() {
     renderHubUI();
 }
 
-function backToSetup() {
-    hideAllSections();
-    document.getElementById("setupSection").classList.remove("hidden");
-    refreshSetupUI();
-    window.scrollTo(0, 0);
-    history.pushState({view: 'setupSection'}, "");
-}
-
-function startEventNow() {
+async function startEventNow() {
     if (confirm("Start the event? This will lock the participant list and allow scoring.")) {
         currentEvent.status = 'ongoing';
-        saveCurrentEvent(false);
+        await saveCurrentEvent(false);
         renderHubUI();
     }
 }
 
-function promptFinishEvent() {
+async function promptFinishEvent() {
     if(currentEvent.status === 'finished') return;
     if (confirm("Finish event? This will permanently lock scoring and trigger the 7-day photo cleanup countdown.")) {
         currentEvent.status = "finished";
         currentEvent.finishedAt = Date.now();
-        saveCurrentEvent(true);
+        await saveCurrentEvent(true);
     }
 }
 
@@ -1333,19 +1342,22 @@ function openAddParticipantModal() {
 }
 function closeAddParticipantModal() { document.getElementById("participantModal").classList.add("hidden"); }
 
-function confirmAddParticipantModal() {
+async function confirmAddParticipantModal() {
     let items = parseParticipants(document.getElementById("modalParticipantName").value);
     items.forEach(name => currentEvent.participants.push({ id: 'p_'+Math.random().toString(36).substr(2,9), name: name, catches: [], penalties: [], registeredBy: loggedInUser }));
-    closeAddParticipantModal(); renderHubUI();
+    closeAddParticipantModal(); 
+    renderHubUI();
+    await saveCurrentEvent(false);
 }
 
-function editParticipantName(index) {
+async function editParticipantName(index) {
     if(currentEvent.status === 'finished') return;
     let p = currentEvent.participants[index];
     let newName = prompt("Edit Name:", p.name);
     if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
         p.name = newName.trim();
-        renderHubUI(); saveCurrentEvent(false);
+        renderHubUI(); 
+        await saveCurrentEvent(false);
     }
 }
 
@@ -1418,7 +1430,7 @@ function openUserUploadModal() {
     openFishModal(pIdx);
 }
 
-function confirmAddFishModal() {
+async function confirmAddFishModal() {
     if (activeFishParticipantIndex === null || !selectedModalSpecies) return;
     
     let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventSection").classList.contains("hidden"));
@@ -1449,10 +1461,10 @@ function confirmAddFishModal() {
         }
     }
     
-    executeAddFish(selectedModalSpecies, size);
+    await executeAddFish(selectedModalSpecies, size);
 }
 
-function executeAddFish(abbr, size) {
+async function executeAddFish(abbr, size) {
     let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventSection").classList.contains("hidden"));
     
     let catchObj = { abbr, size };
@@ -1472,25 +1484,30 @@ function executeAddFish(abbr, size) {
         let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
         let safeDetails = JSON.parse(JSON.stringify(currentEvent));
         
-        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
+        showSaveStatus("Saving...", "#f59e0b");
+        try {
+            await db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
+            showSaveStatus("✓ Saved", "#10b981");
             alert("Catch logged successfully! Pending organizer grading.");
             closeFishModal();
             openPublicEvent(currentParticipationEventId); 
-        }).catch(err => {
+        } catch (err) {
             console.error("Save error:", err);
+            showSaveStatus("✕ Error", "#ef4444");
             alert("Failed to save catch.");
-        });
+        }
     } else {
-        saveCurrentEvent(false); 
+        await saveCurrentEvent(false); 
         renderModalCatches(); 
         renderHubUI(); 
         document.getElementById("modalFishSize").focus();
     }
 }
-function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
-function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
 
-function updateCatchSize(pIdx, cIdx, val, btnElement) {
+function cancelSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; document.getElementById("modalFishSize").focus(); }
+async function ignoreSmallFish() { document.getElementById("smallFishWarningModal").classList.add("hidden"); if (pendingSmallFish) { await executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); pendingSmallFish = null; } }
+
+async function updateCatchSize(pIdx, cIdx, val, btnElement) {
     let size = parseFloat(val);
     if (isNaN(size) || size < 0) size = 0;
     currentEvent.participants[pIdx].catches[cIdx].size = size;
@@ -1505,24 +1522,31 @@ function updateCatchSize(pIdx, cIdx, val, btnElement) {
         }, 1500);
     }
     
-    saveCurrentEvent(false);
+    await saveCurrentEvent(false);
     renderHubUI();
 }
 
-function removeFish(pIndexReal, cIdx) {
+async function removeFish(pIndexReal, cIdx) {
     let isUserUpload = (currentParticipationEventId !== null && !document.getElementById("publicEventSection").classList.contains("hidden"));
     currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
     
     if (isUserUpload) {
         let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
         let safeDetails = JSON.parse(JSON.stringify(currentEvent));
-        db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails }).then(() => {
+        
+        showSaveStatus("Saving...", "#f59e0b");
+        try {
+            await db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
+            showSaveStatus("✓ Saved", "#10b981");
             if(activeFishParticipantIndex !== null) renderModalCatches();
             renderPublicLeaderboardList(safeDetails);
             renderPublicGallery(safeDetails);
-        }).catch(err => console.error("Save error:", err));
+        } catch (err) {
+            console.error("Save error:", err);
+            showSaveStatus("✕ Error", "#ef4444");
+        }
     } else {
-        saveCurrentEvent(false);
+        await saveCurrentEvent(false);
         if(activeFishParticipantIndex !== null) renderModalCatches();
         renderHubUI();
     }
@@ -1543,8 +1567,9 @@ function renderModalCatches() {
                 `<b>${c.size > 0 ? c.size + unitText : 'Pending'}</b>` :
                 `<div class="flex" style="margin-right:8px;"><input type="number" id="editCatchSize_${cIdx}" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px;"><button class="primary icon-btn" style="padding:4px 8px; box-shadow:none;" onclick="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, document.getElementById('editCatchSize_${cIdx}').value, this)">Save</button></div>`;
 
-            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreview(${activeFishParticipantIndex}, ${cIdx})">${svgCamera}</button>` : '';
+            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreviewByUrl('${c.photo}')">${svgCamera}</button>` : '';
             
+            // Allow delete if it's the organizer OR if it's the user and the event is ongoing
             let canDelete = (!isUserUpload) || (isUserUpload && currentEvent.status === 'ongoing');
             let deleteBtn = canDelete ? `<button class="danger icon-btn" style="padding:6px; box-shadow:none;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">${svgTrash}</button>` : '';
 
@@ -1569,7 +1594,7 @@ function openPenaltyModal(pIndexReal) {
 }
 function closePenaltyModal() { document.getElementById("penaltyModal").classList.add("hidden"); activePenaltyParticipantIndex = null; }
 
-function confirmAddPenalty() {
+async function confirmAddPenalty() {
     if(activePenaltyParticipantIndex === null) return;
     let pts = parseFloat(document.getElementById("modalPenaltyPoints").value);
     let reason = document.getElementById("modalPenaltyReason").value.trim();
@@ -1578,13 +1603,13 @@ function confirmAddPenalty() {
     let p = currentEvent.participants[activePenaltyParticipantIndex];
     if(!p.penalties) p.penalties = [];
     p.penalties.push({ points: pts, reason: reason });
-    saveCurrentEvent(false);
+    await saveCurrentEvent(false);
     renderModalPenalties(); renderHubUI();
 }
 
-function removePenalty(pIndexReal, penIdx) {
+async function removePenalty(pIndexReal, penIdx) {
     currentEvent.participants[pIndexReal].penalties.splice(penIdx, 1);
-    saveCurrentEvent(false);
+    await saveCurrentEvent(false);
     if(activePenaltyParticipantIndex !== null) renderModalPenalties();
     renderHubUI();
 }
@@ -1623,7 +1648,7 @@ function calculateFishPoints(abbr, size, speciesList, measureType) {
         return size >= f && size <= (t.to === "" ? Infinity : parseFloat(t.to));
     });
     
-    if (!matchingTier) return 0; // If fish doesn't match any tier, it gets 0 points.
+    if (!matchingTier) return 0; 
     
     let m = (matchingTier.multiplier !== "") ? parseFloat(matchingTier.multiplier) : 1.0;
     return size * (isNaN(m) ? 1.0 : m);
@@ -1759,31 +1784,216 @@ function renderLeaderboard() {
     document.getElementById("leaderboardContainer").innerHTML = html;
 }
 
-function saveCurrentEvent(redirect = true) {
-    try {
-        if (!currentEvent.date) currentEvent.date = new Date().toLocaleDateString();
-        if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+// Native HTML2PDF Engine (from Stable)
+async function downloadChart(eventId = null) {
+    let ev = currentEvent;
+    if (eventId) { 
+        let found = loadedEvents.find(e => e.id === eventId); 
+        if (found) ev = found.details; 
+    }
+    if (!ev || !ev.participants || ev.participants.length === 0) { 
+        alert("No data to download."); 
+        return; 
+    }
 
-        let safeDetails = JSON.parse(JSON.stringify(currentEvent));
+    showSaveStatus("Generating PDF...", "#f59e0b");
 
-        const eventPayload = { 
-            username: loggedInUser, 
-            name: currentEvent.name, 
-            details: safeDetails, 
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
-        };
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+
+    let processed = ev.participants.map(p => {
+        let totalCm = 0, totalPts = 0, maxFishCm = 0, maxFishAbbr = "";
+        let countedCatches = ev.limitType === 'top5' ? [...(p.catches||[])].sort((a,b)=>b.size-a.size).slice(0,5) : (p.catches||[]);
         
-        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeDetails.species));
-
-        db.collection("events").doc(currentEvent.id).set(eventPayload).then(() => { 
-            if(redirect) showMyEvents(); 
-        }).catch(err => { 
-            console.error("Save error:", err); 
-            alert("Failed to save event to cloud: " + err.message); 
+        countedCatches.forEach(c => {
+            totalCm += c.size;
+            if (c.size > maxFishCm) { 
+                maxFishCm = c.size; 
+                maxFishAbbr = c.abbr ? c.abbr.toUpperCase() : ""; 
+            }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
         });
-    } catch (e) {
-        console.error("Sync error during save:", e);
-        alert("An error occurred while preparing to save: " + e.message);
+        
+        let penPts = 0; 
+        let penStr = "";
+        if (p.penalties && p.penalties.length > 0) {
+            p.penalties.forEach(pn => penPts += parseFloat(pn.points));
+            penStr = ` (-${penPts} pts)`;
+        }
+        totalPts -= penPts;
+
+        let allCatchesStr = (p.catches || []).map(c => `${c.size}${unitText} ${(c.abbr || '').toUpperCase()}`).join(', ') || "-";
+        return { 
+            name: p.name, 
+            totalCm, 
+            totalPts, 
+            maxFishCm, 
+            maxFishAbbr, 
+            amountCatches: countedCatches.length, 
+            allCatchesStr, 
+            penStr 
+        };
+    });
+
+    processed.sort((a, b) => {
+        if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+        if (a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
+        return b.maxFishCm - a.maxFishCm; 
+    });
+
+    let container = document.createElement('div');
+    container.style.width = '1000px';
+    container.style.padding = '30px';
+    container.style.background = '#ffffff';
+    container.style.fontFamily = "'Inter', system-ui, -apple-system, sans-serif";
+    container.style.color = '#0f172a';
+
+    container.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <h2 style="margin: 0 0 6px 0; color: #000000; font-size: 24px; font-weight: 700;">Tournament Results: ${ev.name}</h2>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">Generated on: ${new Date().toLocaleDateString()}</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+            <thead>
+                <tr style="background: #000000; color: #ffffff;">
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 45px; text-align: center;">Place</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 180px;">Name</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 85px;">Points</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 80px;">Total ${unitText.toUpperCase()}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 50px; text-align: center;">Amt</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 100px;">Biggest Fish</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff;">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${processed.map((p, i) => `
+                    <tr style="${i % 2 === 0 ? 'background: #f8fafc;' : 'background: #ffffff;'} page-break-inside: avoid; break-inside: avoid;">
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 700; text-align: center;">${i + 1}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 600;">${p.name}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; color: #000000; font-weight: 700;">${p.totalPts.toFixed(1)}${p.penStr ? `<br><span style="color:#e11d48; font-size:11px;">${p.penStr}</span>` : ''}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">${p.totalCm.toFixed(1)}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">${p.amountCatches}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">${p.maxFishCm > 0 ? `${p.maxFishCm}${unitText} ${p.maxFishAbbr}` : '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; color: #475569; font-size: 12px; line-height: 1.4;">${p.allCatchesStr}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+
+    const opt = {
+        margin: [25, 20, 25, 20],
+        filename: `${(ev.name || 'tournament').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'pt', format: 'letter', orientation: 'landscape' },
+        pagebreak: { mode: ['css', 'legacy'] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(container).save();
+        showSaveStatus("✓ PDF Ready", "#10b981");
+    } catch(err) {
+        console.error("PDF Export error:", err);
+        showSaveStatus("✕ Error", "#ef4444");
+    }
+}
+
+async function downloadSeasonChart() {
+    let rankedFinishedEvents = loadedEvents.filter(e => {
+        let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+        let status = e.details.status || 'finished';
+        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
+    });
+
+    if (rankedFinishedEvents.length === 0) {
+        alert("No finished ranked tournaments found for this season.");
+        return;
+    }
+
+    showSaveStatus("Generating PDF...", "#f59e0b");
+
+    let yearlyAgg = {};
+    rankedFinishedEvents.forEach(ev => {
+        let placements = getEventPlacements(ev.details);
+        Object.keys(placements).forEach(normName => {
+            if (!yearlyAgg[normName]) {
+                let originalName = ev.details.participants.find(p => p.name.toLowerCase().trim() === normName)?.name || normName;
+                yearlyAgg[normName] = { name: originalName, scores: [] };
+            }
+            yearlyAgg[normName].scores.push(placements[normName]);
+        });
+    });
+
+    let aotyArray = Object.values(yearlyAgg).map(angler => {
+        let sortedScores = [...angler.scores].sort((a, b) => a - b);
+        let best5 = sortedScores.slice(0, 5); 
+        let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
+        return {
+            name: angler.name,
+            validEventsCount: angler.scores.length,
+            totalRankPts: totalRankPts,
+            allScoresStr: sortedScores.join(', ')
+        };
+    }).filter(a => a.validEventsCount > 0);
+
+    aotyArray.sort((a, b) => {
+        let aEvents = Math.min(a.validEventsCount, 5);
+        let bEvents = Math.min(b.validEventsCount, 5);
+        if (aEvents !== bEvents) return bEvents - aEvents; 
+        return a.totalRankPts - b.totalRankPts; 
+    });
+
+    let container = document.createElement('div');
+    container.style.width = '750px';
+    container.style.padding = '30px';
+    container.style.background = '#ffffff';
+    container.style.fontFamily = "'Inter', system-ui, -apple-system, sans-serif";
+    container.style.color = '#0f172a';
+
+    container.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <h2 style="margin: 0 0 6px 0; color: #000000; font-size: 24px; font-weight: 700;">Season Results ${selectedYear}</h2>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">Generated on: ${new Date().toLocaleDateString()}</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+            <thead>
+                <tr style="background: #000000; color: #ffffff;">
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 45px; text-align: center;">Place</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 200px;">Name</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 110px; text-align: center;">Rank Pts (Best 5)</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff; width: 90px; text-align: center;">Tournaments Played</th>
+                    <th style="padding: 10px 8px; border: 1px solid #e2e8f0; color: #ffffff;">All Placements</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${aotyArray.map((p, index) => `
+                    <tr style="${index % 2 === 0 ? 'background: #f8fafc;' : 'background: #ffffff;'} page-break-inside: avoid; break-inside: avoid;">
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 700; text-align: center;">${index + 1}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 600;">${p.name}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; color: #000000; font-weight: 700; text-align: center;">${p.totalRankPts}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">${p.validEventsCount}</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0; color: #475569; font-size: 12px;">${p.allScoresStr}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+
+    const opt = {
+        margin: [25, 20, 25, 20],
+        filename: `season_${selectedYear}_results.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(container).save();
+        showSaveStatus("✓ PDF Ready", "#10b981");
+    } catch(err) {
+        console.error("PDF Export error:", err);
+        showSaveStatus("✕ Error", "#ef4444");
     }
 }
 
