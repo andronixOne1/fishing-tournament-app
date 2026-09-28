@@ -228,6 +228,11 @@ function saveProfile() {
     });
 }
 
+function handleClientAreaClick() {
+    if (loggedInUser) showProfilePage();
+    else openLogin();
+}
+
 // AUTHENTICATION
 function toggleAuth(view) {
     hideAllSections();
@@ -364,7 +369,6 @@ function subscribeToEventsRealtime() {
             if (!data.details) data.details = {};
             data.details.id = doc.id; 
             
-            // AUTOMATIC 7-DAY PHOTO CLEANUP FOR FINISHED EVENTS
             let evDet = data.details;
             if (evDet.status === 'finished' && evDet.finishedAt) {
                 let daysSince = (Date.now() - evDet.finishedAt) / (1000 * 3600 * 24);
@@ -616,7 +620,7 @@ function renderPublicLeaderboardList(ev) {
         return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length, penPts, hasPenalty: penPts > 0 };
     });
 
-    processed.sort((a, b) => b.totalPts - a.totalPts); 
+    processed.sort((a, b) => mode === 'points' ? b.totalPts - a.totalPts : b.totalMeasure - a.totalMeasure); 
 
     let toShow = isLeaderboardExpanded ? processed : processed.slice(0, 3);
 
@@ -651,7 +655,8 @@ async function joinEventDirectly() {
         if(confirm("Are you sure you want to leave this event?")) {
             ev.participants = ev.participants.filter(p => p.name.toLowerCase() !== myName.toLowerCase());
             
-            let safeDetails = JSON.parse(JSON.stringify(ev));
+            let safeDetails;
+            try { safeDetails = JSON.parse(JSON.stringify(ev)); } catch(e) { return; }
             showSaveStatus("Updating...", "#f59e0b");
             try {
                 await db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
@@ -667,7 +672,8 @@ async function joinEventDirectly() {
             id: 'p_' + Math.random().toString(36).substr(2, 9),
             name: myName, catches: [], penalties: [], registeredBy: loggedInUser
         });
-        let safeDetails = JSON.parse(JSON.stringify(ev));
+        let safeDetails;
+        try { safeDetails = JSON.parse(JSON.stringify(ev)); } catch(e) { return; }
         showSaveStatus("Updating...", "#f59e0b");
         try {
             await db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
@@ -1143,42 +1149,46 @@ function addSpecies() {
 function removeSpecies(sIdx) { currentEvent.species.splice(sIdx, 1); refreshSetupUI(); }
 
 function refreshSetupUI() {
-    let container = document.getElementById("speciesConfigContainer");
-    container.innerHTML = currentEvent.species.map((s, sIdx) => {
-        let rulesSummary = s.tiers.map(t => {
-            let fromVal = t.from === "" ? 0 : t.from;
-            let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
-            let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
-            return `${fromVal}-${toVal} ${mult}x`;
-        }).join(' | ');
+    try {
+        let container = document.getElementById("speciesConfigContainer");
+        container.innerHTML = currentEvent.species.map((s, sIdx) => {
+            let rulesSummary = s.tiers.map(t => {
+                let fromVal = t.from === "" ? 0 : t.from;
+                let toVal = t.to === 'above' ? '∞' : (t.to === "" ? 0 : t.to);
+                let mult = t.multiplier === "" ? "1.0" : parseFloat(t.multiplier).toFixed(1);
+                return `${fromVal}-${toVal} ${mult}x`;
+            }).join(' | ');
 
-        return `
-        <div class="card" style="padding:16px; margin-bottom:12px;">
-            <div class="flex flex-between">
-                <div>
-                    <div class="flex">
-                        <b style="font-size:15px;">${s.name}</b>
-                        <span class="badge neutral" style="font-size:10px;">${s.abbr.toUpperCase()}</span>
+            return `
+            <div class="card" style="padding:16px; margin-bottom:12px;">
+                <div class="flex flex-between">
+                    <div>
+                        <div class="flex">
+                            <b style="font-size:15px;">${s.name}</b>
+                            <span class="badge neutral" style="font-size:10px;">${s.abbr.toUpperCase()}</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">${rulesSummary}</div>
                     </div>
-                    <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">${rulesSummary}</div>
+                    <div class="flex">
+                        <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})">Rules</button>
+                        <button class="danger icon-btn" style="padding:6px 10px;" onclick="removeSpecies(${sIdx})">${svgTrash}</button>
+                    </div>
                 </div>
-                <div class="flex">
-                    <button class="secondary icon-btn" onclick="openRulesModal(${sIdx})">Rules</button>
-                    <button class="danger icon-btn" style="padding:6px 10px;" onclick="removeSpecies(${sIdx})">${svgTrash}</button>
-                </div>
-            </div>
-        </div>`;
-    }).join("");
+            </div>`;
+        }).join("");
 
-    let isStarted = ['ongoing', 'finished'].includes(currentEvent.status);
-    if (isStarted) {
-        document.getElementById("bulkParticipantsInput").disabled = true;
-        document.getElementById("bulkParticipantsOverlay").classList.remove("hidden");
-        document.getElementById("bulkParticipantsOverlay").style.display = "flex";
-    } else {
-        document.getElementById("bulkParticipantsInput").disabled = false;
-        document.getElementById("bulkParticipantsOverlay").classList.add("hidden");
-        document.getElementById("bulkParticipantsOverlay").style.display = "none";
+        let isStarted = ['ongoing', 'finished'].includes(currentEvent.status);
+        if (isStarted) {
+            document.getElementById("bulkParticipantsInput").disabled = true;
+            document.getElementById("bulkParticipantsOverlay").classList.remove("hidden");
+            document.getElementById("bulkParticipantsOverlay").style.display = "flex";
+        } else {
+            document.getElementById("bulkParticipantsInput").disabled = false;
+            document.getElementById("bulkParticipantsOverlay").classList.add("hidden");
+            document.getElementById("bulkParticipantsOverlay").style.display = "none";
+        }
+    } catch(e) {
+        console.error(e);
     }
 }
 
@@ -1240,14 +1250,14 @@ function renderRules() {
         return `
         <div class="tier-grid" style="position:relative;">
             <button class="danger icon-btn" style="position:absolute; top:-8px; right:-8px; padding:6px; border-radius:50%; box-shadow:none;" onclick="removeRule(${tIdx})">${svgTrash}</button>
-            <div><label>From</label><input type="number" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)"></div>
+            <div><label>From</label><input type="number" step="any" value="${tData.from}" min="${minFrom}" onchange="updateRuleField(${tIdx}, 'from', this.value)"></div>
             <div><label>To</label>
                 <div style="display:flex; gap:4px;">
                     <select onchange="updateRuleField(${tIdx}, 'toType', this.value)" style="flex:1;">
                         <option value="number" ${tData.to !== 'above' ? 'selected' : ''}>Number</option>
                         <option value="above" ${tData.to === 'above' ? 'selected' : ''}>Above</option>
                     </select>
-                    ${tData.to !== 'above' ? `<input type="number" value="${tData.to}" onchange="updateRuleField(${tIdx}, 'to', this.value)" style="flex:1;">` : ''}
+                    ${tData.to !== 'above' ? `<input type="number" step="any" value="${tData.to}" onchange="updateRuleField(${tIdx}, 'to', this.value)" style="flex:1;">` : ''}
                 </div>
             </div>
             <div class="full-width"><label>Multiplier</label><select onchange="updateRuleField(${tIdx}, 'multiplier', this.value)">${multOptions}</select></div>
@@ -1257,64 +1267,125 @@ function renderRules() {
     document.getElementById('rulesContainer').innerHTML = html;
 }
 
-async function goToEventHub() {
-    currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
-    currentEvent.description = document.getElementById("eventDescInput").value.trim();
-    currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
-    let wantsRanked = document.getElementById("isRankedToggle").checked;
-    
-    let thumbSrc = document.getElementById('thumbnailPreview').src;
-    if(thumbSrc && thumbSrc.startsWith('data:')) currentEvent.thumbnail = thumbSrc;
+// SECURE AUTO-SAVE WITH ASYNC
+async function saveCurrentEvent(redirect = true) {
+    if (!currentEvent) return;
+    if (!currentEvent.date) currentEvent.date = new Date().toLocaleDateString();
+    if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+    if (!currentEvent.status) currentEvent.status = "announced";
 
-    currentEvent.eventType = confEventType;
-    currentEvent.unit = confUnit;
-    currentEvent.measureType = confMeasure;
-    currentEvent.limitType = confLimit;
-    
-    currentEvent.hostFullName = loggedInUserData ? loggedInUserData.fullName || loggedInUser : loggedInUser;
-    currentEvent.hostAvatar = loggedInUserData ? loggedInUserData.avatar || "https://via.placeholder.com/40" : "https://via.placeholder.com/40";
+    showSaveStatus("Saving...", "#f59e0b");
 
-    if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
-    if(!currentEvent.status) currentEvent.status = "announced";
-
-    if(wantsRanked) {
-        let existingRankedCount = loadedEvents.filter(e => {
-            let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
-            let status = e.details.status || 'finished';
-            return eYear === String(currentEvent.year) && e.details.isRanked !== false && status === 'finished' && e.id !== currentEvent.id;
-        }).length;
-
-        if(existingRankedCount >= 7) {
-            alert(`Limit reached! You already have 7 ranked tournaments in ${currentEvent.year}. This event will be set as Unranked.`);
-            wantsRanked = false;
-            document.getElementById("isRankedToggle").checked = false;
-        }
+    let safeDetails;
+    try {
+        safeDetails = JSON.parse(JSON.stringify(currentEvent));
+    } catch (e) {
+        console.error("JSON Stringify Error:", e);
+        showSaveStatus("✕ Error", "#f43f5e");
+        alert("Failed to serialize event. Check for invalid data.");
+        return;
     }
-    currentEvent.isRanked = wantsRanked;
 
-    let items = parseParticipants(document.getElementById("bulkParticipantsInput").value);
-    let existingMap = {};
-    (currentEvent.participants||[]).forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [], registeredBy: p.registeredBy });
+    const eventPayload = { 
+        username: loggedInUser, 
+        name: safeDetails.name || "Untitled Event", 
+        details: safeDetails, 
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+    };
 
-    currentEvent.participants = items.map(name => {
-        let lowerName = name.toLowerCase();
-        return {
-            id: existingMap[lowerName] ? existingMap[lowerName].id : 'p_' + Math.random().toString(36).substr(2, 9),
-            name: name,
-            catches: existingMap[lowerName] ? existingMap[lowerName].catches : [],
-            penalties: existingMap[lowerName] ? existingMap[lowerName].penalties : [],
-            registeredBy: existingMap[lowerName] ? existingMap[lowerName].registeredBy : loggedInUser
-        };
-    });
-    
-    await saveCurrentEvent(false);
-    
+    try {
+        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeDetails.species));
+        
+        if (!currentEvent.id) {
+            currentEvent.id = "ev_" + Date.now();
+            safeDetails.id = currentEvent.id;
+        }
+
+        await db.collection("events").doc(currentEvent.id).set(eventPayload);
+        showSaveStatus("✓ Saved", "#10b981");
+        if (redirect) showMyEvents(); 
+    } catch (err) {
+        showSaveStatus("✕ Error", "#f43f5e");
+        console.error("Save error:", err); 
+        alert("Firebase write rejected: " + err.message); 
+    }
+}
+
+async function goToEventHub() {
+    try {
+        currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
+        currentEvent.description = document.getElementById("eventDescInput").value.trim();
+        currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
+        let wantsRanked = document.getElementById("isRankedToggle").checked;
+        
+        let thumbPreview = document.getElementById('thumbnailPreview');
+        if (thumbPreview && thumbPreview.src && thumbPreview.src.startsWith('data:')) {
+            currentEvent.thumbnail = thumbPreview.src;
+        }
+
+        currentEvent.eventType = confEventType;
+        currentEvent.unit = confUnit;
+        currentEvent.measureType = confMeasure;
+        currentEvent.limitType = confLimit;
+        
+        currentEvent.hostFullName = loggedInUserData ? loggedInUserData.fullName || loggedInUser : loggedInUser;
+        currentEvent.hostAvatar = loggedInUserData ? loggedInUserData.avatar || "https://via.placeholder.com/40" : "https://via.placeholder.com/40";
+
+        if(!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
+        if(!currentEvent.status) currentEvent.status = "announced";
+
+        if(wantsRanked) {
+            let existingRankedCount = loadedEvents.filter(e => {
+                let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+                let status = e.details.status || 'finished';
+                return eYear === String(currentEvent.year) && e.details.isRanked !== false && status === 'finished' && e.id !== currentEvent.id;
+            }).length;
+
+            if(existingRankedCount >= 7) {
+                alert(`Limit reached! You already have 7 ranked tournaments in ${currentEvent.year}. This event will be set as Unranked.`);
+                wantsRanked = false;
+                document.getElementById("isRankedToggle").checked = false;
+            }
+        }
+        currentEvent.isRanked = wantsRanked;
+
+        let bulkEl = document.getElementById("bulkParticipantsInput");
+        let items = parseParticipants(bulkEl ? bulkEl.value : "");
+        
+        let existingMap = {};
+        (currentEvent.participants||[]).forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [], registeredBy: p.registeredBy });
+
+        currentEvent.participants = items.map(name => {
+            let lowerName = name.toLowerCase();
+            return {
+                id: existingMap[lowerName] ? existingMap[lowerName].id : 'p_' + Math.random().toString(36).substr(2, 9),
+                name: name,
+                catches: existingMap[lowerName] ? existingMap[lowerName].catches : [],
+                penalties: existingMap[lowerName] ? existingMap[lowerName].penalties : [],
+                registeredBy: existingMap[lowerName] ? existingMap[lowerName].registeredBy : loggedInUser
+            };
+        });
+        
+        await saveCurrentEvent(false); 
+        
+        hideAllSections();
+        document.getElementById("hubSection").classList.remove("hidden");
+        window.scrollTo(0, 0);
+        
+        history.pushState({view: 'hubSection'}, "");
+        renderHubUI();
+    } catch(e) {
+        console.error("Navigation error:", e);
+        alert("Error parsing event configuration: " + e.message);
+    }
+}
+
+function backToSetup() {
     hideAllSections();
-    document.getElementById("hubSection").classList.remove("hidden");
+    document.getElementById("setupSection").classList.remove("hidden");
+    refreshSetupUI();
     window.scrollTo(0, 0);
-    
-    history.pushState({view: 'hubSection'}, "");
-    renderHubUI();
+    history.pushState({view: 'setupSection'}, "");
 }
 
 async function startEventNow() {
@@ -1565,7 +1636,7 @@ function renderModalCatches() {
         p.catches.map((c, cIdx) => {
             let sizeDisplay = isUserUpload ? 
                 `<b>${c.size > 0 ? c.size + unitText : 'Pending'}</b>` :
-                `<div class="flex" style="margin-right:8px;"><input type="number" id="editCatchSize_${cIdx}" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px;"><button class="primary icon-btn" style="padding:4px 8px; box-shadow:none;" onclick="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, document.getElementById('editCatchSize_${cIdx}').value, this)">Save</button></div>`;
+                `<div class="flex" style="margin-right:8px;"><input type="number" step="any" id="editCatchSize_${cIdx}" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px;"><button class="primary icon-btn" style="padding:4px 8px; box-shadow:none;" onclick="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, document.getElementById('editCatchSize_${cIdx}').value, this)">Save</button></div>`;
 
             let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreviewByUrl('${c.photo}')">${svgCamera}</button>` : '';
             
@@ -1648,7 +1719,7 @@ function calculateFishPoints(abbr, size, speciesList, measureType) {
         return size >= f && size <= (t.to === "" ? Infinity : parseFloat(t.to));
     });
     
-    if (!matchingTier) return 0; 
+    if (!matchingTier) return 0; // If fish doesn't match any tier, it gets 0 points.
     
     let m = (matchingTier.multiplier !== "") ? parseFloat(matchingTier.multiplier) : 1.0;
     return size * (isNaN(m) ? 1.0 : m);
