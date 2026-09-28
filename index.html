@@ -290,9 +290,8 @@
         <!-- Sticky Bottom Bar for Step 2 -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div id="bottomActionBarButtons" class="flex" style="gap: 12px; width: 100%; align-items: center;">
-                <a href="javascript:void(0)" onclick="downloadChart()" data-i18n="download_chart" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-decoration: underline; flex-shrink: 0; padding: 0 8px;">PDF</a>
-                <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 1; padding:12px;" data-i18n="finish_event">Finish Event</button>
-                <button onclick="saveCurrentEvent(true)" class="primary-dark" data-i18n="save_event" style="flex: 1; padding:12px;">Save Event</button>
+                <button onclick="downloadChart()" class="secondary" style="flex: 1; padding: 14px; font-weight: 700;">📄 Download PDF</button>
+                <button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 1; padding: 14px;" data-i18n="finish_event">Finish Event</button>
             </div>
         </div>
     </div>
@@ -413,7 +412,7 @@
     let currentLang = "en";
     let selectedYear = new Date().getFullYear().toString();
 
-    let cachedGeorgianFontB64 = null;
+    let cachedFullFontB64 = null;
 
     const translations = {
         en: {
@@ -422,8 +421,8 @@
             tourn_name: "Tournament Name", ranked_tourn: "Ranked Tournament", ranked_desc: "Include in Yearly Leaderboard (Max 7/year)", bulk_part: "Participants List",
             bulk_desc: "Paste names. Symbols/brackets are auto-removed.", fish_species_title: "Species & Multipliers", add_species: "+ Add Species", start_event: "Start Event", next_btn: "Next",
             hub_title: "Tournament Hub", edit_setup: "← Setup", manage_part: "Participants", add_new: "+ Add", leaderboard: "Leaderboard", mode_pts: "Rank by Points",
-            mode_cm: "Rank by Centimeters", save_event: "Save Event", finish_event: "Finish Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
-            add_remove_fish: "Add / Remove Catch", species_sel: "Species", size_cm: "Size (cm)", save: "Save", add_fish_btn: "+ Add Catch", edit_rules: "Edit Rules",
+            mode_cm: "Rank by Centimeters", finish_event: "Finish Event", modal_add_title: "Add New Participant", close: "Cancel", add: "Add",
+            add_remove_fish: "Add / Remove Catch", species_sel: "Species", size_cm: "Size (cm)", add_fish_btn: "+ Add Catch", edit_rules: "Edit Rules",
             add_rule: "+ Add New Rule", done: "Done", rule_from: "From", rule_to: "To", rule_mult: "Multiplier", download_chart: "PDF", download_season_pdf: "Season PDF",
             season_results: "Season Results", current_catches: "Current Catches", no_catches: "No catches logged.", too_small_title: "Fish Too Small", 
             too_small_desc: "The fish is too small based on the rules.", ok: "OK", ignore: "Ignore", angler_of_year: "Angler of the Year", edit_name: "Edit Name", 
@@ -439,8 +438,8 @@
             tourn_name: "ტურნირის სახელი", ranked_tourn: "სარეიტინგო ტურნირი", ranked_desc: "წლიურ რეიტინგში დამატება (მაქს 7/წელს)", bulk_part: "მონაწილეთა სია",
             bulk_desc: "ჩასვით სახელები. ფრჩხილები/სიმბოლოები იშლება.", fish_species_title: "სახეობები და კოეფიციენტები", add_species: "+ სახეობის დამატება", start_event: "ტურნირის დაწყება", next_btn: "შემდეგი",
             hub_title: "ტურნირის ჰაბი", edit_setup: "← პარამეტრები", manage_part: "მონაწილეები", add_new: "+ დამატება", leaderboard: "ლიდერბორდი", mode_pts: "ქულებით რეიტინგი",
-            mode_cm: "სანტიმეტრებით რეიტინგი", save_event: "ტურნირის შენახვა", finish_event: "ტურნირის დასრულება", modal_add_title: "მონაწილის დამატება", close: "გაუქმება", add: "დამატება",
-            add_remove_fish: "თევზის დამატება/წაშლა", species_sel: "სახეობა", size_cm: "ზომა (სმ)", save: "შენახვა", add_fish_btn: "+ დამატება", edit_rules: "წესები",
+            mode_cm: "სანტიმეტრებით რეიტინგი", finish_event: "ტურნირის დასრულება", modal_add_title: "მონაწილის დამატება", close: "გაუქმება", add: "დამატება",
+            add_remove_fish: "თევზის დამატება/წაშლა", species_sel: "სახეობა", size_cm: "ზომა (სმ)", add_fish_btn: "+ დამატება", edit_rules: "წესები",
             add_rule: "+ ახალი წესი", done: "მზადაა", rule_from: "-დან", rule_to: "-მდე", rule_mult: "კოეფიციენტი", download_chart: "PDF", download_season_pdf: "სეზონის PDF",
             season_results: "სეზონის შედეგები", current_catches: "მიმდინარე თევზები", no_catches: "თევზი არ არის.", too_small_title: "თევზი ძალიან პატარაა", 
             too_small_desc: "წესების მიხედვით თევზი ძალიან პატარაა.", ok: "OK", ignore: "იგნორირება", angler_of_year: "წლის მეთევზე", edit_name: "სახელის შეცვლა", 
@@ -742,7 +741,7 @@
                     <div style="font-size:13px; color:var(--text-muted); font-weight:500;">📅 ${publishDate} • ${ev.details.participants.length} Participants</div>
                 </div>
                 <div class="flex" style="gap:8px; align-items:center;">
-                    <a href="javascript:void(0)" onclick="downloadChart('${ev.id}')" style="color: var(--text-muted); font-size: 13px; font-weight: 600; text-decoration: underline; margin-right: 4px;">PDF</a>
+                    <button onclick="downloadChart('${ev.id}')" class="secondary icon-btn" style="padding:10px 14px; box-shadow:none; font-weight:700;">PDF</button>
                     <button onclick="editEvent('${ev.id}')" class="icon-btn primary-dark" style="padding:10px 14px; box-shadow:none;">Open</button>
                     <button class="danger icon-btn" onclick="deleteEvent('${ev.id}')" style="padding:10px 14px; box-shadow:none;">Del</button>
                 </div>
@@ -1139,6 +1138,7 @@
         await executeAddFish(selectedModalSpecies, size);
     }
 
+    // ADDS CATCH, UPDATES UI, AND SAVES TO CLOUD
     async function executeAddFish(abbr, size) {
         currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
         if(document.getElementById("modalFishSize")) {
@@ -1375,12 +1375,13 @@
 }
 
 // =========================================================================
-// GEORGIAN UNICODE FONT LOADER FOR JSPDF
+// UNIFIED FULL-UNICODE FONT (GEORGIAN + LATIN + DIGITS)
 // =========================================================================
-async function ensureGeorgianFont(doc) {
-    if (!cachedGeorgianFontB64) {
-        showSaveStatus("Loading Fonts...", "#f59e0b");
-        const fontUrl = "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@master/hinted/ttf/NotoSansGeorgian/NotoSansGeorgian-Regular.ttf";
+async function ensureFullUnicodeFont(doc) {
+    if (!cachedFullFontB64) {
+        showSaveStatus("Loading font...", "#f59e0b");
+        // DejaVu Sans contains Latin, Georgian (Mkhedruli & Asomtavruli), Cyrillic, and numeric glyphs
+        const fontUrl = "https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans.ttf";
         const response = await fetch(fontUrl);
         const buffer = await response.arrayBuffer();
         let binary = '';
@@ -1388,15 +1389,15 @@ async function ensureGeorgianFont(doc) {
         for (let i = 0; i < bytes.byteLength; i++) {
             binary += String.fromCharCode(bytes[i]);
         }
-        cachedGeorgianFontB64 = btoa(binary);
+        cachedFullFontB64 = btoa(binary);
     }
-    doc.addFileToVFS("NotoSansGeorgian.ttf", cachedGeorgianFontB64);
-    doc.addFont("NotoSansGeorgian.ttf", "NotoSansGeorgian", "normal");
-    doc.setFont("NotoSansGeorgian");
+    doc.addFileToVFS("DejaVuSans.ttf", cachedFullFontB64);
+    doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
+    doc.setFont("DejaVuSans");
 }
 
 // =========================================================================
-// PURE JSPDF-AUTOTABLE GENERATOR WITH GEORGIAN UNICODE SUPPORT
+// PURE JSPDF-AUTOTABLE GENERATOR WITH COMPLETE UNICODE
 // =========================================================================
 async function downloadChart(eventId = null) {
     let ev = currentEvent;
@@ -1455,11 +1456,12 @@ async function downloadChart(eventId = null) {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
 
     try {
-        await ensureGeorgianFont(doc);
+        await ensureFullUnicodeFont(doc);
     } catch(err) {
-        console.warn("Georgian font load error:", err);
+        console.warn("Unicode font load error:", err);
     }
 
+    doc.setFont("DejaVuSans");
     doc.setFontSize(18);
     doc.setTextColor(79, 70, 229);
     doc.text(`${t('tournament_results')}: ${ev.name}`, 40, 45);
@@ -1493,14 +1495,14 @@ async function downloadChart(eventId = null) {
         body: tableRows,
         theme: 'striped',
         styles: { 
-            font: "NotoSansGeorgian",
+            font: "DejaVuSans",
             fontSize: 9, 
             cellPadding: 6, 
             textColor: [30, 41, 59],
             valign: 'middle' 
         },
         headStyles: { 
-            font: "NotoSansGeorgian",
+            font: "DejaVuSans",
             fillColor: [79, 70, 229], 
             textColor: 255, 
             fontStyle: 'normal',
@@ -1508,7 +1510,7 @@ async function downloadChart(eventId = null) {
         },
         columnStyles: {
             0: { cellWidth: 45, halign: 'center' },
-            1: { cellWidth: 140 },
+            1: { cellWidth: 150 },
             2: { cellWidth: 70, textColor: [79, 70, 229] },
             3: { cellWidth: 65 },
             4: { cellWidth: 40, halign: 'center' },
@@ -1569,11 +1571,12 @@ async function downloadSeasonChart() {
     const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" });
 
     try {
-        await ensureGeorgianFont(doc);
+        await ensureFullUnicodeFont(doc);
     } catch(err) {
-        console.warn("Georgian font load error:", err);
+        console.warn("Unicode font load error:", err);
     }
 
+    doc.setFont("DejaVuSans");
     doc.setFontSize(18);
     doc.setTextColor(79, 70, 229);
     doc.text(`${t('season_results')} ${selectedYear}`, 40, 45);
@@ -1603,14 +1606,14 @@ async function downloadSeasonChart() {
         body: tableRows,
         theme: 'striped',
         styles: { 
-            font: "NotoSansGeorgian",
+            font: "DejaVuSans",
             fontSize: 9, 
             cellPadding: 6, 
             textColor: [30, 41, 59],
             valign: 'middle' 
         },
         headStyles: { 
-            font: "NotoSansGeorgian",
+            font: "DejaVuSans",
             fillColor: [79, 70, 229], 
             textColor: 255, 
             fontStyle: 'normal',
