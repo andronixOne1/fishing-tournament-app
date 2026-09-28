@@ -8,7 +8,6 @@
     <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- Firebase Realtime Cloud SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -102,16 +101,15 @@
         .tier-grid input, .tier-grid select { padding: 12px; font-size: 14px; }
         .tier-grid .full-width { grid-column: span 2; }
 
-        /* Live Save Toast */
-        #liveSaveStatus {
-            transition: all 0.3s ease;
-            font-size: 12px;
+        /* Live Save Status Toast */
+        #globalSaveBadge {
+            transition: all 0.2s ease;
+            font-size: 11px;
             font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.25);
-            color: #fff;
-            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            color: #ffffff;
+            display: none;
         }
     </style>
 </head>
@@ -125,7 +123,7 @@
                 <circle cx="12" cy="3" r="1.5"/>
             </svg>
             <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard</div>
-            <span id="liveSaveStatus" class="hidden">✓ Saved</span>
+            <span id="globalSaveBadge">Saved</span>
         </div>
         
         <div class="flex" style="gap: 8px;">
@@ -385,7 +383,7 @@
 
 <script>
     // =========================================================================
-    // FIREBASE REALTIME CLOUD DATABASE CONFIGURATION
+    // INLINE JAVASCRIPT LOGIC - SELF CONTAINED
     // =========================================================================
     const firebaseConfig = {
         apiKey: "AIzaSyD0uXVP6iALWh2ADcn3jjb6zMBCAzOAUtk",
@@ -409,7 +407,7 @@
     let activeFishParticipantIndex = null;
     let activePenaltyParticipantIndex = null;
     let activeSpeciesIndex = null;
-
+    
     let selectedModalSpecies = "";
     let pendingSmallFish = null;
     let currentLang = "en";
@@ -452,22 +450,14 @@
         }
     };
 
-    function updateSaveBadge(status) {
-        let badge = document.getElementById("liveSaveStatus");
-        if (!badge) return;
-        if (status === 'saving') {
-            badge.innerText = "💾 Saving...";
-            badge.style.background = "#f59e0b";
-            badge.classList.remove("hidden");
-        } else if (status === 'saved') {
-            badge.innerText = "✓ Saved";
-            badge.style.background = "#10b981";
-            badge.classList.remove("hidden");
-            setTimeout(() => { badge.classList.add("hidden"); }, 2000);
-        } else if (status === 'error') {
-            badge.innerText = "✕ Error";
-            badge.style.background = "#f43f5e";
-            badge.classList.remove("hidden");
+    function showSaveStatus(text, bg) {
+        let el = document.getElementById("globalSaveBadge");
+        if (!el) return;
+        el.innerText = text;
+        el.style.background = bg;
+        el.style.display = "inline-block";
+        if (bg === "#10b981") {
+            setTimeout(() => { el.style.display = "none"; }, 2000);
         }
     }
 
@@ -771,6 +761,7 @@
         if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
         if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.remove("hidden");
         window.scrollTo(0, 0);
+
         history.pushState({view: 'setupSection'}, "");
 
         if (eventObj) {
@@ -967,14 +958,16 @@
         }).join('');
     }
 
-    // DIRECT & GUARANTEED SAVE TO FIRESTORE
+    // ==========================================
+    // PERSISTENCE SAVE FUNCTION
+    // ==========================================
     async function saveCurrentEvent(redirect = true) {
         if (!currentEvent) return;
         if (!currentEvent.date) currentEvent.date = new Date().toLocaleDateString();
         if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
         if (!currentEvent.status) currentEvent.status = "ongoing";
 
-        updateSaveBadge('saving');
+        showSaveStatus("Saving...", "#f59e0b");
 
         const safeEvent = JSON.parse(JSON.stringify(currentEvent));
         const eventPayload = { 
@@ -986,12 +979,12 @@
 
         try {
             await db.collection("events").doc(currentEvent.id).set(eventPayload);
-            updateSaveBadge('saved');
+            showSaveStatus("✓ Saved", "#10b981");
             if (redirect) showDashboard(); 
         } catch (err) {
-            updateSaveBadge('error');
+            showSaveStatus("✕ Error", "#f43f5e");
             console.error("Save error:", err); 
-            alert("Firebase Error: " + err.message); 
+            alert("Firebase write rejected: " + err.message); 
         }
     }
 
@@ -1144,6 +1137,7 @@
         await executeAddFish(selectedModalSpecies, size);
     }
 
+    // ADDS CATCH, UPDATES UI, AND SAVES TO CLOUD
     async function executeAddFish(abbr, size) {
         currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
         if(document.getElementById("modalFishSize")) {
@@ -1152,7 +1146,7 @@
         }
         renderModalCatches(); 
         renderHubUI(); 
-        await saveCurrentEvent(false); // FORCED IMMEDIATE SAVE
+        await saveCurrentEvent(false);
     }
 
     function cancelSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").focus(); }
@@ -1352,176 +1346,264 @@
                             <div style="font-size:12px; color:#b45309; font-weight:700; text-transform:uppercase; letter-spacing: 0.5px;">🏆 ${t('biggest_fish')}</div>
                             <div style="font-weight:700; font-size:18px; color:var(--text); margin-top:4px;">${sortedByBiggest[0].name}</div>
                         </div>
-                        <div style="text-align:right;">
-                            <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishCm}</span> cm
-                            <div class="badge" style="background:#fef08a; color:#b45309; display:inline-block; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
-                        </div>
-                    </div>`;
-                topSummaryContainer.classList.remove('hidden');
-            } else { topSummaryContainer.classList.add('hidden'); }
-        }
-
-        let html = `<table><tr><th style="width:50px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
-        sortedByMain.forEach((p, idx) => {
-            let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
-            let maxDisplay = p.maxFishCm > 0 ? `${p.maxFishCm}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
-            let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
-            html += `<tr>
-                <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
-                <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
-                <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
-                <td>${p.totalCm.toFixed(1)}</td>
-                <td>${p.amountCatches}</td>
-                <td>${maxDisplay}</td>
-            </tr>`;
-        });
-        html += `</table>`;
-        container.innerHTML = html;
+                    <div style="text-align:right;">
+                        <span style="font-size:20px; font-weight:800; color:var(--text);">${sortedByBiggest[0].maxFishCm}</span> cm
+                        <div class="badge" style="background:#fef08a; color:#b45309; display:inline-block; margin-left:4px; box-shadow:none;">${sortedByBiggest[0].maxFishAbbr}</div>
+                    </div>
+                </div>`;
+            topSummaryContainer.classList.remove('hidden');
+        } else { topSummaryContainer.classList.add('hidden'); }
     }
 
-    function downloadChart(eventId = null) {
-        let ev = currentEvent;
-        if (eventId) { let found = loadedEvents.find(e => e.id === eventId); if (found) ev = found.details; }
-        if (!ev || ev.participants.length === 0) { alert("No data to download."); return; }
+    let html = `<table><tr><th style="width:50px;">#</th><th>${t('name')}</th><th>${t('points')}</th><th>${t('total_cm').toUpperCase()}</th><th>Amt</th><th>Max</th></tr>`;
+    sortedByMain.forEach((p, idx) => {
+        let placeBadge = (idx === 0) ? "🥇" : (idx === 1) ? "🥈" : (idx === 2) ? "🥉" : `${idx + 1}`;
+        let maxDisplay = p.maxFishCm > 0 ? `${p.maxFishCm}<span style="font-size:11px; color:var(--text-muted); margin-left:2px;">${p.maxFishAbbr}</span>` : `-`;
+        let penMarker = p.hasPenalty ? `<span style="color:var(--danger); font-size:10px; margin-left:4px;" title="-${p.penPts} pts">❗</span>` : '';
+        html += `<tr>
+            <td style="font-weight:bold; text-align:center;">${placeBadge}</td>
+            <td style="font-weight:600; white-space:nowrap;">${p.name}${penMarker}</td>
+            <td style="color:var(--primary); font-weight:700;">${p.totalPts.toFixed(1)}</td>
+            <td>${p.totalCm.toFixed(1)}</td>
+            <td>${p.amountCatches}</td>
+            <td>${maxDisplay}</td>
+        </tr>`;
+    });
+    html += `</table>`;
+    container.innerHTML = html;
+}
 
-        let processed = ev.participants.map(p => {
-            let totalCm = 0, totalPts = 0, maxFishCm = 0, maxFishAbbr = "";
-            p.catches.forEach(c => {
-                totalCm += c.size;
-                if (c.size > maxFishCm) { maxFishCm = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
-                totalPts += calculateFishPoints(c.abbr, c.size, ev.species);
-            });
-            let penPts = 0; let penStr = "";
-            if(p.penalties && p.penalties.length > 0) {
-                p.penalties.forEach(pn => penPts += parseFloat(pn.points));
-                penStr = ` (Penalty: -${penPts})`;
+// =========================================================================
+// PURE JSPDF-AUTOTABLE GENERATOR (NO CANVAS TRUNCATION)
+// =========================================================================
+function downloadChart(eventId = null) {
+    let ev = currentEvent;
+    if (eventId) { 
+        let found = loadedEvents.find(e => e.id === eventId); 
+        if (found) ev = found.details; 
+    }
+    if (!ev || !ev.participants || ev.participants.length === 0) { 
+        alert("No data to download."); 
+        return; 
+    }
+
+    let unitText = 'cm';
+
+    let processed = ev.participants.map(p => {
+        let totalCm = 0, totalPts = 0, maxFishCm = 0, maxFishAbbr = "";
+        let countedCatches = p.catches || [];
+        
+        countedCatches.forEach(c => {
+            totalCm += c.size;
+            if (c.size > maxFishCm) { 
+                maxFishCm = c.size; 
+                maxFishAbbr = c.abbr ? c.abbr.toUpperCase() : ""; 
             }
-            totalPts -= penPts;
-            return { name: p.name, totalCm, totalPts, maxFishCm, maxFishAbbr, amountCatches: p.catches.length, allCatchesStr: p.catches.map(c => `${c.size}cm ${c.abbr.toUpperCase()}`).join(', ') || "-" };
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species);
         });
-
-        processed.sort((a, b) => {
-            if(b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-            if(a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
-            return b.maxFishCm - a.maxFishCm; 
-        });
-
-        let htmlContent = `
-            <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 1000px; margin: 0 auto; background: white;">
-                <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">${t('tournament_results')}: ${ev.name}</h2>
-                <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                    <thead><tr style="background-color: #4f46e5; color: #ffffff;">
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('points')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('total_cm')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">Amt</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('biggest_fish')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 40%;">${t('details')}</th>
-                    </tr></thead>
-                    <tbody>${processed.map((p, i) => `
-                        <tr style="${index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${i + 1}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalPts.toFixed(1)}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.totalCm.toFixed(1)}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.amountCatches}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.maxFishCm > 0 ? `${p.maxFishCm}cm ${p.maxFishAbbr}` : '-'}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px; line-height: 1.4;">${p.allCatchesStr}</td>
-                        </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`;
-
-        let opt = { margin: 0.3, filename: `${ev.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-        let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
-    }
-
-    function downloadSeasonChart() {
-        let rankedFinishedEvents = loadedEvents.filter(e => {
-            let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
-            let status = e.details.status || 'finished';
-            return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
-        });
-
-        if (rankedFinishedEvents.length === 0) {
-            alert("No finished ranked tournaments found for this season.");
-            return;
+        
+        let penPts = 0; 
+        let penStr = "";
+        if (p.penalties && p.penalties.length > 0) {
+            p.penalties.forEach(pn => penPts += parseFloat(pn.points));
+            penStr = ` (-${penPts} pts)`;
         }
+        totalPts -= penPts;
 
-        let yearlyAgg = {};
-        rankedFinishedEvents.forEach(ev => {
-            let placements = getEventPlacements(ev.details);
-            Object.keys(placements).forEach(normName => {
-                if(!yearlyAgg[normName]) {
-                    let originalName = ev.details.participants.find(p => p.name.toLowerCase().trim() === normName)?.name || normName;
-                    yearlyAgg[normName] = { name: originalName, scores: [] };
-                }
-                yearlyAgg[normName].scores.push(placements[normName]);
-            });
-        });
+        let allCatchesStr = (p.catches || []).map(c => `${c.size}cm ${(c.abbr || '').toUpperCase()}`).join(', ') || "-";
+        return { 
+            name: p.name, 
+            totalCm, 
+            totalPts, 
+            maxFishCm, 
+            maxFishAbbr, 
+            amountCatches: countedCatches.length, 
+            allCatchesStr, 
+            penStr 
+        };
+    });
 
-        let aotyArray = Object.values(yearlyAgg).map(angler => {
-            let sortedScores = [...angler.scores].sort((a, b) => a - b);
-            let best5 = sortedScores.slice(0, 5); 
-            let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
-            return {
-                name: angler.name,
-                validEventsCount: angler.scores.length,
-                totalRankPts: totalRankPts,
-                allScoresStr: sortedScores.join(', ')
-            };
-        }).filter(a => a.validEventsCount > 0);
+    processed.sort((a, b) => {
+        if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+        if (a.amountCatches !== b.amountCatches) return a.amountCatches - b.amountCatches; 
+        return b.maxFishCm - a.maxFishCm; 
+    });
 
-        aotyArray.sort((a, b) => {
-            let aEvents = Math.min(a.validEventsCount, 5);
-            let bEvents = Math.min(b.validEventsCount, 5);
-            if(aEvents !== bEvents) return bEvents - aEvents; 
-            return a.totalRankPts - b.totalRankPts; 
-        });
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
 
-        let htmlContent = `
-            <div style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #0f172a; width: 800px; margin: 0 auto; background: white;">
-                <h2 style="margin-bottom: 8px; color: #4f46e5; font-size:28px;">${t('season_results')} ${selectedYear}</h2>
-                <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                    <thead><tr style="background-color: #4f46e5; color: #ffffff;">
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('place')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('name')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('rank_pts_best5')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('tournaments_played')}</th>
-                        <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5;">${t('all_placements')}</th>
-                    </tr></thead>
-                    <tbody>${aotyArray.map((p, index) => `
-                        <tr style="${index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${index + 1}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalRankPts}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${p.validEventsCount}</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px;">${p.allScoresStr}</td>
-                        </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`;
+    doc.setFontSize(18);
+    doc.setTextColor(79, 70, 229);
+    doc.text(`${t('tournament_results')}: ${ev.name}`, 40, 45);
 
-        let opt = { margin: 0.3, filename: `season_${selectedYear}_results.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-        let tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlContent; html2pdf().set(opt).from(tempDiv).save();
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`${t('generated_on')}: ${new Date().toLocaleDateString()}`, 40, 62);
+
+    const tableRows = processed.map((p, index) => [
+        index + 1,
+        p.name,
+        `${p.totalPts.toFixed(1)}${p.penStr}`,
+        p.totalCm.toFixed(1),
+        p.amountCatches,
+        p.maxFishCm > 0 ? `${p.maxFishCm}${unitText} ${p.maxFishAbbr}` : "-",
+        p.allCatchesStr
+    ]);
+
+    doc.autoTable({
+        startY: 75,
+        margin: { left: 40, right: 40, bottom: 40 },
+        head: [[
+            t('place'), 
+            t('name'), 
+            t('points'), 
+            t('total_cm').toUpperCase(), 
+            'Amt', 
+            t('biggest_fish'), 
+            t('details')
+        ]],
+        body: tableRows,
+        theme: 'striped',
+        headStyles: { 
+            fillColor: [79, 70, 229], 
+            textColor: 255, 
+            fontStyle: 'bold',
+            fontSize: 10
+        },
+        styles: { 
+            fontSize: 9, 
+            cellPadding: 6, 
+            textColor: [30, 41, 59],
+            valign: 'middle' 
+        },
+        columnStyles: {
+            0: { cellWidth: 45, halign: 'center', fontStyle: 'bold' },
+            1: { cellWidth: 120, fontStyle: 'bold' },
+            2: { cellWidth: 70, textColor: [79, 70, 229], fontStyle: 'bold' },
+            3: { cellWidth: 65 },
+            4: { cellWidth: 40, halign: 'center' },
+            5: { cellWidth: 80 },
+            6: { cellWidth: 'auto' }
+        },
+        pageBreak: 'auto'
+    });
+
+    const safeFilename = `${(ev.name || 'tournament').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`;
+    doc.save(safeFilename);
+}
+
+function downloadSeasonChart() {
+    let rankedFinishedEvents = loadedEvents.filter(e => {
+        let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
+        let status = e.details.status || 'finished';
+        return eYear === String(selectedYear) && e.details.isRanked !== false && status === 'finished';
+    });
+
+    if (rankedFinishedEvents.length === 0) {
+        alert("No finished ranked tournaments found for this season.");
+        return;
     }
 
-    // INITIALIZATION
-    let langSelect = document.getElementById("langSelect");
-    if(langSelect) changeLanguage(langSelect.value);
+    let yearlyAgg = {};
+    rankedFinishedEvents.forEach(ev => {
+        let placements = getEventPlacements(ev.details);
+        Object.keys(placements).forEach(normName => {
+            if (!yearlyAgg[normName]) {
+                let originalName = ev.details.participants.find(p => p.name.toLowerCase().trim() === normName)?.name || normName;
+                yearlyAgg[normName] = { name: originalName, scores: [] };
+            }
+            yearlyAgg[normName].scores.push(placements[normName]);
+        });
+    });
 
-    let savedUser = null;
-    try { savedUser = localStorage.getItem("lureboard_user"); } catch(e) {}
+    let aotyArray = Object.values(yearlyAgg).map(angler => {
+        let sortedScores = [...angler.scores].sort((a, b) => a - b);
+        let best5 = sortedScores.slice(0, 5); 
+        let totalRankPts = best5.reduce((sum, val) => sum + val, 0);
+        return {
+            name: angler.name,
+            validEventsCount: angler.scores.length,
+            totalRankPts: totalRankPts,
+            allScoresStr: sortedScores.join(', ')
+        };
+    }).filter(a => a.validEventsCount > 0);
 
-    if (savedUser) {
-        loginSuccess(savedUser);
-    } else {
-        if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
-        if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
-    }
+    aotyArray.sort((a, b) => {
+        let aEvents = Math.min(a.validEventsCount, 5);
+        let bEvents = Math.min(b.validEventsCount, 5);
+        if (aEvents !== bEvents) return bEvents - aEvents; 
+        return a.totalRankPts - b.totalRankPts; 
+    });
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" });
+
+    doc.setFontSize(18);
+    doc.setTextColor(79, 70, 229);
+    doc.text(`${t('season_results')} ${selectedYear}`, 40, 45);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`${t('generated_on')}: ${new Date().toLocaleDateString()}`, 40, 62);
+
+    const tableRows = aotyArray.map((p, index) => [
+        index + 1,
+        p.name,
+        p.totalRankPts,
+        p.validEventsCount,
+        p.allScoresStr
+    ]);
+
+    doc.autoTable({
+        startY: 75,
+        margin: { left: 40, right: 40, bottom: 40 },
+        head: [[
+            t('place'), 
+            t('name'), 
+            t('rank_pts_best5'), 
+            t('tournaments_played'), 
+            t('all_placements')
+        ]],
+        body: tableRows,
+        theme: 'striped',
+        headStyles: { 
+            fillColor: [79, 70, 229], 
+            textColor: 255, 
+            fontStyle: 'bold',
+            fontSize: 10
+        },
+        styles: { 
+            fontSize: 9, 
+            cellPadding: 6, 
+            textColor: [30, 41, 59],
+            valign: 'middle' 
+        },
+        columnStyles: {
+            0: { cellWidth: 45, halign: 'center', fontStyle: 'bold' },
+            1: { cellWidth: 150, fontStyle: 'bold' },
+            2: { cellWidth: 80, textColor: [79, 70, 229], fontStyle: 'bold', halign: 'center' },
+            3: { cellWidth: 70, halign: 'center' },
+            4: { cellWidth: 'auto' }
+        },
+        pageBreak: 'auto'
+    });
+
+    doc.save(`season_${selectedYear}_results.pdf`);
+}
+
+// INITIALIZATION
+let langSelect = document.getElementById("langSelect");
+if(langSelect) changeLanguage(langSelect.value);
+
+let savedUser = null;
+try { savedUser = localStorage.getItem("lureboard_user"); } catch(e) {}
+
+if (savedUser) {
+    loginSuccess(savedUser);
+} else {
+    if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
+    if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
+}
 </script>
 </body>
 </html>
