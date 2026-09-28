@@ -156,6 +156,31 @@ const translations = {
     }
 };
 
+// --- DYNAMIC SAVING INDICATOR ---
+function showSavingIndicator() {
+    let indicator = document.getElementById("lureboardSaveIndicator");
+    if (!indicator) {
+        indicator = document.createElement("div");
+        indicator.id = "lureboardSaveIndicator";
+        indicator.innerHTML = "Saving...";
+        Object.assign(indicator.style, {
+            position: "fixed", top: "16px", left: "50%", transform: "translateX(-50%)",
+            background: "#10b981", color: "white", padding: "6px 16px",
+            borderRadius: "20px", fontSize: "14px", fontWeight: "bold",
+            zIndex: "9999", boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+            transition: "opacity 0.2s ease-in-out", opacity: "0", pointerEvents: "none"
+        });
+        document.body.appendChild(indicator);
+    }
+    void indicator.offsetWidth; // Force repaint
+    indicator.style.opacity = "1";
+}
+
+function hideSavingIndicator() {
+    let indicator = document.getElementById("lureboardSaveIndicator");
+    if (indicator) indicator.style.opacity = "0";
+}
+
 function changeLanguage(lang) {
     currentLang = lang;
     document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -269,16 +294,20 @@ function subscribeToEventsRealtime() {
         .where("username", "==", loggedInUser)
         .onSnapshot(snapshot => {
             loadedEvents = [];
-            snapshot.forEach(doc => { loadedEvents.push({ id: doc.id, ...doc.data() }); });
-            processDashboard();
+            allPublicEvents = [];
+            
+            snapshot.forEach(doc => { 
+                let serverData = { id: doc.id, ...doc.data() };
+                if (loggedInUser && serverData.username === loggedInUser) loadedEvents.push(serverData);
+                if (serverData.details && serverData.details.isPublic) allPublicEvents.push(serverData);
+            });
+            
+            if (loggedInUser) processDashboard();
+            renderPublicHub();
 
-            if (currentEvent && document.getElementById("hubSection") && !document.getElementById("hubSection").classList.contains("hidden")) {
-                let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id);
-                if (activeUpdated) {
-                    currentEvent = activeUpdated.details;
-                    renderHubUI();
-                }
-            }
+            // BUG FIX: Intentionally removed the logic that overwrote 'currentEvent' here. 
+            // The local app is now the strict source of truth for the event you are currently editing,
+            // preventing the server cache from reverting your catches before they commit.
         });
 }
 
@@ -455,6 +484,55 @@ function renderEventsList(filteredEvents) {
         </div>`;
     });
     container.innerHTML = html;
+}
+
+function setUnit(u) {
+    confUnit = u;
+    let btnMet = document.getElementById('unitBtnMetric');
+    let btnImp = document.getElementById('unitBtnImperial');
+    if(btnMet) btnMet.className = u === 'metric' ? 'primary-dark' : 'secondary';
+    if(btnImp) btnImp.className = u === 'imperial' ? 'primary-dark' : 'secondary';
+}
+function setMeasure(m) {
+    confMeasure = m;
+    let btnSize = document.getElementById('measureBtnSize');
+    let btnWgt = document.getElementById('measureBtnWeight');
+    if(btnSize) btnSize.className = m === 'size' ? 'primary-dark' : 'secondary';
+    if(btnWgt) btnWgt.className = m === 'weight' ? 'primary-dark' : 'secondary';
+}
+function setLimit(l) {
+    confLimit = l;
+    let btnAll = document.getElementById('limitBtnAll');
+    let btnT5 = document.getElementById('limitBtnTop5');
+    if(btnAll) btnAll.className = l === 'all' ? 'primary-dark' : 'secondary';
+    if(btnT5) btnT5.className = l === 'top5' ? 'primary-dark' : 'secondary';
+}
+
+function handleThumbnailUpload(e) {
+    let file = e.target.files[0];
+    if(!file) return;
+    let reader = new FileReader();
+    reader.onload = function(event) {
+        let img = new Image();
+        img.onload = function() {
+            let canvas = document.createElement('canvas');
+            let ctx = canvas.getContext('2d');
+            let maxW = 800;
+            let scale = img.width > maxW ? maxW / img.width : 1;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            let compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            
+            let preview = document.getElementById('thumbnailPreview');
+            if(preview) {
+                preview.src = compressedDataUrl;
+                preview.style.display = 'block';
+            }
+        }
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 function showDashboard() {
@@ -668,12 +746,14 @@ function renderRules() {
     }).join('');
 }
 
-async function saveCurrentEvent(redirect = true) {
+function saveCurrentEvent(redirect = true) {
     if (!currentEvent.date) currentEvent.date = new Date().toLocaleDateString();
     if (!currentEvent.year) currentEvent.year = new Date().getFullYear().toString();
     if (!currentEvent.status) currentEvent.status = "ongoing";
 
-    // Deep copy to break reference links
+    showSavingIndicator();
+
+    // Copy event strictly to disconnect from memory references
     const safeEvent = JSON.parse(JSON.stringify(currentEvent));
 
     const eventPayload = { 
@@ -682,16 +762,22 @@ async function saveCurrentEvent(redirect = true) {
         details: safeEvent, 
         updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
     };
-
+    
     try { localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeEvent.species)); } catch(e){}
 
-    try {
-        await db.collection("events").doc(currentEvent.id).set(eventPayload);
+    // Do NOT block UI. Send data to Firebase instantly and let promise handle resolution.
+    let savePromise = db.collection("events").doc(currentEvent.id).set(eventPayload);
+    
+    savePromise.then(() => {
+        hideSavingIndicator();
         if (redirect) showDashboard(); 
-    } catch (err) {
+    }).catch(err => { 
+        hideSavingIndicator();
         console.error("Save error:", err); 
-        alert("Failed to save event to cloud. Please check your connection.");
-    }
+        alert("Failed to save event to cloud. Check your connection."); 
+    });
+
+    return savePromise;
 }
 
 async function goToEventHub() {
@@ -738,7 +824,7 @@ async function goToEventHub() {
         currentEvent.isStarted = true;
     }
     
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
     
     if(document.getElementById("setupSection")) document.getElementById("setupSection").classList.add("hidden");
     if(document.getElementById("hubSection")) document.getElementById("hubSection").classList.remove("hidden");
@@ -756,11 +842,11 @@ function backToSetup() {
     history.pushState({view: 'setupSection'}, "");
 }
 
-async function promptFinishEvent() {
+function promptFinishEvent() {
     if(currentEvent.status === 'finished') return;
     if (confirm(t('finish_warning'))) {
         currentEvent.status = "finished";
-        await saveCurrentEvent(true);
+        saveCurrentEvent(true);
     }
 }
 
@@ -773,7 +859,7 @@ function openAddParticipantModal() {
 
 function closeAddParticipantModal() { if(document.getElementById("participantModal")) document.getElementById("participantModal").classList.add("hidden"); }
 
-async function confirmAddParticipantModal() {
+function confirmAddParticipantModal() {
     let inputEl = document.getElementById("modalParticipantName");
     if(!inputEl) return;
     let parsedNames = parseParticipants(inputEl.value);
@@ -781,17 +867,17 @@ async function confirmAddParticipantModal() {
     parsedNames.forEach(name => { currentEvent.participants.push({ id: 'p_' + Math.random().toString(36).substr(2, 9), name: name, catches: [], penalties: [] }); });
     closeAddParticipantModal(); 
     renderHubUI();
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
-async function editParticipantName(index) {
+function editParticipantName(index) {
     if(currentEvent.status === 'finished') return;
     let p = currentEvent.participants[index];
     let newName = prompt(t('edit_name') + ":", p.name);
     if (newName && newName.trim() !== "" && newName.trim() !== p.name) {
         p.name = newName.trim();
         renderHubUI();
-        await saveCurrentEvent(false);
+        saveCurrentEvent(false);
     }
 }
 
@@ -820,7 +906,7 @@ function openFishModal(pIndexReal) {
 
 function closeFishModal() { if(document.getElementById("fishModal")) document.getElementById("fishModal").classList.add("hidden"); activeFishParticipantIndex = null; selectedModalSpecies = ""; }
 
-async function confirmAddFishModal() {
+function confirmAddFishModal() {
     if (activeFishParticipantIndex === null || !selectedModalSpecies) return;
     let inputEl = document.getElementById("modalFishSize");
     if(!inputEl) return;
@@ -836,34 +922,34 @@ async function confirmAddFishModal() {
             return;
         }
     }
-    await executeAddFish(selectedModalSpecies, size);
+    executeAddFish(selectedModalSpecies, size);
 }
 
-async function executeAddFish(abbr, size) {
+function executeAddFish(abbr, size) {
     currentEvent.participants[activeFishParticipantIndex].catches.unshift({ abbr, size }); 
     if(document.getElementById("modalFishSize")) {
         document.getElementById("modalFishSize").value = ""; 
         document.getElementById("modalFishSize").focus();
     }
     renderModalCatches(); renderHubUI(); 
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
 function cancelSmallFish() { if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").value = ""; pendingSmallFish = null; if(document.getElementById("modalFishSize")) document.getElementById("modalFishSize").focus(); }
 
-async function ignoreSmallFish() { 
+function ignoreSmallFish() { 
     if(document.getElementById("smallFishWarningModal")) document.getElementById("smallFishWarningModal").classList.add("hidden"); 
     if (pendingSmallFish) { 
-        await executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); 
+        executeAddFish(pendingSmallFish.abbr, pendingSmallFish.size); 
         pendingSmallFish = null; 
     } 
 }
 
-async function removeFish(pIndexReal, cIdx) {
+function removeFish(pIndexReal, cIdx) {
     currentEvent.participants[pIndexReal].catches.splice(cIdx, 1);
     if(activeFishParticipantIndex !== null) renderModalCatches();
     renderHubUI();
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
 function renderModalCatches() {
@@ -893,7 +979,7 @@ function openPenaltyModal(pIndexReal) {
 }
 function closePenaltyModal() { if(document.getElementById("penaltyModal")) document.getElementById("penaltyModal").classList.add("hidden"); activePenaltyParticipantIndex = null; }
 
-async function confirmAddPenalty() {
+function confirmAddPenalty() {
     if(activePenaltyParticipantIndex === null) return;
     let ptsEl = document.getElementById("modalPenaltyPoints");
     let rsnEl = document.getElementById("modalPenaltyReason");
@@ -910,14 +996,14 @@ async function confirmAddPenalty() {
     ptsEl.value = "";
     rsnEl.value = "";
     renderModalPenalties(); renderHubUI();
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
-async function removePenalty(pIndexReal, penIdx) {
+function removePenalty(pIndexReal, penIdx) {
     currentEvent.participants[pIndexReal].penalties.splice(penIdx, 1);
     if(activePenaltyParticipantIndex !== null) renderModalPenalties();
     renderHubUI();
-    await saveCurrentEvent(false);
+    saveCurrentEvent(false);
 }
 
 function renderModalPenalties() {
@@ -1116,7 +1202,7 @@ function downloadChart(eventId = null) {
                     <th style="padding: 12px; border: 1px solid #c7d2fe; color: #ffffff !important; background-color: #4f46e5; width: 40%;">${t('details')}</th>
                 </tr></thead>
                 <tbody>${processed.map((p, i) => `
-                    <tr style="${index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
+                    <tr style="${i % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: #ffffff;'}">
                         <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${i + 1}</td>
                         <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">${p.name}</td>
                         <td style="padding: 12px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: bold;">${p.totalPts.toFixed(1)}</td>
