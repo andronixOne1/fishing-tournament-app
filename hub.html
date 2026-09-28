@@ -23,6 +23,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/><circle cx="12" cy="3" r="1.5"/></svg>
                 <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px; color: var(--text-main);">Lureboard</div>
             </div>
+            <span id="globalSaveBadge">Saved</span>
             <button id="headerMyEventsBtn" class="secondary icon-btn hidden" onclick="showMyEvents()">My Events</button>
         </div>
         
@@ -196,7 +197,6 @@
             <div id="pubGalleryContainer" class="gallery-grid"></div>
         </div>
 
-        <!-- The Action Bar -->
         <div id="pubActionBar" class="bottom-action-bar hidden">
             <div class="flex">
                 <button class="secondary" onclick="showPublicHub()" style="flex:1;">Back to Hub</button>
