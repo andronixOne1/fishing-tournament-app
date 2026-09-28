@@ -106,3 +106,16 @@ tr:last-child td { border-bottom: none; }
 .mt-2 { margin-top: 12px; }
 svg { stroke-width: 2.5; width: 18px; height: 18px; }
 .svg-lg { width: 24px; height: 24px; stroke-width: 2.5; }
+
+/* Live Save Status Toast */
+#globalSaveBadge {
+    transition: all 0.2s ease;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    color: #ffffff;
+    display: none;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
