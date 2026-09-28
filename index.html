@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lureboard</title>
     
-    <!-- PDF Generation (Native Browser Canvas with Segoe UI Unicode & Pagebreak Protection) -->
+    <!-- PDF Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- Firebase Realtime Cloud SDKs -->
@@ -286,7 +286,7 @@
             </div>
         </div>
 
-        <!-- Sticky Bottom Bar for Step 2: "Save Event" removed completely -->
+        <!-- Sticky Bottom Bar for Step 2: "Save Event" button removed -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div id="bottomActionBarButtons" class="flex" style="gap: 12px; width: 100%; align-items: center;">
                 <button onclick="downloadChart()" class="secondary" style="flex: 1; padding: 14px; font-weight: 700;">📄 Download PDF</button>
@@ -1372,7 +1372,7 @@
 }
 
 // =========================================================================
-// ZERO-DOWNLOAD PDF EXPORT ENGINE (Segoe UI + FULL MULTI-PAGE TABLE)
+// NATIVE HTML2PDF EXPORT ENGINE (COMPLETE MULTI-PAGE & UNICODE PRESERVATION)
 // =========================================================================
 async function downloadChart(eventId = null) {
     let ev = currentEvent;
@@ -1427,34 +1427,34 @@ async function downloadChart(eventId = null) {
         return b.maxFishCm - a.maxFishCm; 
     });
 
-    let tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    tempDiv.style.top = '0';
-    tempDiv.style.width = '1050px';
-    tempDiv.style.background = '#ffffff';
-    tempDiv.style.padding = '35px';
-    tempDiv.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
-    tempDiv.style.color = '#0f172a';
+    // Native container without off-screen canvas clipping
+    let container = document.createElement('div');
+    container.style.width = '1000px';
+    container.style.padding = '30px';
+    container.style.background = '#ffffff';
+    container.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
+    container.style.color = '#0f172a';
 
-    tempDiv.innerHTML = `
-        <h2 style="margin: 0 0 6px 0; color: #4f46e5; font-size: 26px; font-weight: 700;">${t('tournament_results')}: ${ev.name}</h2>
-        <p style="font-size: 13px; color: #64748b; margin: 0 0 20px 0;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
+    container.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <h2 style="margin: 0 0 6px 0; color: #4f46e5; font-size: 24px; font-weight: 700;">${t('tournament_results')}: ${ev.name}</h2>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
+        </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
             <thead>
                 <tr style="background: #4f46e5; color: #ffffff;">
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 45px; text-align: center;">${t('place')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 180px;">${t('name')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 85px;">${t('points')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 80px;">${t('total_cm').toUpperCase()}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 50px; text-align: center;">Amt</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 100px;">${t('biggest_fish')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff;">${t('details')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 45px; text-align: center;">${t('place')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 180px;">${t('name')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 85px;">${t('points')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 80px;">${t('total_cm').toUpperCase()}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 50px; text-align: center;">Amt</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 100px;">${t('biggest_fish')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff;">${t('details')}</th>
                 </tr>
             </thead>
             <tbody>
                 ${processed.map((p, i) => `
-                    <tr style="${i % 2 === 0 ? 'background: #f8fafc;' : 'background: #ffffff;'} page-break-inside: avoid !important;">
+                    <tr style="${i % 2 === 0 ? 'background: #f8fafc;' : 'background: #ffffff;'} page-break-inside: avoid; break-inside: avoid;">
                         <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 700; text-align: center;">${i + 1}</td>
                         <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 600;">${p.name}</td>
                         <td style="padding: 8px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: 700;">${p.totalPts.toFixed(1)}${p.penStr ? `<br><span style="color:#e11d48; font-size:11px;">${p.penStr}</span>` : ''}</td>
@@ -1468,25 +1468,21 @@ async function downloadChart(eventId = null) {
         </table>
     `;
 
-    document.body.appendChild(tempDiv);
-
     const opt = {
         margin: [25, 20, 25, 20],
         filename: `${(ev.name || 'tournament').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1200 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'pt', format: 'letter', orientation: 'landscape' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: 'tr' }
+        pagebreak: { mode: ['css', 'legacy'] }
     };
 
     try {
-        await html2pdf().set(opt).from(tempDiv).save();
+        await html2pdf().set(opt).from(container).save();
         showSaveStatus("✓ PDF Ready", "#10b981");
     } catch(err) {
         console.error("PDF Export error:", err);
         showSaveStatus("✕ Error", "#f43f5e");
-    } finally {
-        document.body.removeChild(tempDiv);
     }
 }
 
@@ -1535,32 +1531,31 @@ async function downloadSeasonChart() {
         return a.totalRankPts - b.totalRankPts; 
     });
 
-    let tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    tempDiv.style.top = '0';
-    tempDiv.style.width = '800px';
-    tempDiv.style.background = '#ffffff';
-    tempDiv.style.padding = '35px';
-    tempDiv.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
-    tempDiv.style.color = '#0f172a';
+    let container = document.createElement('div');
+    container.style.width = '750px';
+    container.style.padding = '30px';
+    container.style.background = '#ffffff';
+    container.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
+    container.style.color = '#0f172a';
 
-    tempDiv.innerHTML = `
-        <h2 style="margin: 0 0 6px 0; color: #4f46e5; font-size: 26px; font-weight: 700;">${t('season_results')} ${selectedYear}</h2>
-        <p style="font-size: 13px; color: #64748b; margin: 0 0 20px 0;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
+    container.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <h2 style="margin: 0 0 6px 0; color: #4f46e5; font-size: 24px; font-weight: 700;">${t('season_results')} ${selectedYear}</h2>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
+        </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
             <thead>
                 <tr style="background: #4f46e5; color: #ffffff;">
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 45px; text-align: center;">${t('place')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 200px;">${t('name')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 110px; text-align: center;">${t('rank_pts_best5')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff; width: 90px; text-align: center;">${t('tournaments_played')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #fff;">${t('all_placements')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 45px; text-align: center;">${t('place')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 200px;">${t('name')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 110px; text-align: center;">${t('rank_pts_best5')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 90px; text-align: center;">${t('tournaments_played')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff;">${t('all_placements')}</th>
                 </tr>
             </thead>
             <tbody>
                 ${aotyArray.map((p, index) => `
-                    <tr style="${index % 2 === 0 ? 'background: #f8fafc;' : 'background: #ffffff;'} page-break-inside: avoid !important;">
+                    <tr style="${index % 2 === 0 ? 'background: #f8fafc;' : 'background: #ffffff;'} page-break-inside: avoid; break-inside: avoid;">
                         <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 700; text-align: center;">${index + 1}</td>
                         <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 600;">${p.name}</td>
                         <td style="padding: 8px; border: 1px solid #e2e8f0; color: #4f46e5; font-weight: 700; text-align: center;">${p.totalRankPts}</td>
@@ -1572,25 +1567,21 @@ async function downloadSeasonChart() {
         </table>
     `;
 
-    document.body.appendChild(tempDiv);
-
     const opt = {
         margin: [25, 20, 25, 20],
         filename: `season_${selectedYear}_results.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1000 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: 'tr' }
+        pagebreak: { mode: ['css', 'legacy'] }
     };
 
     try {
-        await html2pdf().set(opt).from(tempDiv).save();
+        await html2pdf().set(opt).from(container).save();
         showSaveStatus("✓ PDF Ready", "#10b981");
     } catch(err) {
         console.error("PDF Export error:", err);
         showSaveStatus("✕ Error", "#f43f5e");
-    } finally {
-        document.body.removeChild(tempDiv);
     }
 }
 
