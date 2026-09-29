@@ -286,7 +286,7 @@
             </div>
         </div>
 
-        <!-- Sticky Bottom Bar for Step 2: "Save Event" button removed -->
+        <!-- Sticky Bottom Bar for Step 2 -->
         <div class="bottom-action-bar" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
             <div id="bottomActionBarButtons" class="flex" style="gap: 12px; width: 100%; align-items: center;">
                 <button onclick="downloadChart()" class="secondary" style="flex: 1; padding: 14px; font-weight: 700;">📄 Download PDF</button>
@@ -1372,17 +1372,19 @@
 }
 
 // =========================================================================
-// NATIVE HTML2PDF EXPORT ENGINE (COMPLETE MULTI-PAGE & UNICODE PRESERVATION)
+// UNIFIED, ACCURATE PDF EXPORT FOR BOTH EVENTS PAGE & TOURNAMENT HUB
 // =========================================================================
 async function downloadChart(eventId = null) {
-    let ev = currentEvent;
-    if (eventId) { 
-        let found = loadedEvents.find(e => e.id === eventId); 
-        if (found) ev = found.details; 
+    let ev = null;
+    if (eventId) {
+        let found = loadedEvents.find(e => e.id === eventId);
+        if (found && found.details) ev = found.details;
     }
-    if (!ev || !ev.participants || ev.participants.length === 0) { 
-        alert("No data to download."); 
-        return; 
+    if (!ev) ev = currentEvent;
+
+    if (!ev || !ev.participants || ev.participants.length === 0) {
+        alert("No participants or catch data to download.");
+        return;
     }
 
     showSaveStatus("Generating PDF...", "#f59e0b");
@@ -1397,7 +1399,7 @@ async function downloadChart(eventId = null) {
                 maxFishCm = c.size; 
                 maxFishAbbr = c.abbr ? c.abbr.toUpperCase() : ""; 
             }
-            totalPts += calculateFishPoints(c.abbr, c.size, ev.species);
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species || []);
         });
         
         let penPts = 0; 
@@ -1427,25 +1429,29 @@ async function downloadChart(eventId = null) {
         return b.maxFishCm - a.maxFishCm; 
     });
 
-    // Native container without off-screen canvas clipping
+    // Create container inside the DOM to prevent canvas clipping
     let container = document.createElement('div');
-    container.style.width = '1000px';
-    container.style.padding = '30px';
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.zIndex = '-9999';
+    container.style.width = '1050px';
+    container.style.padding = '35px';
     container.style.background = '#ffffff';
     container.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
     container.style.color = '#0f172a';
 
     container.innerHTML = `
         <div style="margin-bottom: 20px;">
-            <h2 style="margin: 0 0 6px 0; color: #4f46e5; font-size: 24px; font-weight: 700;">${t('tournament_results')}: ${ev.name}</h2>
+            <h2 style="margin: 0 0 6px 0; color: #4f46e5; font-size: 24px; font-weight: 700;">${t('tournament_results')}: ${ev.name || 'Tournament'}</h2>
             <p style="margin: 0; font-size: 13px; color: #64748b;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-            <thead>
+            <thead style="display: table-header-group;">
                 <tr style="background: #4f46e5; color: #ffffff;">
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 45px; text-align: center;">${t('place')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 180px;">${t('name')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 85px;">${t('points')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 200px;">${t('name')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 90px;">${t('points')}</th>
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 80px;">${t('total_cm').toUpperCase()}</th>
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 50px; text-align: center;">Amt</th>
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 100px;">${t('biggest_fish')}</th>
@@ -1468,6 +1474,8 @@ async function downloadChart(eventId = null) {
         </table>
     `;
 
+    document.body.appendChild(container);
+
     const opt = {
         margin: [25, 20, 25, 20],
         filename: `${(ev.name || 'tournament').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`,
@@ -1483,6 +1491,8 @@ async function downloadChart(eventId = null) {
     } catch(err) {
         console.error("PDF Export error:", err);
         showSaveStatus("✕ Error", "#f43f5e");
+    } finally {
+        document.body.removeChild(container);
     }
 }
 
@@ -1532,8 +1542,12 @@ async function downloadSeasonChart() {
     });
 
     let container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.zIndex = '-9999';
     container.style.width = '750px';
-    container.style.padding = '30px';
+    container.style.padding = '35px';
     container.style.background = '#ffffff';
     container.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
     container.style.color = '#0f172a';
@@ -1544,10 +1558,10 @@ async function downloadSeasonChart() {
             <p style="margin: 0; font-size: 13px; color: #64748b;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-            <thead>
+            <thead style="display: table-header-group;">
                 <tr style="background: #4f46e5; color: #ffffff;">
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 45px; text-align: center;">${t('place')}</th>
-                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 200px;">${t('name')}</th>
+                    <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 220px;">${t('name')}</th>
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 110px; text-align: center;">${t('rank_pts_best5')}</th>
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 90px; text-align: center;">${t('tournaments_played')}</th>
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff;">${t('all_placements')}</th>
@@ -1567,6 +1581,8 @@ async function downloadSeasonChart() {
         </table>
     `;
 
+    document.body.appendChild(container);
+
     const opt = {
         margin: [25, 20, 25, 20],
         filename: `season_${selectedYear}_results.pdf`,
@@ -1582,6 +1598,8 @@ async function downloadSeasonChart() {
     } catch(err) {
         console.error("PDF Export error:", err);
         showSaveStatus("✕ Error", "#f43f5e");
+    } finally {
+        document.body.removeChild(container);
     }
 }
 
