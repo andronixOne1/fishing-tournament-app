@@ -1372,7 +1372,7 @@
 }
 
 // =========================================================================
-// UNIFIED, ACCURATE PDF EXPORT FOR BOTH EVENTS PAGE & TOURNAMENT HUB
+// BULLETPROOF PDF EXPORT ENGINE - CLEAN CONTAINER & MULTI-PAGE
 // =========================================================================
 async function downloadChart(eventId = null) {
     let ev = null;
@@ -1429,17 +1429,17 @@ async function downloadChart(eventId = null) {
         return b.maxFishCm - a.maxFishCm; 
     });
 
-    // Create container inside the DOM to prevent canvas clipping
+    // Create container inside DOM flow with overflow auto, positioned off normal viewport but fully renderable
     let container = document.createElement('div');
-    container.style.position = 'fixed';
+    container.style.position = 'absolute';
     container.style.top = '0';
     container.style.left = '0';
-    container.style.zIndex = '-9999';
-    container.style.width = '1050px';
+    container.style.width = '1000px';
     container.style.padding = '35px';
     container.style.background = '#ffffff';
     container.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
     container.style.color = '#0f172a';
+    container.style.opacity = '1';
 
     container.innerHTML = `
         <div style="margin-bottom: 20px;">
@@ -1447,7 +1447,7 @@ async function downloadChart(eventId = null) {
             <p style="margin: 0; font-size: 13px; color: #64748b;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-            <thead style="display: table-header-group;">
+            <thead>
                 <tr style="background: #4f46e5; color: #ffffff;">
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 45px; text-align: center;">${t('place')}</th>
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 200px;">${t('name')}</th>
@@ -1475,12 +1475,13 @@ async function downloadChart(eventId = null) {
     `;
 
     document.body.appendChild(container);
+    window.scrollTo(0, 0);
 
     const opt = {
         margin: [25, 20, 25, 20],
         filename: `${(ev.name || 'tournament').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 },
         jsPDF: { unit: 'pt', format: 'letter', orientation: 'landscape' },
         pagebreak: { mode: ['css', 'legacy'] }
     };
@@ -1542,15 +1543,15 @@ async function downloadSeasonChart() {
     });
 
     let container = document.createElement('div');
-    container.style.position = 'fixed';
+    container.style.position = 'absolute';
     container.style.top = '0';
     container.style.left = '0';
-    container.style.zIndex = '-9999';
     container.style.width = '750px';
     container.style.padding = '35px';
     container.style.background = '#ffffff';
     container.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
     container.style.color = '#0f172a';
+    container.style.opacity = '1';
 
     container.innerHTML = `
         <div style="margin-bottom: 20px;">
@@ -1558,7 +1559,7 @@ async function downloadSeasonChart() {
             <p style="margin: 0; font-size: 13px; color: #64748b;">${t('generated_on')}: ${new Date().toLocaleDateString()}</p>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-            <thead style="display: table-header-group;">
+            <thead>
                 <tr style="background: #4f46e5; color: #ffffff;">
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 45px; text-align: center;">${t('place')}</th>
                     <th style="padding: 10px 8px; border: 1px solid #c7d2fe; color: #ffffff; width: 220px;">${t('name')}</th>
@@ -1582,12 +1583,13 @@ async function downloadSeasonChart() {
     `;
 
     document.body.appendChild(container);
+    window.scrollTo(0, 0);
 
     const opt = {
         margin: [25, 20, 25, 20],
         filename: `season_${selectedYear}_results.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 },
         jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
     };
