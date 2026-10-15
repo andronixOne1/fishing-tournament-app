@@ -1,5 +1,5 @@
 // =========================================================================
-// FIREBASE FIRESTORE CLOUD DATABASE CONFIGURATION
+// FIREBASE FIRESTORE & AUTH CONFIGURATION
 // =========================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyAN16rU1v-7dOvgOAZuxbqHjbuwBeF7k6k",
@@ -12,6 +12,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 
 // Enable Offline Dead-Zone Persistence
 db.enablePersistence({ synchronizeTabs: true }).catch(err => {
@@ -21,7 +22,8 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
 let unsubscribeEventsListener = null;
 
 let currentEvent = null;
-let loggedInUser = "";
+let loggedInUser = "";     // Stores display handle / username
+let loggedInUid = "";      // Stores cryptographic Firebase Auth UID
 let loggedInUserData = null; 
 let loadedEvents = [];     
 let allPublicEvents = [];  
@@ -154,6 +156,7 @@ function showMyEvents() {
 }
 
 function showProfilePage() {
+    if (!loggedInUid || !loggedInUserData) { openLogin(); return; }
     hideAllSections();
     let profSec = document.getElementById("profileSection");
     if(profSec) profSec.classList.remove("hidden");
@@ -164,6 +167,7 @@ function showProfilePage() {
         document.getElementById("tabHistory").classList.add("hidden");
     }
 
+    document.getElementById("profEmail").value = loggedInUserData.email || "";
     document.getElementById("profUsername").value = loggedInUser;
     document.getElementById("profFullName").value = loggedInUserData.fullName || "";
     document.getElementById("profDob").value = loggedInUserData.dob || "";
@@ -191,7 +195,7 @@ function switchProfileTab(tab) {
     }
 }
 
-// PROFILE AVATAR LOGIC
+// PROFILE AVATAR & SETTINGS LOGIC
 function handleProfileAvatarUpload(e) {
     let file = e.target.files[0];
     if(!file) return;
@@ -214,37 +218,46 @@ function handleProfileAvatarUpload(e) {
     reader.readAsDataURL(file);
 }
 
-function saveProfile() {
+async function saveProfile() {
+    if (!loggedInUid) return;
     let newName = document.getElementById("profFullName").value.trim();
     let newDob = document.getElementById("profDob").value;
     let newPass = document.getElementById("profPassword").value.trim();
     
     let updateData = { fullName: newName, dob: newDob };
-    if (newPass) updateData.password = newPass;
     if (tempProfileAvatarBase64) updateData.avatar = tempProfileAvatarBase64;
 
-    db.collection("users").doc(loggedInUser).update(updateData).then(() => {
-        loggedInUserData = { ...loggedInUserData, ...updateData };
-        localStorage.setItem("lureboard_session_data", JSON.stringify(loggedInUserData));
-        
-        let headerAvatar = document.getElementById("headerAvatar");
-        if(headerAvatar) headerAvatar.src = loggedInUserData.avatar || "https://via.placeholder.com/40";
-        
-        let headerName = document.getElementById("headerUserName");
-        if(headerName) {
-            let dispName = loggedInUserData.fullName || loggedInUser;
-            headerName.innerText = dispName.length > 5 ? dispName.substring(0, 5) + "..." : dispName;
+    showSaveStatus("Saving...", "#f59e0b");
+    try {
+        await db.collection("users").doc(loggedInUid).update(updateData);
+        if (newPass) {
+            if (newPass.length < 6) {
+                alert("New password must be at least 6 characters.");
+                showSaveStatus("✕ Error", "#ef4444");
+                return;
+            }
+            await auth.currentUser.updatePassword(newPass);
         }
 
+        loggedInUserData = { ...loggedInUserData, ...updateData };
+        updateUIAfterAuth();
         document.getElementById("profPassword").value = "";
-        alert("Profile saved successfully!");
-    }).catch(err => {
+        showSaveStatus("✓ Saved", "#10b981");
+        alert("Profile updated successfully!");
+    } catch (err) {
         console.error("Error updating profile: ", err);
-        alert("Failed to save profile. Ensure database connection is stable.");
-    });
+        showSaveStatus("✕ Error", "#ef4444");
+        if (err.code === 'auth/requires-recent-login') {
+            alert("To change your password, please log out and log back in first for security verification.");
+        } else {
+            alert("Failed to save profile: " + err.message);
+        }
+    }
 }
 
-// AUTHENTICATION
+// =========================================================================
+// NATIVE FIREBASE EMAIL AUTHENTICATION
+// =========================================================================
 function toggleAuth(view) {
     hideAllSections();
     if(view === 'register') {
@@ -262,57 +275,127 @@ function setRegRole(role) {
     else document.getElementById("tabRoleOrg").classList.add("active");
 }
 
-function handleRegister() {
-    let user = document.getElementById("regUsername").value.trim().toLowerCase();
+async function handleRegister() {
+    let email = document.getElementById("regEmail").value.trim();
+    let userHandle = document.getElementById("regUsername").value.trim();
     let pass = document.getElementById("regPassword").value.trim();
     let fName = document.getElementById("regFullName").value.trim();
     let dob = document.getElementById("regDob").value;
 
-    if (!user || !pass || !fName || !dob) { alert("Please fill all fields."); return; }
+    if (!email || !userHandle || !pass || !fName || !dob) { 
+        alert("Please fill in all fields."); 
+        return; 
+    }
+    if (pass.length < 6) {
+        alert("Password must be at least 6 characters long.");
+        return;
+    }
 
-    const userRef = db.collection("users").doc(user);
-    userRef.get().then(doc => {
-        if (doc.exists) {
-            alert("Username already taken.");
-        } else {
-            let data = { password: pass, fullName: fName, dob: dob, role: regRoleSelect, createdAt: new Date() };
-            userRef.set(data).then(() => loginSuccess(user, data));
-        }
-    }).catch(err => {
+    showSaveStatus("Creating Account...", "#f59e0b");
+    try {
+        const cred = await auth.createUserWithEmailAndPassword(email, pass);
+        const uid = cred.user.uid;
+        const profileData = {
+            uid: uid,
+            email: email,
+            username: userHandle,
+            fullName: fName,
+            dob: dob,
+            role: regRoleSelect,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection("users").doc(uid).set(profileData);
+        showSaveStatus("✓ Welcome", "#10b981");
+        // onAuthStateChanged will automatically trigger and route the user
+    } catch (err) {
         console.error(err);
+        showSaveStatus("✕ Error", "#ef4444");
         alert("Registration Error: " + err.message);
-    });
+    }
 }
 
-function handleLogin() {
-    let user = document.getElementById("loginUsername").value.trim().toLowerCase();
+async function handleLogin() {
+    let email = document.getElementById("loginEmail").value.trim();
     let pass = document.getElementById("loginPassword").value.trim();
-    if (!user || !pass) { alert("Please enter both username and password."); return; }
+    if (!email || !pass) { 
+        alert("Please enter both your email and password."); 
+        return; 
+    }
 
-    const userRef = db.collection("users").doc(user);
-    userRef.get().then(doc => {
-        if (doc.exists && doc.data().password === pass) {
-            loginSuccess(user, doc.data());
-        } else {
-            alert("Incorrect username or password.");
-        }
-    }).catch(err => {
+    showSaveStatus("Signing In...", "#f59e0b");
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+        showSaveStatus("✓ Signed In", "#10b981");
+        // onAuthStateChanged handles profile load and UI transition
+    } catch (err) {
         console.error(err);
+        showSaveStatus("✕ Error", "#ef4444");
         alert("Login Error: " + err.message);
-    });
+    }
 }
 
-function loginSuccess(user, data) {
-    loggedInUser = user;
-    loggedInUserData = data;
-    
-    localStorage.setItem("lureboard_session_user", user);
-    localStorage.setItem("lureboard_session_data", JSON.stringify(data));
-    
-    updateUIAfterAuth();
-    showPublicHub();
-    subscribeToEventsRealtime();
+async function handleForgotPassword() {
+    let email = document.getElementById("loginEmail").value.trim();
+    if (!email) {
+        email = prompt("Please enter your registered email address to receive a password reset link:");
+    }
+    if (!email || !email.trim()) return;
+
+    try {
+        await auth.sendPasswordResetEmail(email.trim());
+        alert("Password reset email sent! Check your inbox (and spam folder) at " + email.trim());
+    } catch (err) {
+        console.error(err);
+        alert("Reset Error: " + err.message);
+    }
 }
+
+async function handleLogout() {
+    if (unsubscribeEventsListener) unsubscribeEventsListener();
+    await auth.signOut();
+    showPublicHub();
+}
+
+function openLogin() {
+    hideAllSections();
+    document.getElementById("loginSection").classList.remove("hidden");
+    window.scrollTo(0, 0);
+    history.pushState({view: 'loginSection'}, "");
+}
+
+// Automatic Cryptographic Session Listener
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        loggedInUid = user.uid;
+        try {
+            let doc = await db.collection("users").doc(user.uid).get();
+            if (doc.exists) {
+                loggedInUserData = doc.data();
+                loggedInUser = loggedInUserData.username || user.email.split('@')[0];
+            } else {
+                // Fallback if user document wasn't created yet
+                loggedInUser = user.email.split('@')[0];
+                loggedInUserData = { uid: user.uid, email: user.email, username: loggedInUser, fullName: loggedInUser, role: 'participant' };
+                await db.collection("users").doc(user.uid).set(loggedInUserData);
+            }
+        } catch (err) {
+            console.error("Error fetching user profile:", err);
+        }
+        updateUIAfterAuth();
+        let loginSec = document.getElementById("loginSection");
+        let regSec = document.getElementById("registerSection");
+        if ((loginSec && !loginSec.classList.contains("hidden")) || (regSec && !regSec.classList.contains("hidden"))) {
+            showPublicHub();
+        }
+        subscribeToEventsRealtime();
+    } else {
+        loggedInUid = "";
+        loggedInUser = "";
+        loggedInUserData = null;
+        updateUIAfterAuth();
+        subscribeToEventsRealtime();
+    }
+});
 
 function updateUIAfterAuth() {
     let btnLogin = document.getElementById("headerLoginBtn");
@@ -321,7 +404,7 @@ function updateUIAfterAuth() {
     let nameEl = document.getElementById("headerUserName");
     let myEventsBtn = document.getElementById("headerMyEventsBtn");
 
-    if (loggedInUser && loggedInUserData) {
+    if (loggedInUid && loggedInUserData) {
         if (btnLogin) btnLogin.classList.add("hidden");
         if (userWrap) userWrap.classList.remove("hidden");
         if (avatarEl) {
@@ -347,26 +430,6 @@ function updateUIAfterAuth() {
     }
 }
 
-function handleLogout() {
-    if (unsubscribeEventsListener) unsubscribeEventsListener();
-    loggedInUser = "";
-    loggedInUserData = null;
-    
-    localStorage.removeItem("lureboard_session_user");
-    localStorage.removeItem("lureboard_session_data");
-    
-    updateUIAfterAuth();
-    showPublicHub();
-    subscribeToEventsRealtime(); 
-}
-
-function openLogin() {
-    hideAllSections();
-    document.getElementById("loginSection").classList.remove("hidden");
-    window.scrollTo(0, 0);
-    history.pushState({view: 'loginSection'}, "");
-}
-
 // EVENTS SUBSCRIPTION & AUTOMATIC CLEANUP
 function subscribeToEventsRealtime() {
     if (unsubscribeEventsListener) unsubscribeEventsListener();
@@ -380,6 +443,9 @@ function subscribeToEventsRealtime() {
             if (!data.details) data.details = {};
             data.details.id = doc.id; 
             
+            let isMyEvent = loggedInUid && (data.ownerUid === loggedInUid || data.username === loggedInUser);
+
+            // AUTOMATIC 7-DAY PHOTO CLEANUP FOR FINISHED EVENTS
             let evDet = data.details;
             if (evDet.status === 'finished' && evDet.finishedAt) {
                 let daysSince = (Date.now() - evDet.finishedAt) / (1000 * 3600 * 24);
@@ -390,13 +456,13 @@ function subscribeToEventsRealtime() {
                             if (c.photo) { delete c.photo; changed = true; }
                         });
                     });
-                    if (changed && data.username === loggedInUser) {
+                    if (changed && isMyEvent) {
                         db.collection("events").doc(data.id).set({ ...data, details: evDet });
                     }
                 }
             }
 
-            if (loggedInUser && data.username === loggedInUser) {
+            if (isMyEvent) {
                 loadedEvents.push(data);
             }
             
@@ -407,12 +473,12 @@ function subscribeToEventsRealtime() {
         });
         
         let myEvSec = document.getElementById("myEventsSection");
-        if (loggedInUser && myEvSec && !myEvSec.classList.contains("hidden")) {
+        if (loggedInUid && myEvSec && !myEvSec.classList.contains("hidden")) {
             processDashboard();
         }
         
         let histSec = document.getElementById("historyView");
-        if (loggedInUser && histSec && !histSec.classList.contains("hidden")) {
+        if (loggedInUid && histSec && !histSec.classList.contains("hidden")) {
             renderHistoryTab();
         }
         
@@ -520,7 +586,7 @@ function openPublicEvent(eventId) {
     let uploadBtn = document.getElementById("pubUploadCatchBtn");
     let actionBar = document.getElementById("pubActionBar");
     let myName = getMyName();
-    let isAlreadyJoined = loggedInUser && myName && (ev.participants||[]).some(p => p.name.toLowerCase() === myName.toLowerCase());
+    let isAlreadyJoined = loggedInUid && myName && (ev.participants||[]).some(p => p.name.toLowerCase() === myName.toLowerCase() || p.registeredUid === loggedInUid);
 
     let showActionbar = false;
 
@@ -623,7 +689,8 @@ function renderPublicLeaderboardList(ev) {
 
     let processed = (ev.participants||[]).map(p => {
         let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; let maxFishAbbr = "";
-        let countedCatches = ev.limitType === 'top5' ? [...(p.catches||[])].sort((a,b) => b.size - a.size).slice(0,5) : (p.catches||[]);
+        let validCatches = (p.catches||[]).filter(c => c.size > 0);
+        let countedCatches = ev.limitType === 'top5' ? [...validCatches].sort((a,b) => b.size - a.size).slice(0,5) : validCatches;
 
         countedCatches.forEach(c => {
             totalMeasure += c.size;
@@ -667,11 +734,11 @@ async function joinEventDirectly() {
     if(!ev.participants) ev.participants = [];
     
     let myName = getMyName();
-    let isAlreadyJoined = ev.participants.some(p => p.name.toLowerCase() === myName.toLowerCase());
+    let isAlreadyJoined = ev.participants.some(p => p.name.toLowerCase() === myName.toLowerCase() || p.registeredUid === loggedInUid);
     
     if (isAlreadyJoined) {
         if(confirm("Are you sure you want to leave this event?")) {
-            ev.participants = ev.participants.filter(p => p.name.toLowerCase() !== myName.toLowerCase());
+            ev.participants = ev.participants.filter(p => p.name.toLowerCase() !== myName.toLowerCase() && p.registeredUid !== loggedInUid);
             
             let safeDetails;
             try { safeDetails = JSON.parse(JSON.stringify(ev)); } catch(e) { return; }
@@ -688,7 +755,7 @@ async function joinEventDirectly() {
     } else {
         ev.participants.push({
             id: 'p_' + Math.random().toString(36).substr(2, 9),
-            name: myName, catches: [], penalties: [], registeredBy: loggedInUser
+            name: myName, catches: [], penalties: [], registeredBy: loggedInUser, registeredUid: loggedInUid
         });
         let safeDetails;
         try { safeDetails = JSON.parse(JSON.stringify(ev)); } catch(e) { return; }
@@ -731,7 +798,7 @@ function renderPublicHub() {
         let hostAvatar = ev.details.hostAvatar || "https://via.placeholder.com/40";
         let evTypeBadge = ev.details.eventType === 'cpr' ? `<span class="badge warning" style="margin-right:6px; font-size:10px;">CPR</span>` : '';
 
-        let isParticipating = loggedInUser && myName && pList.some(p => p.name.toLowerCase() === myName);
+        let isParticipating = loggedInUid && myName && pList.some(p => p.name.toLowerCase() === myName || p.registeredUid === loggedInUid);
         let registeredBadge = isParticipating ? `<span class="badge success" style="margin-right:6px; font-size:10px;">Registered</span>` : '';
 
         html += `
@@ -783,7 +850,7 @@ function renderHistoryTab() {
     let myName = getMyName().toLowerCase();
     
     let historyEvents = allPublicEvents.filter(e => {
-        return (e.details.participants || []).some(p => p.name.toLowerCase() === myName);
+        return (e.details.participants || []).some(p => p.name.toLowerCase() === myName || p.registeredUid === loggedInUid);
     });
 
     let years = [...new Set(historyEvents.map(e => String(e.details.year || new Date().getFullYear().toString())))];
@@ -808,7 +875,7 @@ function renderHistoryTab() {
 
     let html = "";
     filteredHistory.forEach(ev => {
-        let pData = ev.details.participants.find(p => p.name.toLowerCase() === myName);
+        let pData = ev.details.participants.find(p => p.name.toLowerCase() === myName || p.registeredUid === loggedInUid);
         let cCount = pData ? (pData.catches || []).length : 0;
         let status = ev.details.status || 'finished';
         let stBadge = status === 'finished' ? 'neutral' : (status === 'ongoing' ? 'success' : 'primary-light');
@@ -831,7 +898,8 @@ function renderHistoryTab() {
 function getEventPlacements(evDetails) {
     let processed = (evDetails.participants || []).map(p => {
         let totalMeasure = 0; let totalPts = 0; let maxFishMeasure = 0; 
-        let countedCatches = evDetails.limitType === 'top5' ? [...(p.catches||[])].sort((a,b)=>b.size-a.size).slice(0,5) : (p.catches||[]);
+        let validCatches = (p.catches||[]).filter(c => c.size > 0);
+        let countedCatches = evDetails.limitType === 'top5' ? [...validCatches].sort((a,b)=>b.size-a.size).slice(0,5) : validCatches;
         let amountCatches = countedCatches.length;
         
         countedCatches.forEach(c => {
@@ -1088,7 +1156,6 @@ function handleCatchPhotoUpload(e) {
         EXIF.getData(file, function() {
             let dateTaken = EXIF.getTag(this, "DateTimeOriginal") || EXIF.getTag(this, "DateTime");
             if (dateTaken) {
-                // Convert EXIF "YYYY:MM:DD HH:MM:SS" to readable format
                 let parts = dateTaken.split(" ");
                 let dPart = parts[0].replace(/:/g, "-");
                 let tPart = parts[1] ? parts[1].substring(0, 5) : "";
@@ -1107,7 +1174,7 @@ function handleCatchPhotoUpload(e) {
         img.onload = function() {
             let canvas = document.createElement('canvas');
             let ctx = canvas.getContext('2d');
-            let maxW = 650; // Optimized to fit 3x more photos per event document
+            let maxW = 650;
             let scale = img.width > maxW ? maxW / img.width : 1;
             canvas.width = img.width * scale;
             canvas.height = img.height * scale;
@@ -1152,7 +1219,7 @@ function openEventEditor(eventObj = null) {
         document.getElementById("bulkParticipantsInput").value = (currentEvent.participants||[]).map(p => p.name).join("\n");
     } else {
         let defaultSpecies = [{ name: "Perch", abbr: "pr", tiers: [{ from: 0, to: "above", multiplier: 1.0 }] }];
-        let savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUser);
+        let savedDefaults = localStorage.getItem("lureboard_defaults_" + loggedInUid);
         if (savedDefaults) { try { defaultSpecies = JSON.parse(savedDefaults); } catch(e) {} }
         
         currentEvent = {
@@ -1329,7 +1396,7 @@ function renderRules() {
     document.getElementById('rulesContainer').innerHTML = html;
 }
 
-// SECURE AUTO-SAVE WITH ASYNC
+// SECURE AUTO-SAVE WITH OWNER UID
 async function saveCurrentEvent(redirect = true) {
     if (!currentEvent) return;
     if (!currentEvent.date) currentEvent.date = new Date().toLocaleDateString();
@@ -1349,6 +1416,7 @@ async function saveCurrentEvent(redirect = true) {
     }
 
     const eventPayload = { 
+        ownerUid: loggedInUid,
         username: loggedInUser, 
         name: safeDetails.name || "Untitled Event", 
         details: safeDetails, 
@@ -1356,7 +1424,7 @@ async function saveCurrentEvent(redirect = true) {
     };
 
     try {
-        localStorage.setItem("lureboard_defaults_" + loggedInUser, JSON.stringify(safeDetails.species));
+        localStorage.setItem("lureboard_defaults_" + loggedInUid, JSON.stringify(safeDetails.species));
         
         if (!currentEvent.id) {
             currentEvent.id = "ev_" + Date.now();
@@ -1418,7 +1486,7 @@ async function goToEventHub() {
             let items = parseParticipants(bulkEl ? bulkEl.value : "");
             
             let existingMap = {};
-            (currentEvent.participants||[]).forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [], registeredBy: p.registeredBy });
+            (currentEvent.participants||[]).forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [], registeredBy: p.registeredBy, registeredUid: p.registeredUid });
 
             currentEvent.participants = items.map(name => {
                 let lowerName = name.toLowerCase();
@@ -1427,7 +1495,8 @@ async function goToEventHub() {
                     name: name,
                     catches: existingMap[lowerName] ? existingMap[lowerName].catches : [],
                     penalties: existingMap[lowerName] ? existingMap[lowerName].penalties : [],
-                    registeredBy: existingMap[lowerName] ? existingMap[lowerName].registeredBy : loggedInUser
+                    registeredBy: existingMap[lowerName] ? existingMap[lowerName].registeredBy : loggedInUser,
+                    registeredUid: existingMap[lowerName] ? existingMap[lowerName].registeredUid : loggedInUid
                 };
             });
         }
@@ -1485,7 +1554,7 @@ function closeAddParticipantModal() { document.getElementById("participantModal"
 
 async function confirmAddParticipantModal() {
     let items = parseParticipants(document.getElementById("modalParticipantName").value);
-    items.forEach(name => currentEvent.participants.push({ id: 'p_'+Math.random().toString(36).substr(2,9), name: name, catches: [], penalties: [], registeredBy: loggedInUser }));
+    items.forEach(name => currentEvent.participants.push({ id: 'p_'+Math.random().toString(36).substr(2,9), name: name, catches: [], penalties: [], registeredBy: loggedInUser, registeredUid: loggedInUid }));
     closeAddParticipantModal(); 
     renderHubUI();
     await saveCurrentEvent(false);
@@ -1561,13 +1630,13 @@ function openFishModal(pIndexReal) {
 function closeFishModal() { document.getElementById("fishModal").classList.add("hidden"); activeFishParticipantIndex = null; selectedModalSpecies = ""; }
 
 function openUserUploadModal() {
-    if (!loggedInUser || !currentParticipationEventId) return;
+    if (!loggedInUid || !currentParticipationEventId) return;
     let evData = allPublicEvents.find(e => e.id === currentParticipationEventId);
     if(!evData) return;
     
     currentEvent = evData.details;
     let myName = getMyName();
-    let pIdx = currentEvent.participants.findIndex(p => p.name.toLowerCase() === myName.toLowerCase());
+    let pIdx = currentEvent.participants.findIndex(p => p.name.toLowerCase() === myName.toLowerCase() || p.registeredUid === loggedInUid);
     
     if(pIdx === -1) { alert("You are not participating in this event."); return; }
     
@@ -1893,7 +1962,6 @@ function renderHubUI() {
     
     document.getElementById("hubAddNewParticipantBtn").style.display = (isFinished) ? "none" : "block";
 
-    // Show Judge's Queue tab if CPR event
     let hubTabs = document.getElementById("hubModeTabs");
     if (currentEvent.eventType === 'cpr' && !isAnnounced) {
         hubTabs.classList.remove("hidden");
@@ -2275,24 +2343,8 @@ async function downloadSeasonChart() {
     }
 }
 
-// RESTORE SESSION & INITIALIZATION
-let savedUser = localStorage.getItem("lureboard_session_user");
-let savedData = localStorage.getItem("lureboard_session_data");
-
-if (savedUser && savedData) {
-    try {
-        loggedInUser = savedUser;
-        loggedInUserData = JSON.parse(savedData);
-    } catch(e) {
-        loggedInUser = "";
-        loggedInUserData = null;
-    }
-}
-
-updateUIAfterAuth();
-
+// INITIALIZATION
 hideAllSections();
 document.getElementById("dashboardSection").classList.remove("hidden");
 history.replaceState({view: 'dashboardSection'}, "");
-
 subscribeToEventsRealtime();
