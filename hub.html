@@ -9,6 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- EXIF Metadata Reader for CPR Anti-Cheat -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -148,6 +150,15 @@
             </button>
         </div>
 
+        <!-- Dynamic CPR Secret Code Banner (Revealed only when Ongoing/Finished) -->
+        <div id="pubSecretCodeBanner" class="secret-code-banner hidden">
+            <div>
+                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; font-weight: 700;">Official CPR Event Code</div>
+                <div style="font-size: 13px; opacity: 0.9; margin-top: 2px;">Write this code clearly in your catch photo</div>
+            </div>
+            <div id="pubSecretCodeDisplay" class="secret-code-val">----</div>
+        </div>
+
         <div class="card" style="padding: 16px;">
             <div class="flex flex-between" style="align-items: center; margin-bottom: 16px;">
                 <div class="flex" style="align-items: center;">
@@ -226,6 +237,16 @@
                     <button id="typeBtnCpr" class="secondary" onclick="setEventType('cpr')">CPR (Photo Upload)</button>
                 </div>
             </div>
+            
+            <!-- Dynamic CPR Secret Code Generator -->
+            <div id="cprCodeSetupGroup" class="form-group hidden" style="background: var(--primary-light); padding: 14px; border-radius: var(--radius-sm);">
+                <label style="color: var(--primary);">CPR Verification Code (Hidden until event starts)</label>
+                <div class="flex">
+                    <input type="text" id="eventSecretCodeInput" placeholder="e.g. LB-849" style="background: var(--surface); font-family: monospace; font-weight: 700; letter-spacing: 2px;">
+                    <button type="button" class="secondary icon-btn" onclick="generateRandomCprCode()" style="white-space: nowrap;">Generate</button>
+                </div>
+            </div>
+
             <div class="form-group"><label>Header Image</label><input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)"><img id="thumbnailPreview" class="thumb-preview"></div>
             <div class="form-group"><label>Description & Rules</label><textarea id="eventDescInput" placeholder="Enter rules..."></textarea></div>
         </div>
@@ -281,13 +302,28 @@
             <button class="secondary icon-btn" onclick="backToSetup()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Setup</button>
         </div>
 
-        <div class="card">
+        <!-- Organizer Hub Tabs (Participants vs Judge's Queue) -->
+        <div id="hubModeTabs" class="dash-tabs hidden" style="margin-bottom: 20px;">
+            <div id="tabHubPart" class="dash-tab active" onclick="switchHubTab('part')">Participants</div>
+            <div id="tabHubJudge" class="dash-tab" onclick="switchHubTab('judge')">
+                Judge's Queue <span id="judgeQueueBadge" class="badge danger hidden" style="padding: 2px 6px; font-size: 10px;">0</span>
+            </div>
+        </div>
+
+        <!-- Standard Participants Roster -->
+        <div id="hubParticipantsWrap" class="card">
             <div class="flex flex-between" style="margin-bottom: 16px;">
                 <div class="flex"><h3 style="margin:0;">Participants</h3><span id="hubParticipantCount" class="badge neutral">0</span></div>
                 <button id="hubAddNewParticipantBtn" onclick="openAddParticipantModal()" class="secondary icon-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add</button>
             </div>
             <input type="text" id="searchParticipant" placeholder="Search name..." oninput="renderHubUI()" style="margin-bottom: 16px; border-radius: 30px; padding-left: 20px;">
             <div id="participantsHubContainer"></div>
+        </div>
+
+        <!-- Dedicated Judge's Photo Queue -->
+        <div id="hubJudgeQueueWrap" class="card hidden">
+            <h3 style="margin-bottom: 16px;">Pending Catch Approvals</h3>
+            <div id="judgeQueueContainer"></div>
         </div>
 
         <div class="card">
@@ -342,13 +378,13 @@
             
             <div class="form-group" id="modalFishSizeGroup">
                 <label id="modalFishSizeLabel">Measurement</label>
-                <!-- FIXED: step="any" ensures decimals are accepted natively -->
                 <input type="number" step="any" id="modalFishSize" placeholder="Enter value" inputmode="decimal">
             </div>
             
             <div id="cprPhotoGroup" class="form-group hidden">
                 <label>Catch Photo (Required)</label>
                 <input type="file" id="modalFishPhoto" accept="image/*" onchange="handleCatchPhotoUpload(event)">
+                <div id="exifStatusPreview" style="font-size: 12px; margin-top: 6px; font-weight: 600;"></div>
                 <img id="modalFishPhotoPreview" class="thumb-preview">
             </div>
 
