@@ -25,9 +25,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Network-first with cache fallback (ensures real-time Firebase syncing remains untouched)
 self.addEventListener('fetch', (event) => {
-  // Let Firestore and cloud SDK requests bypass the Service Worker cache completely
   if (event.request.url.includes('firestore.googleapis.com') || 
       event.request.url.includes('firebaseio.com') ||
       event.request.method !== 'GET') {
