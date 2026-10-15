@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- PWA Web App Manifest -->
-<link rel="manifest" href="/manifest.json">
-
-<!-- Mobile & Theme Styling -->
-<meta name="theme-color" content="#4f46e5">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Lureboard">
-<link rel="apple-touch-icon" href="/icon-192.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lureboard</title>
     
+    <!-- PWA Web App Manifest & Compliance Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lureboard">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+
     <!-- PDF Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -125,16 +125,22 @@
 
     <!-- TOP HEADER -->
     <div class="header-bar">
-        <div class="flex" style="gap: 8px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
-                <path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/>
-                <circle cx="12" cy="3" r="1.5"/>
+        <div class="flex" style="gap: 10px;">
+            <!-- Interlocking L + B Anagram Logo Mark -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                <circle cx="6.5" cy="4" r="1.5"/>
+                <path d="M6.5 5.5 V18 C6.5 19.5 7.5 20.5 9 20.5 H14 C17 20.5 19 18.5 19 16 C19 13.5 17 12 14 12 H6.5"/>
+                <path d="M6.5 12 H13.5 C16 12 17.5 10.5 17.5 8.5 C17.5 6.5 16 5 13.5 5 H9.5"/>
             </svg>
             <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px;">Lureboard</div>
             <span id="globalSaveBadge">Saved</span>
         </div>
         
         <div class="flex" style="gap: 8px;">
+            <!-- PWA Native Install Button (Automated detection) -->
+            <button id="pwaInstallBtn" class="icon-btn" style="display: none; padding: 6px 12px; background: rgba(255,255,255,0.25); color: white; border: none; font-size: 13px;">
+                📲 Install
+            </button>
             <button id="headerHomeBtn" class="secondary icon-btn" onclick="showDashboard()" data-i18n="home" style="padding: 6px 10px; background: rgba(255,255,255,0.2); color: white; border: none;">Home</button>
             <button id="headerLogoutBtn" class="hidden danger icon-btn" onclick="handleLogout()" data-i18n="logout" style="padding: 6px 10px; background: transparent; border: 1px solid currentColor;">Logout</button>
             <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto;">
@@ -389,13 +395,6 @@
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((reg) => console.log('Lureboard PWA ServiceWorker active:', reg.scope))
-      .catch((err) => console.warn('PWA registration failed:', err));
-  });
-}
     // =========================================================================
     // INLINE JAVASCRIPT LOGIC - SELF CONTAINED
     // =========================================================================
@@ -426,6 +425,33 @@
     let pendingSmallFish = null;
     let currentLang = "en";
     let selectedYear = new Date().getFullYear().toString();
+
+    // PWA Install Prompt State
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('pwaInstallBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (installBtn) {
+            installBtn.style.display = 'inline-flex';
+            installBtn.onclick = async () => {
+                installBtn.style.display = 'none';
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const choiceResult = await deferredPrompt.userChoice;
+                    console.log('User install choice:', choiceResult.outcome);
+                    deferredPrompt = null;
+                }
+            };
+        }
+    });
+
+    window.addEventListener('appinstalled', () => {
+        if (installBtn) installBtn.style.display = 'none';
+        deferredPrompt = null;
+        console.log('Lureboard PWA installed successfully');
+    });
 
     const translations = {
         en: {
@@ -1388,7 +1414,7 @@
 }
 
 // =========================================================================
-// BULLETPROOF DIRECT HTML2PDF EXPORT (SEGOE UI + NATIVE UNICODE + FULL ROWS)
+// DIRECT HTML2PDF ENGINE (FULL UNICODE + GEORGIAN + MULTI-PAGE SIZING)
 // =========================================================================
 function downloadChart(eventId = null) {
     let ev = null;
@@ -1608,6 +1634,15 @@ if (savedUser) {
 } else {
     if(document.getElementById("loginSection")) document.getElementById("loginSection").classList.remove("hidden");
     if(document.getElementById("dashboardSection")) document.getElementById("dashboardSection").classList.add("hidden");
+}
+
+// REGISTER SERVICE WORKER FOR PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Lureboard PWA ServiceWorker active:', reg.scope))
+            .catch(err => console.warn('PWA registration failed:', err));
+    });
 }
 </script>
 </body>
