@@ -12,7 +12,9 @@
     <!-- EXIF Metadata Reader for CPR Anti-Cheat -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
     
+    <!-- Firebase SDKs (App + Auth + Firestore) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -48,8 +50,14 @@
     <div id="loginSection" class="hidden">
         <div class="card" style="margin-top: 20px; padding: 32px 24px;">
             <h2 class="text-center mb-2">Login</h2>
-            <div class="form-group"><label>Username</label><input type="text" id="loginUsername" placeholder="Username"></div>
-            <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Password"></div>
+            <div class="form-group"><label>Email Address</label><input type="email" id="loginEmail" placeholder="you@example.com"></div>
+            <div class="form-group">
+                <div class="flex flex-between" style="margin-bottom: 8px;">
+                    <label style="margin: 0;">Password</label>
+                    <a href="javascript:void(0)" onclick="handleForgotPassword()" style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-decoration: none;">Forgot password?</a>
+                </div>
+                <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
             <button onclick="handleLogin()" style="margin-top: 16px;">Login</button>
             <p class="text-center mt-2" style="font-size: 14px; margin-top: 24px;">
                 <a href="javascript:void(0)" onclick="toggleAuth('register')" style="color: var(--primary); font-weight: 600;">Don't have an account? Register</a>
@@ -60,15 +68,16 @@
     <!-- REGISTER SCREEN -->
     <div id="registerSection" class="hidden">
         <div class="card" style="margin-top: 20px; padding: 32px 24px;">
-            <h2 class="text-center mb-2">Register</h2>
+            <h2 class="text-center mb-2">Create Account</h2>
             <div class="dash-tabs" style="margin-bottom: 20px;">
                 <div id="tabRolePart" class="dash-tab active" onclick="setRegRole('participant')">Participant</div>
                 <div id="tabRoleOrg" class="dash-tab" onclick="setRegRole('organization')">Organization</div>
             </div>
-            <div class="form-group"><label>Username</label><input type="text" id="regUsername" placeholder="Username"></div>
-            <div class="form-group"><label>Full Name</label><input type="text" id="regFullName" placeholder="John Doe"></div>
+            <div class="form-group"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com"></div>
+            <div class="form-group"><label>Display Handle / Club Name</label><input type="text" id="regUsername" placeholder="e.g. GeoSpinning"></div>
+            <div class="form-group"><label>Full Name (Shown on Leaderboards)</label><input type="text" id="regFullName" placeholder="John Doe"></div>
             <div class="form-group"><label>Date of Birth</label><input type="date" id="regDob"></div>
-            <div class="form-group"><label>Password</label><input type="password" id="regPassword" placeholder="Password"></div>
+            <div class="form-group"><label>Password (Min. 6 characters)</label><input type="password" id="regPassword" placeholder="••••••••"></div>
             <button onclick="handleRegister()" style="margin-top: 16px;">Register</button>
             <p class="text-center mt-2" style="font-size: 14px; margin-top: 24px;">
                 <a href="javascript:void(0)" onclick="toggleAuth('login')" style="color: var(--primary); font-weight: 600;">Already have an account? Login</a>
@@ -115,10 +124,11 @@
                     <input type="file" id="profileAvatarInput" accept="image/*" onchange="handleProfileAvatarUpload(event)" style="display: none;">
                     <button class="secondary icon-btn" onclick="document.getElementById('profileAvatarInput').click()" style="display: block; margin: 0 auto;">Change Picture</button>
                 </div>
-                <div class="form-group"><label>Username (Read Only)</label><input type="text" id="profUsername" disabled style="opacity: 0.7; background: var(--bg);"></div>
+                <div class="form-group"><label>Registered Email</label><input type="email" id="profEmail" disabled style="opacity: 0.7; background: var(--bg);"></div>
+                <div class="form-group"><label>Display Handle</label><input type="text" id="profUsername" disabled style="opacity: 0.7; background: var(--bg);"></div>
                 <div class="form-group"><label>Full Name</label><input type="text" id="profFullName"></div>
                 <div class="form-group"><label>Date of Birth</label><input type="date" id="profDob"></div>
-                <div class="form-group"><label>New Password</label><input type="password" id="profPassword" placeholder="Leave blank to keep current"></div>
+                <div class="form-group"><label>New Password (Min. 6 characters)</label><input type="password" id="profPassword" placeholder="Leave blank to keep current"></div>
                 <div class="flex mt-2">
                     <button onclick="saveProfile()" class="primary">Save Profile</button>
                     <button onclick="handleLogout()" class="danger icon-btn" style="width: auto; padding: 12px 20px;">
@@ -150,7 +160,7 @@
             </button>
         </div>
 
-        <!-- Dynamic CPR Secret Code Banner (Revealed only when Ongoing/Finished) -->
+        <!-- Dynamic CPR Secret Code Banner -->
         <div id="pubSecretCodeBanner" class="secret-code-banner hidden">
             <div>
                 <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; font-weight: 700;">Official CPR Event Code</div>
@@ -238,7 +248,6 @@
                 </div>
             </div>
             
-            <!-- Dynamic CPR Secret Code Generator -->
             <div id="cprCodeSetupGroup" class="form-group hidden" style="background: var(--primary-light); padding: 14px; border-radius: var(--radius-sm);">
                 <label style="color: var(--primary);">CPR Verification Code (Hidden until event starts)</label>
                 <div class="flex">
@@ -302,7 +311,6 @@
             <button class="secondary icon-btn" onclick="backToSetup()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Setup</button>
         </div>
 
-        <!-- Organizer Hub Tabs (Participants vs Judge's Queue) -->
         <div id="hubModeTabs" class="dash-tabs hidden" style="margin-bottom: 20px;">
             <div id="tabHubPart" class="dash-tab active" onclick="switchHubTab('part')">Participants</div>
             <div id="tabHubJudge" class="dash-tab" onclick="switchHubTab('judge')">
@@ -310,7 +318,6 @@
             </div>
         </div>
 
-        <!-- Standard Participants Roster -->
         <div id="hubParticipantsWrap" class="card">
             <div class="flex flex-between" style="margin-bottom: 16px;">
                 <div class="flex"><h3 style="margin:0;">Participants</h3><span id="hubParticipantCount" class="badge neutral">0</span></div>
@@ -320,7 +327,6 @@
             <div id="participantsHubContainer"></div>
         </div>
 
-        <!-- Dedicated Judge's Photo Queue -->
         <div id="hubJudgeQueueWrap" class="card hidden">
             <h3 style="margin-bottom: 16px;">Pending Catch Approvals</h3>
             <div id="judgeQueueContainer"></div>
