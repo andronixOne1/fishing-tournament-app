@@ -11,28 +11,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- EXIF Metadata Reader for CPR Anti-Cheat -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    <!-- QR Code Generator for Zero-Friction Onboarding -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- Firebase SDKs (App + Auth + Firestore) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styleshub.css">
 </head>
 <body>
 
     <!-- TOP HEADER -->
     <div class="header-bar">
-        <div class="flex" style="gap: 16px; align-items: center;">
+        <div class="flex" style="gap: 12px; align-items: center;">
             <div class="flex" style="gap: 8px; cursor: pointer; color: var(--primary);" onclick="showPublicHub()">
                 <svg xmlns="http://www.w3.org/2000/svg" class="svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/><circle cx="12" cy="3" r="1.5"/></svg>
                 <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px; color: var(--text-main);">Lureboard</div>
             </div>
+            <span id="headerPlanBadge" class="badge neutral hidden" style="font-size: 10px; padding: 2px 8px; cursor: pointer;" onclick="openUpgradeModal()">FREE</span>
             <span id="globalSaveBadge">Saved</span>
             <button id="headerMyEventsBtn" class="secondary icon-btn hidden" onclick="showMyEvents()">My Events</button>
         </div>
         
-        <div class="flex" style="gap: 12px; align-items: center;">
-            <select id="langSelect" onchange="changeLanguage(this.value)">
+        <div class="flex" style="gap: 10px; align-items: center;">
+            <!-- Fictional Credits Wallet Pill -->
+            <div id="headerCreditsPill" class="credits-pill hidden" onclick="openUpgradeModal()" title="Click to manage Credits & Pro Plan">
+                <span>🪙</span> <span id="headerCreditsAmount">50</span> CR
+            </div>
+            <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto; padding: 6px 10px; font-size: 13px;">
                 <option value="en">EN</option>
                 <option value="ka">KA</option>
             </select>
@@ -71,7 +78,7 @@
             <h2 class="text-center mb-2">Create Account</h2>
             <div class="dash-tabs" style="margin-bottom: 20px;">
                 <div id="tabRolePart" class="dash-tab active" onclick="setRegRole('participant')">Participant</div>
-                <div id="tabRoleOrg" class="dash-tab" onclick="setRegRole('organization')">Organization</div>
+                <div id="tabRoleOrg" class="dash-tab" onclick="setRegRole('organization')">Organization (+50 Free CR)</div>
             </div>
             <div class="form-group"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com"></div>
             <div class="form-group"><label>Display Handle / Club Name</label><input type="text" id="regUsername" placeholder="e.g. GeoSpinning"></div>
@@ -150,14 +157,28 @@
 
     <!-- PUBLIC EVENT VIEW PAGE -->
     <div id="publicEventSection" class="hidden">
-        <div class="flex flex-between" style="margin-bottom: 20px;">
+        <div class="flex flex-between" style="margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <div class="flex" style="gap: 8px;">
                 <span id="pubEvTypeBadge" class="badge neutral" style="font-size:10px; padding: 2px 6px;">STD</span>
-                <h2 id="pubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Event Title</h2>
+                <h2 id="pubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;">Event Title</h2>
             </div>
-            <button class="secondary icon-btn" onclick="showPublicHub()">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            </button>
+            <div class="flex" style="gap: 6px;">
+                <button class="secondary icon-btn" onclick="openQrModal()" title="Share QR & Invite Link">🔗 QR</button>
+                <button class="secondary icon-btn" onclick="generateSocialCard()" title="Download Social Media Podium Graphic">📱 Card</button>
+                <button class="secondary icon-btn" onclick="openTvBroadcastMode()" title="Launch Live Weigh-In TV Mode">📺 TV</button>
+                <button class="secondary icon-btn" onclick="showPublicHub()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sponsor Banner Slot -->
+        <div id="pubSponsorBanner" class="sponsor-banner-box hidden">
+            <div>
+                <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Official Event Sponsor</div>
+                <div id="pubSponsorName" style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-top: 2px;">Sponsor Name</div>
+            </div>
+            <img id="pubSponsorLogo" src="" class="hidden">
         </div>
 
         <!-- Dynamic CPR Secret Code Banner -->
@@ -167,6 +188,15 @@
                 <div style="font-size: 13px; opacity: 0.9; margin-top: 2px;">Write this code clearly in your catch photo</div>
             </div>
             <div id="pubSecretCodeDisplay" class="secret-code-val">----</div>
+        </div>
+
+        <!-- Automated Prize Pool & Payout Breakdown -->
+        <div id="pubPayoutCard" class="card hidden" style="padding: 16px; background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); border-color: #c7d2fe;">
+            <div class="flex flex-between">
+                <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--pro-accent);">💰 Live Prize Pool & Payouts</span>
+                <span id="pubTotalPotBadge" class="badge pro">$0 Total Pot</span>
+            </div>
+            <div id="pubPayoutGrid" class="payout-grid"></div>
         </div>
 
         <div class="card" style="padding: 16px;">
@@ -260,13 +290,44 @@
             <div class="form-group"><label>Description & Rules</label><textarea id="eventDescInput" placeholder="Enter rules..."></textarea></div>
         </div>
 
+        <!-- Pro SaaS: Automated Payout Calculator & Sponsor Integration -->
+        <div class="card" style="border-color: #c7d2fe;">
+            <div class="flex flex-between" style="margin-bottom: 12px;">
+                <h3 style="margin:0;">💰 Prize Pool & Sponsor Branding</h3>
+                <span class="badge pro" style="font-size: 10px;">Pro / Event Pass</span>
+            </div>
+            <div class="tier-grid" style="margin-bottom: 12px;">
+                <div>
+                    <label>Entry Fee ($ / GEL)</label>
+                    <input type="number" step="any" id="eventEntryFeeInput" placeholder="0 (Free)" value="0">
+                </div>
+                <div>
+                    <label>Club / Org Cut (%)</label>
+                    <input type="number" step="any" id="eventClubCutInput" placeholder="10" value="10">
+                </div>
+                <div class="full-width">
+                    <label>Big Fish Side-Pot Per Angler ($ / GEL)</label>
+                    <input type="number" step="any" id="eventBigFishFeeInput" placeholder="0" value="0">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label>Official Sponsor Name (Shown on Live Board & PDF)</label>
+                <input type="text" id="eventSponsorNameInput" placeholder="e.g. Shimano Georgia / Local Tackle Co.">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Sponsor Banner / Logo</label>
+                <input type="file" id="eventSponsorLogoInput" accept="image/*" onchange="handleSponsorLogoUpload(event)">
+                <img id="sponsorLogoPreview" class="thumb-preview" style="height: 80px; object-fit: contain; background: var(--bg); padding: 8px;">
+            </div>
+        </div>
+
         <div class="card">
             <div class="flex flex-between" style="padding: 10px 0;">
                 <div><h3 style="margin:0;">Public Hub</h3><p style="font-size:12px; color:var(--text-muted); margin:0;">Make visible to everyone</p></div>
                 <label class="switch"><input type="checkbox" id="isPublicToggle"><span class="slider"></span></label>
             </div>
             <div class="flex flex-between" style="padding: 10px 0; border-top: 1px solid var(--border);">
-                <div><h3 style="margin:0;">Ranked Tournament</h3><p style="font-size:12px; color:var(--text-muted); margin:0;">Include in Yearly Leaderboard</p></div>
+                <div><h3 style="margin:0;">Ranked Tournament</h3><p style="font-size:12px; color:var(--text-muted); margin:0;">Include in Yearly AOTY Leaderboard (Pro)</p></div>
                 <label class="switch"><input type="checkbox" id="isRankedToggle" checked><span class="slider"></span></label>
             </div>
         </div>
@@ -279,8 +340,14 @@
         </div>
 
         <div class="card">
-            <div class="flex flex-between"><h3 style="margin:0;">Participants List</h3><span id="participantCountStatus" class="badge neutral">0</span></div>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names here.</p>
+            <div class="flex flex-between">
+                <h3 style="margin:0;">Participants List</h3>
+                <div class="flex">
+                    <span id="participantCapLabel" style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Free Cap: 15</span>
+                    <span id="participantCountStatus" class="badge neutral">0</span>
+                </div>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names here. Events over 15 anglers require an Event Pass (25 CR) or Pro Plan.</p>
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
                 <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.8); backdrop-filter: blur(2px); border-radius: var(--radius-sm); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 13px; font-weight:600; color:var(--text-muted); z-index: 10;">Editing disabled. Edit in Hub.</div>
@@ -306,9 +373,26 @@
 
     <!-- STEP 2: TOURNAMENT HUB -->
     <div id="hubSection" class="hidden">
-        <div class="flex flex-between" style="margin-bottom: 20px;">
-            <h2 id="hubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Hub</h2>
-            <button class="secondary icon-btn" onclick="backToSetup()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Setup</button>
+        <div class="flex flex-between" style="margin-bottom: 20px; flex-wrap: wrap; gap: 8px;">
+            <div class="flex">
+                <h2 id="hubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;">Hub</h2>
+                <span id="hubPassBadge" class="badge neutral" style="font-size: 10px;">FREE CAP (15)</span>
+            </div>
+            <div class="flex" style="gap: 6px;">
+                <button class="secondary icon-btn" onclick="openQrModal()" title="Share QR Code">🔗 QR</button>
+                <button class="secondary icon-btn" onclick="generateSocialCard()" title="Download Social Podium Card">📱 Card</button>
+                <button class="secondary icon-btn" onclick="openTvBroadcastMode()" title="Launch Live TV Mode">📺 TV</button>
+                <button class="secondary icon-btn" onclick="backToSetup()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Setup</button>
+            </div>
+        </div>
+
+        <!-- Organizer Live Payout Summary -->
+        <div id="hubPayoutCard" class="card hidden" style="padding: 16px; background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); border-color: #c7d2fe;">
+            <div class="flex flex-between">
+                <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--pro-accent);">💰 Automated Payout Calculator</span>
+                <span id="hubTotalPotBadge" class="badge pro">$0 Pot</span>
+            </div>
+            <div id="hubPayoutGrid" class="payout-grid"></div>
         </div>
 
         <div id="hubModeTabs" class="dash-tabs hidden" style="margin-bottom: 20px;">
@@ -328,7 +412,10 @@
         </div>
 
         <div id="hubJudgeQueueWrap" class="card hidden">
-            <h3 style="margin-bottom: 16px;">Pending Catch Approvals</h3>
+            <div class="flex flex-between" style="margin-bottom: 12px;">
+                <h3 style="margin:0;">Rapid Judge Verification</h3>
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Shortcuts: [Enter] Approve • [Shift+Del] Reject</span>
+            </div>
             <div id="judgeQueueContainer"></div>
         </div>
 
@@ -346,6 +433,118 @@
 </div>
 
 <!-- ================= MODALS ================= -->
+
+<!-- Fictional Payment, Credits & Pro SaaS Upgrade Modal -->
+<div id="upgradeModal" class="modal-overlay hidden" style="z-index: 1600;" onclick="handleOverlayClick(event, 'upgradeModal')">
+    <div class="modal-card">
+        <div class="modal-indicator"></div>
+        <div class="flex flex-between" style="margin-bottom: 16px;">
+            <div>
+                <h3 style="font-size: 20px; margin: 0;">Lureboard Store & Upgrades</h3>
+                <p id="upgradeModalReason" style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Unlock unlimited anglers, sponsor slots, and club tools.</p>
+            </div>
+            <div class="credits-pill" style="cursor: default;">🪙 <span id="modalCreditsBalance">50</span> CR</div>
+        </div>
+
+        <div style="overflow-y: auto; padding-right: 4px;">
+            <!-- Fictional Wallet Top-Up Box -->
+            <div style="background: var(--gold-bg); border: 1px solid #fde68a; padding: 14px 16px; border-radius: var(--radius-md); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <div>
+                    <b style="font-size: 14px; color: #92400e;">Fictional Sandbox Wallet</b>
+                    <div style="font-size: 12px; color: #b45309;">Simulate buying credits with 1 click (1 CR = $1 USD)</div>
+                </div>
+                <button class="secondary icon-btn" style="background: #ffffff; border-color: #f59e0b; color: #b45309; font-weight: 800; white-space: nowrap;" onclick="simulateTopUpCredits(100)">+100 Free CR</button>
+            </div>
+
+            <!-- Option 1: Single Event Pass -->
+            <div class="pricing-card">
+                <div class="flex flex-between">
+                    <div>
+                        <span class="badge warning" style="margin-bottom: 6px;">Single Tournament</span>
+                        <h3 style="margin: 0; font-size: 18px;">Single Event Pass</h3>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 22px; font-weight: 900;">25 CR</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">One-time unlock</div>
+                    </div>
+                </div>
+                <p style="font-size: 13px; color: var(--text-muted); margin: 10px 0 16px 0;">
+                    ✓ Unlimited anglers for the active tournament (removes 15-angler cap)<br>
+                    ✓ Unlocks Sponsor Banner & Automated Payout Calculator for this event
+                </p>
+                <button id="btnBuyEventPass" class="secondary" onclick="purchaseSingleEventPass()">Unlock Current Event (25 CR)</button>
+            </div>
+
+            <!-- Option 2: Pro Club / Circuit SaaS Subscription -->
+            <div class="pricing-card featured">
+                <div class="flex flex-between">
+                    <div>
+                        <span class="badge pro" style="margin-bottom: 6px;">Best Value • Club SaaS</span>
+                        <h3 style="margin: 0; font-size: 18px;">Pro Club / Circuit Pass</h3>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 22px; font-weight: 900; color: var(--pro-accent);">100 CR</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Full Season Pass</div>
+                    </div>
+                </div>
+                <p style="font-size: 13px; color: var(--text-muted); margin: 10px 0 16px 0;">
+                    ✓ <b>Unlimited Anglers</b> across all tournaments all season<br>
+                    ✓ <b>Season-Long Angler of the Year (AOTY)</b> multi-event standings<br>
+                    ✓ <b>Sponsor Banner Integration</b> on Live Boards, TV Mode & PDFs<br>
+                    ✓ <b>Automated Payout Calculator</b> & Rapid Judge Loupe Tools
+                </p>
+                <button id="btnBuyProSaaS" class="pro-btn" onclick="purchaseProSubscription()">Upgrade Account to PRO (100 CR)</button>
+            </div>
+        </div>
+
+        <div class="flex" style="margin-top: 16px; flex-shrink: 0;">
+            <button class="secondary" onclick="closeUpgradeModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Zero-Friction QR Code & Invite Link Modal -->
+<div id="qrModal" class="modal-overlay hidden" style="z-index: 1550; align-items: center;" onclick="handleOverlayClick(event, 'qrModal')">
+    <div class="card" style="width: 90%; max-width: 360px; text-align: center; padding: 28px 24px; margin: auto; border-radius: var(--radius-lg);">
+        <h3 id="qrModalTitle" style="font-size: 18px; margin-bottom: 4px;">Scan to Join Tournament</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Anglers can scan this QR at the boat ramp to jump straight into this event.</p>
+        <div id="qrCodeContainer" style="display: flex; justify-content: center; margin-bottom: 20px; padding: 16px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md);"></div>
+        <div class="flex" style="gap: 8px;">
+            <button class="secondary" onclick="closeQrModal()">Close</button>
+            <button class="primary" onclick="copyEventInviteLink()">Copy Link</button>
+        </div>
+    </div>
+</div>
+
+<!-- Live Weigh-In TV Broadcast Mode Overlay -->
+<div id="tvBroadcastModal" class="tv-overlay hidden">
+    <div>
+        <div class="tv-header">
+            <div class="flex" style="gap: 16px;">
+                <span class="badge danger" style="font-size: 13px; padding: 6px 14px;">● LIVE WEIGH-IN BROADCAST</span>
+                <h1 id="tvEventTitle" style="font-size: 32px; font-weight: 900; letter-spacing: -1px; margin: 0;">Tournament Name</h1>
+            </div>
+            <div class="flex" style="gap: 16px;">
+                <div id="tvSecretCodePill" class="secret-code-val hidden" style="font-size: 18px;">CODE: ----</div>
+                <button class="secondary icon-btn" style="background: #1e293b; color: #fff; border: none;" onclick="closeTvBroadcastMode()">✕ Exit TV Mode</button>
+            </div>
+        </div>
+
+        <div class="tv-grid">
+            <div class="tv-spotlight-card" style="padding: 0; overflow: hidden;">
+                <table class="tv-table" id="tvLeaderboardTable"></table>
+            </div>
+            <div>
+                <div class="tv-spotlight-card" id="tvBigFishBox"></div>
+                <div class="tv-spotlight-card hidden" id="tvPayoutBox"></div>
+                <div class="tv-spotlight-card hidden" id="tvSponsorBox" style="text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+    <div style="text-align: center; color: #64748b; font-size: 13px; font-weight: 600; padding-top: 16px; border-top: 1px solid #1e293b;">
+        Powered by Lureboard Live Tournament Engine • Real-Time Cloud Sync Active
+    </div>
+</div>
 
 <div id="rulesModal" class="modal-overlay hidden" style="z-index: 1000;" onclick="handleOverlayClick(event, 'rulesModal')">
     <div class="modal-card">
@@ -371,30 +570,34 @@
     </div>
 </div>
 
-<!-- Log Catch Modal -->
+<!-- Wet-Hand 3-Tap Log Catch Modal -->
 <div id="fishModal" class="modal-overlay hidden" style="z-index: 1100;" onclick="handleOverlayClick(event, 'fishModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
-        <h3 style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Log Catch</h3>
+        <h3 style="font-size: 20px; flex-shrink: 0; margin-bottom: 0;">Log Catch (3-Tap Quick Entry)</h3>
         <div style="overflow-y: auto; padding-right: 4px; padding-top: 20px;">
             <div class="form-group">
-                <label>Species</label>
-                <div id="modalSpeciesTabs" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
+                <label>1. Tap Species</label>
+                <div id="modalSpeciesTabs" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;"></div>
             </div>
             
             <div class="form-group" id="modalFishSizeGroup">
-                <label id="modalFishSizeLabel">Measurement</label>
-                <input type="number" step="any" id="modalFishSize" placeholder="Enter value" inputmode="decimal">
+                <label id="modalFishSizeLabel">2. Enter Measurement</label>
+                <input type="number" step="any" id="modalFishSize" placeholder="Enter value" inputmode="decimal" style="font-size: 20px; font-weight: 800; padding: 16px;">
             </div>
             
             <div id="cprPhotoGroup" class="form-group hidden">
-                <label>Catch Photo (Required)</label>
-                <input type="file" id="modalFishPhoto" accept="image/*" onchange="handleCatchPhotoUpload(event)">
+                <label>2. Tap to Snap or Upload Catch Photo</label>
+                <input type="file" id="modalFishPhoto" accept="image/*" onchange="handleCatchPhotoUpload(event)" style="display: none;">
+                <div class="wet-hand-upload" onclick="document.getElementById('modalFishPhoto').click()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span>TAP TO TAKE / SELECT PHOTO</span>
+                </div>
                 <div id="exifStatusPreview" style="font-size: 12px; margin-top: 6px; font-weight: 600;"></div>
                 <img id="modalFishPhotoPreview" class="thumb-preview">
             </div>
 
-            <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 14px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Log Catch</button>
+            <button onclick="confirmAddFishModal()" class="success" style="margin-bottom: 20px; padding: 18px; font-size: 17px; font-weight: 800;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 3. SUBMIT CATCH</button>
             <div id="modalCurrentCatches" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px;"></div>
         </div>
         <div class="flex" style="margin-top: 20px; flex-shrink: 0;">
@@ -437,13 +640,18 @@
     </div>
 </div>
 
-<!-- Photo Preview Modal -->
+<!-- Photo Preview Modal with Interactive Zoom Toggle -->
 <div id="photoPreviewModal" class="modal-overlay hidden" style="align-items: center; justify-content: center; z-index: 1500;" onclick="handleOverlayClick(event, 'photoPreviewModal')">
-    <div class="card" style="width: 90%; max-width: 500px; padding: 16px; position: relative; margin: auto; border-radius: var(--radius-lg);">
-        <button class="secondary icon-btn" style="position: absolute; top: 16px; right: 16px; z-index: 10; padding:6px; border-radius:50%; box-shadow:var(--shadow-sm);" onclick="closePhotoPreview()">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-        <img id="fullPhotoPreview" style="width: 100%; border-radius: var(--radius-sm); object-fit: contain; max-height: 70vh;">
+    <div class="card" style="width: 92%; max-width: 560px; padding: 16px; position: relative; margin: auto; border-radius: var(--radius-lg);">
+        <div class="flex" style="position: absolute; top: 16px; right: 16px; z-index: 10; gap: 8px;">
+            <button class="secondary icon-btn" style="padding: 6px 10px; box-shadow: var(--shadow-sm); font-size: 12px;" onclick="togglePreviewModalZoom()">🔍 2.5x Zoom</button>
+            <button class="secondary icon-btn" style="padding:6px; border-radius:50%; box-shadow:var(--shadow-sm);" onclick="closePhotoPreview()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div id="fullPhotoPreviewWrap" class="judge-img-wrap" style="height: 65vh; background: #0f172a;" onmousemove="panZoomImage(event, this)" ontouchmove="panZoomImageTouch(event, this)">
+            <img id="fullPhotoPreview" style="width: 100%; height: 100%; object-fit: contain;">
+        </div>
     </div>
 </div>
 
