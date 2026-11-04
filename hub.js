@@ -2,12 +2,12 @@
 // FIREBASE FIRESTORE & AUTH CONFIGURATION
 // =========================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyAN16rU1v-7dOvgOAZuxbqHjbuwBeF7k6k",
-  authDomain: "lureboard-hub.firebaseapp.com",
-  projectId: "lureboard-hub",
-  storageBucket: "lureboard-hub.firebasestorage.app",
-  messagingSenderId: "565191004647",
-  appId: "1:565191004647:web:74cb548055e0695053ad42"
+    apiKey: "AIzaSyD0uXVP6iALWh2ADcn3jjb6zMBCAzOAUtk",
+    authDomain: "lureboard-13c15.firebaseapp.com",
+    projectId: "lureboard-13c15",
+    storageBucket: "lureboard-13c15.firebasestorage.app",
+    messagingSenderId: "807956356939",
+    appId: "1:807956356939:web:af22328840dc388eb312ce"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -19,11 +19,12 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
     console.warn("Offline persistence note:", err.code);
 });
 
+const FREE_ANGLER_CAP = 15;
 let unsubscribeEventsListener = null;
 
 let currentEvent = null;
-let loggedInUser = "";     // Stores display handle / username
-let loggedInUid = "";      // Stores cryptographic Firebase Auth UID
+let loggedInUser = "";     
+let loggedInUid = "";      
 let loggedInUserData = null; 
 let loadedEvents = [];     
 let allPublicEvents = [];  
@@ -35,6 +36,7 @@ let selectedModalSpecies = "";
 let pendingSmallFish = null;
 let tempCatchPhotoBase64 = "";
 let tempCatchExifTime = null;
+let tempSponsorLogoBase64 = "";
 
 let currentLang = "en";
 let selectedYear = new Date().getFullYear().toString();
@@ -49,6 +51,7 @@ let currentParticipationEventId = null;
 let isLeaderboardExpanded = false;
 let regRoleSelect = 'participant';
 let tempProfileAvatarBase64 = "";
+let initialDeepLinkHandled = false;
 
 // Minimal SVGs
 const svgTrophy = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v8a5 5 0 0 1-10 0V4"/><path d="M4 9h3"/><path d="M17 9h3"/></svg>`;
@@ -84,6 +87,397 @@ function showSaveStatus(text, bg) {
     }
 }
 
+// =========================================================================
+// FICTIONAL CREDITS, EVENT PASS & PRO SAAS ENGINE
+// =========================================================================
+function isUserPro() {
+    return loggedInUserData && loggedInUserData.plan === 'pro';
+}
+
+function isEventUnlocked(evObj) {
+    if (!evObj) return isUserPro();
+    return isUserPro() || evObj.isUnlocked === true;
+}
+
+function openUpgradeModal(reasonText = "") {
+    if (!loggedInUid) { openLogin(); return; }
+    let reasonEl = document.getElementById("upgradeModalReason");
+    if (reasonEl) {
+        reasonEl.innerText = reasonText || "Unlock unlimited anglers, sponsor slots, and Pro Club tools.";
+    }
+    let balEl = document.getElementById("modalCreditsBalance");
+    if (balEl) balEl.innerText = (loggedInUserData && loggedInUserData.credits !== undefined) ? loggedInUserData.credits : 0;
+
+    let passBtn = document.getElementById("btnBuyEventPass");
+    if (passBtn) {
+        if (!currentEvent) {
+            passBtn.disabled = true;
+            passBtn.innerText = "Open an Event to Unlock Single Pass";
+        } else if (isEventUnlocked(currentEvent)) {
+            passBtn.disabled = true;
+            passBtn.innerText = "✓ Current Event Already Unlocked";
+        } else {
+            passBtn.disabled = false;
+            passBtn.innerText = `Unlock "${currentEvent.name}" (25 CR)`;
+        }
+    }
+
+    let proBtn = document.getElementById("btnBuyProSaaS");
+    if (proBtn) {
+        if (isUserPro()) {
+            proBtn.disabled = true;
+            proBtn.innerText = "✓ PRO Club Plan Active";
+        } else {
+            proBtn.disabled = false;
+            proBtn.innerText = "Upgrade Account to PRO (100 CR)";
+        }
+    }
+
+    document.getElementById("upgradeModal").classList.remove("hidden");
+}
+
+function closeUpgradeModal() {
+    document.getElementById("upgradeModal").classList.add("hidden");
+}
+
+async function simulateTopUpCredits(amount) {
+    if (!loggedInUid || !loggedInUserData) return;
+    let newCredits = (Number(loggedInUserData.credits) || 0) + amount;
+    showSaveStatus("Topping Up...", "#f59e0b");
+    try {
+        await db.collection("users").doc(loggedInUid).update({ credits: newCredits });
+        loggedInUserData.credits = newCredits;
+        updateUIAfterAuth();
+        openUpgradeModal();
+        showSaveStatus(`+${amount} CR Added!`, "#10b981");
+    } catch (e) {
+        console.error(e);
+        showSaveStatus("✕ Error", "#ef4444");
+    }
+}
+
+async function purchaseSingleEventPass() {
+    if (!loggedInUid || !loggedInUserData || !currentEvent) return;
+    let bal = Number(loggedInUserData.credits) || 0;
+    if (bal < 25) {
+        alert("Not enough credits! Click '+100 Free CR' at the top of the store to top up your fictional wallet.");
+        return;
+    }
+    let newCredits = bal - 25;
+    showSaveStatus("Unlocking...", "#f59e0b");
+    try {
+        await db.collection("users").doc(loggedInUid).update({ credits: newCredits });
+        loggedInUserData.credits = newCredits;
+        currentEvent.isUnlocked = true;
+        await saveCurrentEvent(false);
+        updateUIAfterAuth();
+        updateParticipantCountStatus();
+        if (!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
+        closeUpgradeModal();
+        alert(`🎉 Event Pass Activated! "${currentEvent.name}" now supports unlimited anglers, sponsor banners, and prize pool payouts.`);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function purchaseProSubscription() {
+    if (!loggedInUid || !loggedInUserData) return;
+    let bal = Number(loggedInUserData.credits) || 0;
+    if (bal < 100) {
+        alert("Not enough credits! Click '+100 Free CR' at the top of the store to top up your fictional wallet.");
+        return;
+    }
+    let newCredits = bal - 100;
+    showSaveStatus("Upgrading to PRO...", "#f59e0b");
+    try {
+        await db.collection("users").doc(loggedInUid).update({ credits: newCredits, plan: 'pro' });
+        loggedInUserData.credits = newCredits;
+        loggedInUserData.plan = 'pro';
+        if (currentEvent) currentEvent.isUnlocked = true;
+        updateUIAfterAuth();
+        updateParticipantCountStatus();
+        if (!document.getElementById("myEventsSection").classList.contains("hidden")) processDashboard();
+        if (!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
+        closeUpgradeModal();
+        alert("🏆 Welcome to Lureboard PRO Club! All tournaments now have unlimited angler capacity, Season-Long AOTY Standings, Sponsor Slots, and Automated Payouts.");
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// =========================================================================
+// AUTOMATED PAYOUT CALCULATOR & SPONSOR BANNERS
+// =========================================================================
+function calculatePayoutBreakdown(ev) {
+    let pCount = (ev.participants || []).length;
+    let entryFee = parseFloat(ev.entryFee) || 0;
+    let clubCutPct = parseFloat(ev.clubCutPct) || 0;
+    let bigFishFee = parseFloat(ev.bigFishFee) || 0;
+
+    let grossEntry = pCount * entryFee;
+    let clubKeep = grossEntry * (clubCutPct / 100);
+    let netTournamentPot = Math.max(0, grossEntry - clubKeep);
+    let bigFishPot = pCount * bigFishFee;
+    let totalPot = netTournamentPot + bigFishPot;
+
+    return {
+        hasPayouts: entryFee > 0 || bigFishFee > 0,
+        pCount,
+        totalPot,
+        clubKeep,
+        first: netTournamentPot * 0.50,
+        second: netTournamentPot * 0.30,
+        third: netTournamentPot * 0.20,
+        bigFish: bigFishPot
+    };
+}
+
+function renderPayoutWidget(ev, cardId, badgeId, gridId) {
+    let card = document.getElementById(cardId);
+    let badge = document.getElementById(badgeId);
+    let grid = document.getElementById(gridId);
+    if (!card || !badge || !grid || !ev) return;
+
+    let pay = calculatePayoutBreakdown(ev);
+    if (!pay.hasPayouts) {
+        card.classList.add("hidden");
+        return;
+    }
+
+    card.classList.remove("hidden");
+    badge.innerText = `$${pay.totalPot.toFixed(0)} Total Pool (${pay.pCount} Anglers)`;
+    grid.innerHTML = `
+        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">1ST (50%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.first.toFixed(0)}</div></div>
+        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">2ND (30%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.second.toFixed(0)}</div></div>
+        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">3RD (20%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.third.toFixed(0)}</div></div>
+        <div class="payout-box"><div style="font-size:10px; color:#b45309; font-weight:700;">BIG FISH</div><div style="font-size:15px; font-weight:800; color:#b45309;">$${pay.bigFish.toFixed(0)}</div></div>
+    `;
+}
+
+// =========================================================================
+// ZERO-FRICTION QR CODE & DEEP-LINK ONBOARDING
+// =========================================================================
+function getActiveEventShareUrl() {
+    let evId = currentParticipationEventId || (currentEvent && currentEvent.id);
+    let baseUrl = window.location.origin + window.location.pathname;
+    return evId ? `${baseUrl}?event=${evId}` : baseUrl;
+}
+
+function openQrModal() {
+    let ev = currentEvent || allPublicEvents.find(e => e.id === currentParticipationEventId)?.details;
+    let url = getActiveEventShareUrl();
+    document.getElementById("qrModalTitle").innerText = ev ? `Join: ${ev.name}` : "Scan to Join";
+    let qrBox = document.getElementById("qrCodeContainer");
+    qrBox.innerHTML = "";
+    if (window.QRCode) {
+        new QRCode(qrBox, { text: url, width: 200, height: 200 });
+    } else {
+        qrBox.innerText = url;
+    }
+    document.getElementById("qrModal").classList.remove("hidden");
+}
+
+function closeQrModal() {
+    document.getElementById("qrModal").classList.add("hidden");
+}
+
+function copyEventInviteLink() {
+    let url = getActiveEventShareUrl();
+    navigator.clipboard.writeText(url).then(() => {
+        showSaveStatus("✓ Link Copied!", "#10b981");
+        closeQrModal();
+    }).catch(() => {
+        prompt("Copy this tournament link:", url);
+    });
+}
+
+// =========================================================================
+// BROADCAST TV MODE & 1-TAP SOCIAL MEDIA PODIUM GRAPHIC
+// =========================================================================
+function getActiveBroadcastEvent() {
+    if (!document.getElementById("publicEventSection").classList.contains("hidden") && currentParticipationEventId) {
+        return allPublicEvents.find(e => e.id === currentParticipationEventId)?.details;
+    }
+    return currentEvent;
+}
+
+function openTvBroadcastMode() {
+    let ev = getActiveBroadcastEvent();
+    if (!ev) return;
+    document.getElementById("tvBroadcastModal").classList.remove("hidden");
+    renderTvBroadcastView(ev);
+}
+
+function closeTvBroadcastMode() {
+    document.getElementById("tvBroadcastModal").classList.add("hidden");
+}
+
+function renderTvBroadcastView(ev) {
+    if (!ev || document.getElementById("tvBroadcastModal").classList.contains("hidden")) return;
+    document.getElementById("tvEventTitle").innerText = ev.name || "Live Weigh-In";
+
+    let codePill = document.getElementById("tvSecretCodePill");
+    if (ev.eventType === 'cpr' && ev.status !== 'announced' && ev.secretCode) {
+        codePill.innerText = `CPR CODE: ${ev.secretCode}`;
+        codePill.classList.remove("hidden");
+    } else {
+        codePill.classList.add("hidden");
+    }
+
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+    let processed = (ev.participants || []).map(p => {
+        let totalMeasure = 0, totalPts = 0, maxFishMeasure = 0, maxFishAbbr = "";
+        let validCatches = (p.catches || []).filter(c => c.size > 0);
+        let countedCatches = ev.limitType === 'top5' ? [...validCatches].sort((a,b) => b.size - a.size).slice(0,5) : validCatches;
+        countedCatches.forEach(c => {
+            totalMeasure += c.size;
+            if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+        });
+        let penPts = 0;
+        if (p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
+        totalPts -= penPts;
+        return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length };
+    });
+
+    processed.sort((a, b) => b.totalPts - a.totalPts);
+    let biggest = [...processed].sort((a, b) => b.maxFishMeasure - a.maxFishMeasure)[0];
+
+    let tableHtml = `<thead><tr><th style="width:70px;">Rank</th><th>Angler</th><th>Points</th><th>Total ${unitText.toUpperCase()}</th><th>Fish</th><th>Biggest</th></tr></thead><tbody>`;
+    processed.slice(0, 12).forEach((p, i) => {
+        let medal = i === 0 ? "🥇 1st" : i === 1 ? "🥈 2nd" : i === 2 ? "🥉 3rd" : `#${i + 1}`;
+        tableHtml += `<tr>
+            <td>${medal}</td>
+            <td>${escapeHTML(p.name)}</td>
+            <td style="color:#38bdf8;">${p.totalPts.toFixed(1)}</td>
+            <td>${p.totalMeasure.toFixed(1)}</td>
+            <td>${p.amountCatches}</td>
+            <td>${p.maxFishMeasure > 0 ? `${p.maxFishMeasure}${unitText} ${escapeHTML(p.maxFishAbbr)}` : '-'}</td>
+        </tr>`;
+    });
+    tableHtml += `</tbody>`;
+    document.getElementById("tvLeaderboardTable").innerHTML = tableHtml;
+
+    let bigBox = document.getElementById("tvBigFishBox");
+    if (biggest && biggest.maxFishMeasure > 0) {
+        bigBox.innerHTML = `
+            <div style="font-size:13px; color:#fbbf24; font-weight:800; text-transform:uppercase; letter-spacing:1px;">🏆 BIGGEST CATCH LEADER</div>
+            <div style="font-size:28px; font-weight:900; margin-top:8px;">${escapeHTML(biggest.name)}</div>
+            <div style="font-size:36px; font-weight:900; color:#fbbf24; margin-top:4px;">${biggest.maxFishMeasure} ${unitText} <span style="font-size:18px; color:#94a3b8;">(${escapeHTML(biggest.maxFishAbbr)})</span></div>
+        `;
+    } else {
+        bigBox.innerHTML = `<div style="color:#64748b; font-weight:700;">Waiting for first official catch...</div>`;
+    }
+
+    let pay = calculatePayoutBreakdown(ev);
+    let payBox = document.getElementById("tvPayoutBox");
+    if (pay.hasPayouts) {
+        payBox.classList.remove("hidden");
+        payBox.innerHTML = `
+            <div style="font-size:13px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:1px;">💰 LIVE PRIZE PURSE ($${pay.totalPot.toFixed(0)})</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; font-size:18px; font-weight:800;">
+                <div>🥇 1st: $${pay.first.toFixed(0)}</div>
+                <div>🥈 2nd: $${pay.second.toFixed(0)}</div>
+                <div>🥉 3rd: $${pay.third.toFixed(0)}</div>
+                <div style="color:#fbbf24;">🐟 Big: $${pay.bigFish.toFixed(0)}</div>
+            </div>
+        `;
+    } else {
+        payBox.classList.add("hidden");
+    }
+
+    let spBox = document.getElementById("tvSponsorBox");
+    if (ev.sponsorName || ev.sponsorLogo) {
+        spBox.classList.remove("hidden");
+        spBox.innerHTML = `
+            <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">OFFICIAL TOURNAMENT SPONSOR</div>
+            ${ev.sponsorLogo ? `<img src="${ev.sponsorLogo}" style="max-height:80px; max-width:100%; object-fit:contain; margin-bottom:8px; background:#fff; padding:8px; border-radius:8px;">` : ''}
+            <div style="font-size:20px; font-weight:800; color:#fff;">${escapeHTML(ev.sponsorName || '')}</div>
+        `;
+    } else {
+        spBox.classList.add("hidden");
+    }
+}
+
+async function generateSocialCard() {
+    let ev = getActiveBroadcastEvent();
+    if (!ev || !ev.participants || ev.participants.length === 0) {
+        alert("Log at least one participant to generate a Social Podium Card.");
+        return;
+    }
+
+    showSaveStatus("Rendering Social Graphic...", "#f59e0b");
+    let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
+
+    let processed = (ev.participants || []).map(p => {
+        let totalMeasure = 0, totalPts = 0, maxFishMeasure = 0, maxFishAbbr = "";
+        let validCatches = (p.catches || []).filter(c => c.size > 0);
+        let countedCatches = ev.limitType === 'top5' ? [...validCatches].sort((a,b) => b.size - a.size).slice(0,5) : validCatches;
+        countedCatches.forEach(c => {
+            totalMeasure += c.size;
+            if (c.size > maxFishMeasure) { maxFishMeasure = c.size; maxFishAbbr = c.abbr.toUpperCase(); }
+            totalPts += calculateFishPoints(c.abbr, c.size, ev.species, ev.measureType);
+        });
+        let penPts = 0;
+        if (p.penalties) p.penalties.forEach(pen => penPts += parseFloat(pen.points));
+        totalPts -= penPts;
+        return { name: p.name, totalMeasure, totalPts, maxFishMeasure, maxFishAbbr, amountCatches: countedCatches.length };
+    });
+
+    processed.sort((a, b) => b.totalPts - a.totalPts);
+    let biggest = [...processed].sort((a, b) => b.maxFishMeasure - a.maxFishMeasure)[0];
+    let top3 = processed.slice(0, 3);
+
+    let cardWrap = document.createElement("div");
+    cardWrap.style.cssText = "position:fixed; left:-9999px; top:0; width:600px; padding:44px; background:linear-gradient(145deg, #090d16 0%, #1e1b4b 100%); color:#ffffff; font-family:'Inter',sans-serif; border-radius:24px;";
+    cardWrap.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px;">
+            <div style="font-weight:900; font-size:22px; letter-spacing:-0.5px; color:#38bdf8;">🎣 LUREBOARD OFFICIAL STANDINGS</div>
+            <div style="font-size:13px; color:#94a3b8; font-weight:600;">${escapeHTML(ev.date || '')}</div>
+        </div>
+        <h1 style="font-size:36px; font-weight:900; margin:0 0 28px 0; line-height:1.15;">${escapeHTML(ev.name)}</h1>
+        ${top3.map((p, i) => `
+            <div style="background:${i === 0 ? 'linear-gradient(135deg, rgba(251,191,36,0.22) 0%, rgba(251,191,36,0.05) 100%)' : 'rgba(255,255,255,0.06)'}; border:1px solid ${i === 0 ? '#fbbf24' : 'rgba(255,255,255,0.12)'}; padding:20px 24px; border-radius:18px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-size:13px; font-weight:800; color:${i === 0 ? '#fbbf24' : '#94a3b8'}; text-transform:uppercase;">${i === 0 ? '🥇 1ST PLACE CHAMPION' : i === 1 ? '🥈 2ND PLACE' : '🥉 3RD PLACE'}</div>
+                    <div style="font-size:24px; font-weight:900; margin-top:4px;">${escapeHTML(p.name)}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:26px; font-weight:900; color:#38bdf8;">${p.totalPts.toFixed(1)} <span style="font-size:14px;">PTS</span></div>
+                    <div style="font-size:13px; color:#cbd5e1;">${p.amountCatches} Fish • ${p.totalMeasure.toFixed(1)}${unitText}</div>
+                </div>
+            </div>
+        `).join('')}
+        ${biggest && biggest.maxFishMeasure > 0 ? `
+            <div style="background:rgba(16,185,129,0.12); border:1px solid #10b981; padding:18px 24px; border-radius:16px; margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-size:12px; font-weight:800; color:#34d399; text-transform:uppercase;">🏆 BIGGEST CATCH OF THE TOURNAMENT</div>
+                    <div style="font-size:20px; font-weight:800; margin-top:2px;">${escapeHTML(biggest.name)}</div>
+                </div>
+                <div style="font-size:26px; font-weight:900; color:#34d399;">${biggest.maxFishMeasure}${unitText} ${escapeHTML(biggest.maxFishAbbr)}</div>
+            </div>
+        ` : ''}
+        ${ev.sponsorName ? `<div style="margin-top:28px; text-align:center; padding-top:18px; border-top:1px solid rgba(255,255,255,0.12); font-size:13px; color:#94a3b8;">Sponsored by <b style="color:#fff;">${escapeHTML(ev.sponsorName)}</b> • lureboard.com</div>` : `<div style="margin-top:28px; text-align:center; font-size:12px; color:#64748b; font-weight:700;">lureboard.com</div>`}
+    `;
+    document.body.appendChild(cardWrap);
+
+    try {
+        if (window.html2canvas) {
+            let canvas = await html2canvas(cardWrap, { scale: 2, useCORS: true });
+            let link = document.createElement("a");
+            link.download = `${(ev.name || 'podium').replace(/[^a-z0-9]/gi, '_')}_social_card.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            showSaveStatus("✓ Social Card Downloaded", "#10b981");
+        }
+    } catch (e) {
+        console.error(e);
+        showSaveStatus("✕ Error", "#ef4444");
+    } finally {
+        document.body.removeChild(cardWrap);
+    }
+}
+
 function changeLanguage(lang) {
     currentLang = lang;
     if(!document.getElementById("setupSection").classList.contains("hidden")) refreshSetupUI();
@@ -111,6 +505,8 @@ function handleOverlayClick(e, modalId) {
         if (modalId === 'rulesModal') closeRulesModal();
         if (modalId === 'smallFishWarningModal') cancelSmallFish();
         if (modalId === 'photoPreviewModal') closePhotoPreview();
+        if (modalId === 'upgradeModal') closeUpgradeModal();
+        if (modalId === 'qrModal') closeQrModal();
     }
 }
 
@@ -302,11 +698,12 @@ async function handleRegister() {
             fullName: fName,
             dob: dob,
             role: regRoleSelect,
+            credits: 50,
+            plan: 'free',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         await db.collection("users").doc(uid).set(profileData);
-        showSaveStatus("✓ Welcome", "#10b981");
-        // onAuthStateChanged will automatically trigger and route the user
+        showSaveStatus("✓ Welcome (+50 CR)", "#10b981");
     } catch (err) {
         console.error(err);
         showSaveStatus("✕ Error", "#ef4444");
@@ -326,7 +723,6 @@ async function handleLogin() {
     try {
         await auth.signInWithEmailAndPassword(email, pass);
         showSaveStatus("✓ Signed In", "#10b981");
-        // onAuthStateChanged handles profile load and UI transition
     } catch (err) {
         console.error(err);
         showSaveStatus("✕ Error", "#ef4444");
@@ -372,10 +768,14 @@ auth.onAuthStateChanged(async (user) => {
             if (doc.exists) {
                 loggedInUserData = doc.data();
                 loggedInUser = loggedInUserData.username || user.email.split('@')[0];
+                if (loggedInUserData.credits === undefined) {
+                    loggedInUserData.credits = 50;
+                    loggedInUserData.plan = loggedInUserData.plan || 'free';
+                    await db.collection("users").doc(user.uid).update({ credits: 50, plan: loggedInUserData.plan });
+                }
             } else {
-                // Fallback if user document wasn't created yet
                 loggedInUser = user.email.split('@')[0];
-                loggedInUserData = { uid: user.uid, email: user.email, username: loggedInUser, fullName: loggedInUser, role: 'participant' };
+                loggedInUserData = { uid: user.uid, email: user.email, username: loggedInUser, fullName: loggedInUser, role: 'participant', credits: 50, plan: 'free' };
                 await db.collection("users").doc(user.uid).set(loggedInUserData);
             }
         } catch (err) {
@@ -403,6 +803,9 @@ function updateUIAfterAuth() {
     let avatarEl = document.getElementById("headerAvatar");
     let nameEl = document.getElementById("headerUserName");
     let myEventsBtn = document.getElementById("headerMyEventsBtn");
+    let creditsPill = document.getElementById("headerCreditsPill");
+    let creditsAmt = document.getElementById("headerCreditsAmount");
+    let planBadge = document.getElementById("headerPlanBadge");
 
     if (loggedInUid && loggedInUserData) {
         if (btnLogin) btnLogin.classList.add("hidden");
@@ -415,11 +818,20 @@ function updateUIAfterAuth() {
             let dispName = loggedInUserData.fullName || loggedInUser;
             nameEl.innerText = dispName.length > 5 ? dispName.substring(0, 5) + "..." : dispName;
         }
-        if (myEventsBtn) {
-            if (loggedInUserData.role === 'organization' || !loggedInUserData.role) {
-                myEventsBtn.classList.remove("hidden");
+        let isOrg = (loggedInUserData.role === 'organization' || !loggedInUserData.role);
+        if (myEventsBtn) myEventsBtn.classList.toggle("hidden", !isOrg);
+        if (creditsPill) {
+            creditsPill.classList.toggle("hidden", !isOrg);
+            if (creditsAmt) creditsAmt.innerText = loggedInUserData.credits !== undefined ? loggedInUserData.credits : 50;
+        }
+        if (planBadge) {
+            planBadge.classList.toggle("hidden", !isOrg);
+            if (isUserPro()) {
+                planBadge.innerText = "PRO CLUB";
+                planBadge.className = "badge pro";
             } else {
-                myEventsBtn.classList.add("hidden");
+                planBadge.innerText = "FREE TIER";
+                planBadge.className = "badge neutral";
             }
         }
     } else {
@@ -427,10 +839,12 @@ function updateUIAfterAuth() {
         if (userWrap) userWrap.classList.add("hidden");
         if (avatarEl) avatarEl.style.display = "none";
         if (myEventsBtn) myEventsBtn.classList.add("hidden");
+        if (creditsPill) creditsPill.classList.add("hidden");
+        if (planBadge) planBadge.classList.add("hidden");
     }
 }
 
-// EVENTS SUBSCRIPTION & AUTOMATIC CLEANUP
+// EVENTS SUBSCRIPTION, DEEP-LINKING & AUTOMATIC CLEANUP
 function subscribeToEventsRealtime() {
     if (unsubscribeEventsListener) unsubscribeEventsListener();
     
@@ -471,6 +885,18 @@ function subscribeToEventsRealtime() {
                 allPublicEvents.push(data);
             }
         });
+
+        // Handle QR / Direct URL Deep Link (?event=ev_12345) on initial load
+        if (!initialDeepLinkHandled && allPublicEvents.length > 0) {
+            let params = new URLSearchParams(window.location.search);
+            let targetEv = params.get("event");
+            if (targetEv && allPublicEvents.some(e => e.id === targetEv)) {
+                initialDeepLinkHandled = true;
+                openPublicEvent(targetEv);
+                return;
+            }
+            initialDeepLinkHandled = true;
+        }
         
         let myEvSec = document.getElementById("myEventsSection");
         if (loggedInUid && myEvSec && !myEvSec.classList.contains("hidden")) {
@@ -503,8 +929,15 @@ function subscribeToEventsRealtime() {
             if (activeUpdated) {
                 activeUpdated.details.id = activeUpdated.id;
                 renderPublicLeaderboardList(activeUpdated.details);
+                renderPayoutWidget(activeUpdated.details, "pubPayoutCard", "pubTotalPotBadge", "pubPayoutGrid");
                 if (activeUpdated.details.eventType === 'cpr') renderPublicGallery(activeUpdated.details);
             }
+        }
+
+        // Live Auto-Refresh TV Broadcast Mode if open
+        let tvEv = getActiveBroadcastEvent();
+        if (tvEv && !document.getElementById("tvBroadcastModal").classList.contains("hidden")) {
+            renderTvBroadcastView(tvEv);
         }
     }, error => {
         console.error("Firebase Read Error: ", error);
@@ -536,6 +969,25 @@ function openPublicEvent(eventId) {
     document.getElementById("pubEvTypeBadge").innerText = ev.eventType === 'cpr' ? "CPR" : "STD";
     if (ev.eventType === 'cpr') document.getElementById("pubEvTypeBadge").className = "badge warning";
     else document.getElementById("pubEvTypeBadge").className = "badge neutral";
+
+    // Sponsor Banner
+    let spBanner = document.getElementById("pubSponsorBanner");
+    if (ev.sponsorName || ev.sponsorLogo) {
+        spBanner.classList.remove("hidden");
+        document.getElementById("pubSponsorName").innerText = ev.sponsorName || "Official Partner";
+        let spLogo = document.getElementById("pubSponsorLogo");
+        if (ev.sponsorLogo) {
+            spLogo.src = ev.sponsorLogo;
+            spLogo.classList.remove("hidden");
+        } else {
+            spLogo.classList.add("hidden");
+        }
+    } else {
+        spBanner.classList.add("hidden");
+    }
+
+    // Payout Widget
+    renderPayoutWidget(ev, "pubPayoutCard", "pubTotalPotBadge", "pubPayoutGrid");
 
     let st = ev.status || 'finished';
     let codeBanner = document.getElementById("pubSecretCodeBanner");
@@ -753,6 +1205,14 @@ async function joinEventDirectly() {
             }
         }
     } else {
+        // Check 15-Angler Trojan Horse Cap if event is not unlocked
+        if (!ev.isUnlocked && ev.participants.length >= FREE_ANGLER_CAP) {
+            alert(`This tournament has reached the 15-Angler Free Tier limit. Please ask the tournament organizer to unlock the Event Pass (25 CR) or Pro Plan.`);
+            return;
+        }
+        let feeMsg = parseFloat(ev.entryFee) > 0 ? `Join this tournament? (Entry Fee: $${ev.entryFee})` : "Join this tournament?";
+        if (!confirm(feeMsg)) return;
+
         ev.participants.push({
             id: 'p_' + Math.random().toString(36).substr(2, 9),
             name: myName, catches: [], penalties: [], registeredBy: loggedInUser, registeredUid: loggedInUid
@@ -800,6 +1260,7 @@ function renderPublicHub() {
 
         let isParticipating = loggedInUid && myName && pList.some(p => p.name.toLowerCase() === myName || p.registeredUid === loggedInUid);
         let registeredBadge = isParticipating ? `<span class="badge success" style="margin-right:6px; font-size:10px;">Registered</span>` : '';
+        let sponsorPill = ev.details.sponsorName ? `<span class="badge pro" style="font-size:10px;">Sponsored by ${escapeHTML(ev.details.sponsorName)}</span>` : '';
 
         html += `
         <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
@@ -810,6 +1271,7 @@ function renderPublicHub() {
                     <div class="flex" style="font-size:13px; color:var(--text-muted);">
                         <img src="${hostAvatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">
                         <b style="font-weight:600;">${escapeHTML(hostName)}</b>
+                        ${sponsorPill}
                     </div>
                 </div>
                 <span class="badge ${stBadge}">${status}</span>
@@ -823,18 +1285,47 @@ function renderPublicHub() {
     container.innerHTML = html;
 }
 
-// Photo Preview Modal Control
+// Photo Preview Modal & 2.5x Interactive Bump-Board Loupe Zoom
 function openPhotoPreview(pIdx, cIdx) {
     let p = currentEvent.participants[pIdx];
     if (!p || !p.catches[cIdx] || !p.catches[cIdx].photo) return;
-    document.getElementById("fullPhotoPreview").src = p.catches[cIdx].photo;
-    document.getElementById("photoPreviewModal").classList.remove("hidden");
+    openPhotoPreviewByUrl(p.catches[cIdx].photo);
 }
 
 function openPhotoPreviewByUrl(url) {
     if (!url) return;
+    let wrap = document.getElementById("fullPhotoPreviewWrap");
+    if (wrap) wrap.classList.remove("zoomed");
     document.getElementById("fullPhotoPreview").src = url;
     document.getElementById("photoPreviewModal").classList.remove("hidden");
+}
+
+function togglePreviewModalZoom() {
+    let wrap = document.getElementById("fullPhotoPreviewWrap");
+    if (wrap) wrap.classList.toggle("zoomed");
+}
+
+function toggleJudgeCardZoom(wrapId) {
+    let wrap = document.getElementById(wrapId);
+    if (wrap) wrap.classList.toggle("zoomed");
+}
+
+function panZoomImage(e, container) {
+    if (!container.classList.contains("zoomed")) return;
+    let img = container.querySelector("img");
+    let rect = container.getBoundingClientRect();
+    let x = ((e.clientX - rect.left) / rect.width) * 100;
+    let y = ((e.clientY - rect.top) / rect.height) * 100;
+    img.style.transformOrigin = `${x}% ${y}%`;
+}
+
+function panZoomImageTouch(e, container) {
+    if (!container.classList.contains("zoomed") || !e.touches[0]) return;
+    let img = container.querySelector("img");
+    let rect = container.getBoundingClientRect();
+    let x = ((e.touches[0].clientX - rect.left) / rect.width) * 100;
+    let y = ((e.touches[0].clientY - rect.top) / rect.height) * 100;
+    img.style.transformOrigin = `${x}% ${y}%`;
 }
 
 function closePhotoPreview() {
@@ -985,28 +1476,44 @@ function processDashboard() {
 
     let aotyContainer = document.getElementById("aotyContainer");
     if(aotyArray.length > 0) {
-        let medals = ["1st", "2nd", "3rd"];
-        let aotyHtml = `<div class="card" style="background: var(--primary); color: white; border:none;">
-            <div class="flex flex-between" style="margin-bottom: 16px;">
-                <h3 style="color:white; margin:0; font-size:16px;">Angler of the Year (${selectedYear})</h3>
-                <button class="secondary icon-btn" onclick="downloadSeasonChart()" style="padding:4px 8px; width:auto; border:none; background:rgba(255,255,255,0.2); color:white;">${svgDownload}</button>
-            </div>`;
-        
-        aotyArray.slice(0, 3).forEach((angler, idx) => {
-            aotyHtml += `
-            <div class="flex flex-between" style="background: rgba(255,255,255,0.1); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 8px;">
-                <div class="flex" style="gap: 12px;">
-                    <span style="font-size: 14px; font-weight: bold; opacity:0.8;">${medals[idx]}</span>
-                    <b style="font-size: 15px;">${escapeHTML(angler.name)}</b>
-                </div>
-                <div style="text-align:right;">
-                    <b style="font-size: 15px;">${angler.totalRankPts} <span style="font-size:11px; font-weight:normal;">pts</span></b>
+        if (!isUserPro()) {
+            // Pro SaaS Upsell Gate for Season-Long AOTY Standings
+            aotyContainer.innerHTML = `
+            <div class="card" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; border:none;">
+                <div class="flex flex-between">
+                    <div>
+                        <span class="badge pro" style="margin-bottom:6px;">PRO CLUB SAAS FEATURE</span>
+                        <h3 style="color:white; margin:0; font-size:18px;">🏆 Angler of the Year (${selectedYear}) Standings</h3>
+                        <p style="font-size:13px; opacity:0.85; margin:6px 0 0 0;">Unlock automated multi-tournament circuit standings & Season PDF exports.</p>
+                    </div>
+                    <button class="pro-btn icon-btn" onclick="openUpgradeModal('Upgrade to Pro Club SaaS to unlock Season-Long Angler of the Year (AOTY) standings.')" style="white-space:nowrap;">Unlock AOTY (100 CR)</button>
                 </div>
             </div>`;
-        });
-        aotyHtml += `</div>`;
-        aotyContainer.innerHTML = aotyHtml;
-        aotyContainer.classList.remove("hidden");
+            aotyContainer.classList.remove("hidden");
+        } else {
+            let medals = ["1st", "2nd", "3rd"];
+            let aotyHtml = `<div class="card" style="background: var(--primary); color: white; border:none;">
+                <div class="flex flex-between" style="margin-bottom: 16px;">
+                    <h3 style="color:white; margin:0; font-size:16px;">Angler of the Year (${selectedYear})</h3>
+                    <button class="secondary icon-btn" onclick="downloadSeasonChart()" style="padding:4px 8px; width:auto; border:none; background:rgba(255,255,255,0.2); color:white;">${svgDownload}</button>
+                </div>`;
+            
+            aotyArray.slice(0, 3).forEach((angler, idx) => {
+                aotyHtml += `
+                <div class="flex flex-between" style="background: rgba(255,255,255,0.1); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 8px;">
+                    <div class="flex" style="gap: 12px;">
+                        <span style="font-size: 14px; font-weight: bold; opacity:0.8;">${medals[idx]}</span>
+                        <b style="font-size: 15px;">${escapeHTML(angler.name)}</b>
+                    </div>
+                    <div style="text-align:right;">
+                        <b style="font-size: 15px;">${angler.totalRankPts} <span style="font-size:11px; font-weight:normal;">pts</span></b>
+                    </div>
+                </div>`;
+            });
+            aotyHtml += `</div>`;
+            aotyContainer.innerHTML = aotyHtml;
+            aotyContainer.classList.remove("hidden");
+        }
     } else {
         aotyContainer.innerHTML = "";
         aotyContainer.classList.add("hidden");
@@ -1023,6 +1530,8 @@ function processDashboard() {
     renderEventsList(sortedEvents);
 }
 
+function changeYear(y) { selectedYear = y; processDashboard(); }
+
 function renderEventsList(filteredEvents) {
     let container = document.getElementById("eventsList");
     if (filteredEvents.length === 0) {
@@ -1035,6 +1544,7 @@ function renderEventsList(filteredEvents) {
         let rankIcon = ev.details.isRanked !== false ? svgTrophy : svgCircle;
         let rankBadge = ev.details.isRanked === false ? `<span class="badge danger" style="padding:2px 6px; font-size:10px; margin-left:6px;">Unranked</span>` : '';
         let typeBadge = ev.details.eventType === 'cpr' ? `<span class="badge warning" style="padding:2px 6px; font-size:10px; margin-left:6px;">CPR</span>` : '';
+        let passBadge = isEventUnlocked(ev.details) ? `<span class="badge pro" style="padding:2px 6px; font-size:10px; margin-left:6px;">UNLIMITED</span>` : '';
         
         let status = ev.details.status || 'finished';
         let stBadge = status === 'finished' ? 'neutral' : (status === 'ongoing' ? 'success' : 'primary-light');
@@ -1046,7 +1556,7 @@ function renderEventsList(filteredEvents) {
                     <span>${escapeHTML(ev.name)}</span>
                     <div class="flex" style="gap:4px;">
                         <span class="badge ${stBadge}" style="padding:2px 6px; font-size:10px;">${status}</span>
-                        ${rankBadge} ${typeBadge}
+                        ${rankBadge} ${typeBadge} ${passBadge}
                     </div>
                 </div>
                 <div class="flex" style="font-size:12px; color:var(--text-muted); font-weight:500;">
@@ -1143,6 +1653,30 @@ function handleThumbnailUpload(e) {
     reader.readAsDataURL(file);
 }
 
+function handleSponsorLogoUpload(e) {
+    let file = e.target.files[0];
+    if(!file) return;
+    let reader = new FileReader();
+    reader.onload = function(event) {
+        let img = new Image();
+        img.onload = function() {
+            let canvas = document.createElement('canvas');
+            let ctx = canvas.getContext('2d');
+            let maxW = 400;
+            let scale = img.width > maxW ? maxW / img.width : 1;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            tempSponsorLogoBase64 = canvas.toDataURL('image/png', 0.8);
+            
+            document.getElementById('sponsorLogoPreview').src = tempSponsorLogoBase64;
+            document.getElementById('sponsorLogoPreview').style.display = 'block';
+        }
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
 // EXIF Photo Verification & Optimized Compression
 function handleCatchPhotoUpload(e) {
     let file = e.target.files[0];
@@ -1195,6 +1729,8 @@ function openEventEditor(eventObj = null) {
     window.scrollTo(0, 0);
     history.pushState({view: 'setupSection'}, "");
 
+    tempSponsorLogoBase64 = "";
+
     if (eventObj) {
         currentEvent = JSON.parse(JSON.stringify(eventObj));
         
@@ -1203,6 +1739,10 @@ function openEventEditor(eventObj = null) {
         document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false && currentEvent.isPublic !== "false";
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         document.getElementById("eventSecretCodeInput").value = currentEvent.secretCode || "";
+        document.getElementById("eventEntryFeeInput").value = currentEvent.entryFee || 0;
+        document.getElementById("eventClubCutInput").value = currentEvent.clubCutPct !== undefined ? currentEvent.clubCutPct : 10;
+        document.getElementById("eventBigFishFeeInput").value = currentEvent.bigFishFee || 0;
+        document.getElementById("eventSponsorNameInput").value = currentEvent.sponsorName || "";
         
         if(currentEvent.thumbnail) {
             document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
@@ -1210,6 +1750,14 @@ function openEventEditor(eventObj = null) {
         } else {
             document.getElementById('thumbnailPreview').style.display = 'none';
             document.getElementById('thumbnailPreview').src = '';
+        }
+
+        if(currentEvent.sponsorLogo) {
+            document.getElementById('sponsorLogoPreview').src = currentEvent.sponsorLogo;
+            document.getElementById('sponsorLogoPreview').style.display = 'block';
+        } else {
+            document.getElementById('sponsorLogoPreview').style.display = 'none';
+            document.getElementById('sponsorLogoPreview').src = '';
         }
 
         setEventType(currentEvent.eventType || 'standard');
@@ -1231,8 +1779,14 @@ function openEventEditor(eventObj = null) {
             isRanked: true,
             isPublic: true,
             isStarted: false,
+            isUnlocked: isUserPro(),
             eventType: 'standard',
             secretCode: "",
+            entryFee: 0,
+            clubCutPct: 10,
+            bigFishFee: 0,
+            sponsorName: "",
+            sponsorLogo: "",
             unit: 'metric',
             measureType: 'size',
             limitType: 'all',
@@ -1248,8 +1802,14 @@ function openEventEditor(eventObj = null) {
         document.getElementById("isRankedToggle").checked = true;
         document.getElementById("eventThumbnailInput").value = "";
         document.getElementById('thumbnailPreview').style.display = 'none';
+        document.getElementById("eventSponsorLogoInput").value = "";
+        document.getElementById('sponsorLogoPreview').style.display = 'none';
         document.getElementById("bulkParticipantsInput").value = "";
         document.getElementById("eventSecretCodeInput").value = "";
+        document.getElementById("eventEntryFeeInput").value = "0";
+        document.getElementById("eventClubCutInput").value = "10";
+        document.getElementById("eventBigFishFeeInput").value = "0";
+        document.getElementById("eventSponsorNameInput").value = "";
         
         setEventType('standard');
         setUnit('metric');
@@ -1262,7 +1822,19 @@ function openEventEditor(eventObj = null) {
 
 function updateParticipantCountStatus() {
     let rawText = document.getElementById("bulkParticipantsInput").value;
-    document.getElementById("participantCountStatus").innerText = parseParticipants(rawText).length;
+    let count = parseParticipants(rawText).length;
+    let statusBadge = document.getElementById("participantCountStatus");
+    let capLabel = document.getElementById("participantCapLabel");
+    if (statusBadge) statusBadge.innerText = count;
+    if (capLabel) {
+        if (isEventUnlocked(currentEvent)) {
+            capLabel.innerText = "UNLIMITED PASS ACTIVE";
+            capLabel.style.color = "var(--pro-accent)";
+        } else {
+            capLabel.innerText = `Free Cap: ${count}/${FREE_ANGLER_CAP}`;
+            capLabel.style.color = count > FREE_ANGLER_CAP ? "var(--danger)" : "var(--text-muted)";
+        }
+    }
 }
 
 function addSpecies() {
@@ -1443,6 +2015,23 @@ async function saveCurrentEvent(redirect = true) {
 
 async function goToEventHub() {
     try {
+        let isStarted = ['ongoing', 'finished'].includes(currentEvent.status);
+        let bulkEl = document.getElementById("bulkParticipantsInput");
+        let items = isStarted ? (currentEvent.participants || []).map(p => p.name) : parseParticipants(bulkEl ? bulkEl.value : "");
+
+        // Enforce 15-Angler Trojan Horse Free Tier Cap
+        if (!isEventUnlocked(currentEvent) && items.length > FREE_ANGLER_CAP) {
+            openUpgradeModal(`You entered ${items.length} participants. The Free Tier supports up to ${FREE_ANGLER_CAP} anglers. Unlock this tournament with a 25 CR Event Pass or upgrade to PRO Club!`);
+            return;
+        }
+
+        let sponsorNameVal = document.getElementById("eventSponsorNameInput").value.trim();
+        let entryFeeVal = parseFloat(document.getElementById("eventEntryFeeInput").value) || 0;
+        if (!isEventUnlocked(currentEvent) && (sponsorNameVal !== "" || tempSponsorLogoBase64 !== "" || entryFeeVal > 0)) {
+            openUpgradeModal("Sponsor Banner Integration and Automated Payout Calculators require a Single Event Pass (25 CR) or Pro Club Plan (100 CR).");
+            return;
+        }
+
         currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
         currentEvent.description = document.getElementById("eventDescInput").value.trim();
         currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
@@ -1453,11 +2042,22 @@ async function goToEventHub() {
             currentEvent.thumbnail = thumbPreview.src;
         }
 
+        let spPreview = document.getElementById('sponsorLogoPreview');
+        if (spPreview && spPreview.src && spPreview.src.startsWith('data:')) {
+            currentEvent.sponsorLogo = spPreview.src;
+        }
+
+        currentEvent.entryFee = entryFeeVal;
+        currentEvent.clubCutPct = parseFloat(document.getElementById("eventClubCutInput").value) || 0;
+        currentEvent.bigFishFee = parseFloat(document.getElementById("eventBigFishFeeInput").value) || 0;
+        currentEvent.sponsorName = sponsorNameVal;
+
         currentEvent.eventType = confEventType;
         currentEvent.secretCode = document.getElementById("eventSecretCodeInput").value.trim() || "LB-2026";
         currentEvent.unit = confUnit;
         currentEvent.measureType = confMeasure;
         currentEvent.limitType = confLimit;
+        if (isUserPro()) currentEvent.isUnlocked = true;
         
         currentEvent.hostFullName = loggedInUserData ? loggedInUserData.fullName || loggedInUser : loggedInUser;
         currentEvent.hostAvatar = loggedInUserData ? loggedInUserData.avatar || "https://via.placeholder.com/40" : "https://via.placeholder.com/40";
@@ -1480,11 +2080,7 @@ async function goToEventHub() {
         }
         currentEvent.isRanked = wantsRanked;
 
-        let isStarted = ['ongoing', 'finished'].includes(currentEvent.status);
         if (!isStarted) {
-            let bulkEl = document.getElementById("bulkParticipantsInput");
-            let items = parseParticipants(bulkEl ? bulkEl.value : "");
-            
             let existingMap = {};
             (currentEvent.participants||[]).forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [], registeredBy: p.registeredBy, registeredUid: p.registeredUid });
 
@@ -1546,6 +2142,10 @@ async function promptFinishEvent() {
 
 function openAddParticipantModal() {
     if(currentEvent.status === 'finished') return;
+    if (!isEventUnlocked(currentEvent) && (currentEvent.participants || []).length >= FREE_ANGLER_CAP) {
+        openUpgradeModal(`This event has reached the ${FREE_ANGLER_CAP}-angler Free Tier limit. Unlock this event (25 CR) or upgrade to PRO Club to add more participants!`);
+        return;
+    }
     document.getElementById("modalParticipantName").value = "";
     document.getElementById("participantModal").classList.remove("hidden");
     setTimeout(() => document.getElementById("modalParticipantName").focus(), 100);
@@ -1554,6 +2154,11 @@ function closeAddParticipantModal() { document.getElementById("participantModal"
 
 async function confirmAddParticipantModal() {
     let items = parseParticipants(document.getElementById("modalParticipantName").value);
+    if (!isEventUnlocked(currentEvent) && ((currentEvent.participants || []).length + items.length) > FREE_ANGLER_CAP) {
+        closeAddParticipantModal();
+        openUpgradeModal(`Adding ${items.length} angler(s) exceeds the ${FREE_ANGLER_CAP}-angler Free Tier cap. Unlock this event with a 25 CR Event Pass!`);
+        return;
+    }
     items.forEach(name => currentEvent.participants.push({ id: 'p_'+Math.random().toString(36).substr(2,9), name: name, catches: [], penalties: [], registeredBy: loggedInUser, registeredUid: loggedInUid }));
     closeAddParticipantModal(); 
     renderHubUI();
@@ -1590,7 +2195,7 @@ function openFishModal(pIndexReal) {
     activeFishParticipantIndex = pIndexReal;
     
     let unitText = currentEvent.unit === 'imperial' ? (currentEvent.measureType === 'weight' ? 'lbs' : 'in') : (currentEvent.measureType === 'weight' ? 'kg' : 'cm');
-    document.getElementById("modalFishSizeLabel").innerText = `Measurement (${unitText})`;
+    document.getElementById("modalFishSizeLabel").innerText = `2. Enter Measurement (${unitText})`;
 
     document.getElementById("modalSpeciesTabs").innerHTML = currentEvent.species.map((s, idx) => `
         <div class="species-tab ${idx === 0 ? 'active' : ''}" onclick="selectModalSpecies('${s.abbr}', this)">${escapeHTML(s.abbr)}</div>
@@ -1709,7 +2314,7 @@ async function executeAddFish(abbr, size) {
         try {
             await db.collection("events").doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
             showSaveStatus("✓ Saved", "#10b981");
-            alert("Catch logged successfully! Pending organizer grading.");
+            alert("Catch logged! Sent to Judge's Queue for verification.");
             closeFishModal();
             openPublicEvent(currentParticipationEventId); 
         } catch (err) {
@@ -1812,7 +2417,7 @@ function renderModalCatches() {
 }
 
 // ---------------------------------------------------------
-// DEDICATED JUDGE'S QUEUE FOR CPR TOURNAMENTS
+// RAPID JUDGE'S QUEUE (2.5x Loupe Zoom + Keyboard Workflow)
 // ---------------------------------------------------------
 function switchHubTab(tab) {
     activeHubTab = tab;
@@ -1851,6 +2456,7 @@ function renderJudgeQueue() {
 
     container.innerHTML = pendingList.map(item => {
         let c = item.catchObj;
+        let wrapId = `judgeWrap_${item.pIdx}_${item.cIdx}`;
         let exifBadge = c.exifTime === "No EXIF Date" 
             ? `<span class="badge warning" style="font-size:10px;">⚠️ No EXIF Timestamp</span>`
             : `<span class="badge success" style="font-size:10px;">📷 Taken: ${escapeHTML(c.exifTime || 'Unknown')}</span>`;
@@ -1862,19 +2468,39 @@ function renderJudgeQueue() {
                     <b style="font-size:16px;">${escapeHTML(item.pName)}</b>
                     <span class="badge neutral" style="margin-left:6px;">${escapeHTML(c.abbr.toUpperCase())}</span>
                 </div>
-                ${exifBadge}
+                <div class="flex" style="gap:6px;">
+                    ${exifBadge}
+                    ${c.photo ? `<button class="secondary icon-btn" style="padding:4px 8px; font-size:11px;" onclick="toggleJudgeCardZoom('${wrapId}')">🔍 2.5x Loupe</button>` : ''}
+                </div>
             </div>
-            ${c.photo ? `<img src="${c.photo}" onclick="openPhotoPreviewByUrl('${c.photo}')" title="Click to enlarge">` : `<div style="padding:20px; text-align:center; color:var(--text-muted);">No Photo Attached</div>`}
+            ${c.photo ? `
+                <div id="${wrapId}" class="judge-img-wrap" onmousemove="panZoomImage(event, this)" ontouchmove="panZoomImageTouch(event, this)" onclick="toggleJudgeCardZoom('${wrapId}')">
+                    <img src="${c.photo}" title="Click to toggle 2.5x bump-board zoom, move mouse to inspect">
+                </div>` : `<div style="padding:20px; text-align:center; color:var(--text-muted);">No Photo Attached</div>`}
             <div class="flex" style="margin-top:4px;">
-                <input type="number" step="any" id="judgeInput_${item.pIdx}_${item.cIdx}" placeholder="Enter size (${unitText})" style="flex:1; background:var(--surface);">
+                <input type="number" step="any" class="judge-size-input" id="judgeInput_${item.pIdx}_${item.cIdx}" placeholder="Size (${unitText}) • Press Enter to Approve" style="flex:1; background:var(--surface);" onkeydown="handleJudgeKeydown(event, ${item.pIdx}, ${item.cIdx})">
                 <button class="success icon-btn" style="padding:14px 20px;" onclick="approveJudgeCatch(${item.pIdx}, ${item.cIdx})">Approve</button>
-                <button class="danger icon-btn" style="padding:14px;" title="Reject & Delete" onclick="removeFish(${item.pIdx}, ${item.cIdx})">${svgTrash}</button>
+                <button class="danger icon-btn" style="padding:14px;" title="Reject & Delete (Shift+Del)" onclick="removeFish(${item.pIdx}, ${item.cIdx})">${svgTrash}</button>
             </div>
         </div>`;
     }).join('');
 }
 
-async function approveJudgeCatch(pIdx, cIdx) {
+async function handleJudgeKeydown(e, pIdx, cIdx) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        await approveJudgeCatch(pIdx, cIdx, true);
+    } else if (e.key === 'Delete' && e.shiftKey) {
+        e.preventDefault();
+        await removeFish(pIdx, cIdx);
+        setTimeout(() => {
+            let nextInput = document.querySelector(".judge-size-input");
+            if (nextInput) nextInput.focus();
+        }, 80);
+    }
+}
+
+async function approveJudgeCatch(pIdx, cIdx, autoFocusNext = false) {
     let inputEl = document.getElementById(`judgeInput_${pIdx}_${cIdx}`);
     if (!inputEl) return;
     let val = parseFloat(String(inputEl.value).replace(',', '.'));
@@ -1885,6 +2511,12 @@ async function approveJudgeCatch(pIdx, cIdx) {
     currentEvent.participants[pIdx].catches[cIdx].size = val;
     await saveCurrentEvent(false);
     renderHubUI();
+    if (autoFocusNext) {
+        setTimeout(() => {
+            let nextInput = document.querySelector(".judge-size-input");
+            if (nextInput) nextInput.focus();
+        }, 80);
+    }
 }
 
 function openPenaltyModal(pIndexReal) {
@@ -1960,6 +2592,23 @@ function renderHubUI() {
     let isFinished = currentEvent.status === 'finished';
     let isAnnounced = currentEvent.status === 'announced';
     
+    document.getElementById("hubTitle").innerText = currentEvent.name || "Hub";
+    let passBadge = document.getElementById("hubPassBadge");
+    if (passBadge) {
+        if (isEventUnlocked(currentEvent)) {
+            passBadge.innerText = "UNLIMITED PASS";
+            passBadge.className = "badge pro";
+            passBadge.onclick = null;
+        } else {
+            passBadge.innerText = `FREE CAP (${(currentEvent.participants||[]).length}/${FREE_ANGLER_CAP}) • UPGRADE`;
+            passBadge.className = "badge warning";
+            passBadge.style.cursor = "pointer";
+            passBadge.onclick = () => openUpgradeModal();
+        }
+    }
+
+    renderPayoutWidget(currentEvent, "hubPayoutCard", "hubTotalPotBadge", "hubPayoutGrid");
+
     document.getElementById("hubAddNewParticipantBtn").style.display = (isFinished) ? "none" : "block";
 
     let hubTabs = document.getElementById("hubModeTabs");
@@ -2098,7 +2747,7 @@ function renderLeaderboard() {
     document.getElementById("leaderboardContainer").innerHTML = html;
 }
 
-// Native HTML2PDF Engine
+// Native HTML2PDF Engine (Includes Sponsor Banner & Payouts)
 async function downloadChart(eventId = null) {
     let ev = currentEvent;
     if (eventId) { 
@@ -2155,6 +2804,15 @@ async function downloadChart(eventId = null) {
         return b.maxFishCm - a.maxFishCm; 
     });
 
+    let pay = calculatePayoutBreakdown(ev);
+    let sponsorHeader = (ev.sponsorName || ev.sponsorLogo) ? `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; padding:12px 16px; border-radius:10px; margin-bottom:16px;">
+            <div><span style="font-size:10px; color:#64748b; text-transform:uppercase; font-weight:700;">Official Event Sponsor</span><div style="font-size:16px; font-weight:800; color:#0f172a;">${escapeHTML(ev.sponsorName || '')}</div></div>
+            ${ev.sponsorLogo ? `<img src="${ev.sponsorLogo}" style="max-height:45px; object-fit:contain;">` : ''}
+        </div>` : '';
+
+    let payoutSub = pay.hasPayouts ? ` | Prize Pool: $${pay.totalPot.toFixed(0)} (1st: $${pay.first.toFixed(0)}, 2nd: $${pay.second.toFixed(0)}, 3rd: $${pay.third.toFixed(0)}, Big Fish: $${pay.bigFish.toFixed(0)})` : '';
+
     let container = document.createElement('div');
     container.style.width = '1000px';
     container.style.padding = '30px';
@@ -2163,9 +2821,10 @@ async function downloadChart(eventId = null) {
     container.style.color = '#0f172a';
 
     container.innerHTML = `
+        ${sponsorHeader}
         <div style="margin-bottom: 20px;">
             <h2 style="margin: 0 0 6px 0; color: #000000; font-size: 24px; font-weight: 700;">Tournament Results: ${escapeHTML(ev.name)}</h2>
-            <p style="margin: 0; font-size: 13px; color: #64748b;">Generated on: ${new Date().toLocaleDateString()}</p>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">Generated on: ${new Date().toLocaleDateString()}${payoutSub}</p>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
             <thead>
@@ -2245,6 +2904,10 @@ async function downloadPhotosZip(eventId) {
 }
 
 async function downloadSeasonChart() {
+    if (!isUserPro()) {
+        openUpgradeModal("Season-Long Angler of the Year (AOTY) PDF exports require the PRO Club SaaS Plan.");
+        return;
+    }
     let rankedFinishedEvents = loadedEvents.filter(e => {
         let eYear = String(e.details.year || (e.details.date ? e.details.date.split('.').pop().split('/').pop().slice(-4) : new Date().getFullYear().toString()));
         let status = e.details.status || 'finished';
