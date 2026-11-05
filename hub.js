@@ -55,17 +55,20 @@ let tempProfileAvatarBase64 = "";
 let initialDeepLinkHandled = false;
 let initialEventsLoaded = false;
 
-// Minimal SVGs
-const svgTrophy = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v8a5 5 0 0 1-10 0V4"/><path d="M4 9h3"/><path d="M17 9h3"/></svg>`;
-const svgCircle = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/></svg>`;
-const svgUsers = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+// Minimal 1-Color SVGs
+const svgTrophy = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v8a5 5 0 0 1-10 0V4"/><path d="M4 9h3"/><path d="M17 9h3"/></svg>`;
+const svgCircle = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`;
+const svgUsers = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
 const svgFish = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"/><path d="M18 12v.5"/><path d="M16 17.93a9.77 9.77 0 0 1 0-11.86"/><path d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33"/></svg>`;
-const svgCal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
-const svgDownload = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
-const svgEdit = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-const svgTrash = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+const svgCal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+const svgDownload = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+const svgEdit = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+const svgTrash = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
 const svgWarning = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7.5" x2="12" y2="12.5"/><circle cx="12" cy="16.5" r="1.25" fill="#ef4444" stroke="none"/></svg>`;
-const svgCamera = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+const svgCamera = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+const svgClock = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+const svgSearch = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+const svgStar = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
 
 const translations = { en: {}, ka: { login_btn: "შესვლა" } };
 
@@ -465,7 +468,7 @@ function renderTvBroadcastView(ev) {
 
     let tableHtml = `<thead><tr><th style="width:70px;">Rank</th><th>Angler</th><th>Points</th><th>Total ${unitText.toUpperCase()}</th><th>Fish</th><th>Biggest</th></tr></thead><tbody>`;
     processed.slice(0, 12).forEach((p, i) => {
-        let medal = i === 0 ? "🥇 1st" : i === 1 ? "🥈 2nd" : i === 2 ? "🥉 3rd" : `#${i + 1}`;
+        let medal = i === 0 ? "1st" : i === 1 ? "2nd" : i === 2 ? "3rd" : `#${i + 1}`;
         tableHtml += `<tr>
             <td>${medal}</td>
             <td>${escapeHTML(p.name)}</td>
@@ -481,7 +484,7 @@ function renderTvBroadcastView(ev) {
     let bigBox = document.getElementById("tvBigFishBox");
     if (biggest && biggest.maxFishMeasure > 0) {
         bigBox.innerHTML = `
-            <div style="font-size:13px; color:#fbbf24; font-weight:800; text-transform:uppercase; letter-spacing:1px;">🏆 BIGGEST CATCH LEADER</div>
+            <div class="flex" style="font-size:13px; color:#fbbf24; font-weight:800; text-transform:uppercase; letter-spacing:1px; gap:6px;">${svgTrophy} BIGGEST CATCH LEADER</div>
             <div style="font-size:28px; font-weight:900; margin-top:8px;">${escapeHTML(biggest.name)}</div>
             <div style="font-size:36px; font-weight:900; color:#fbbf24; margin-top:4px;">${biggest.maxFishMeasure} ${unitText} <span style="font-size:18px; color:#94a3b8;">(${escapeHTML(biggest.maxFishAbbr)})</span></div>
         `;
@@ -494,12 +497,12 @@ function renderTvBroadcastView(ev) {
     if (pay.hasPayouts) {
         payBox.classList.remove("hidden");
         payBox.innerHTML = `
-            <div style="font-size:13px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:1px;">💰 LIVE PRIZE PURSE ($${pay.totalPot.toFixed(0)})</div>
+            <div style="font-size:13px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:1px;">LIVE PRIZE PURSE ($${pay.totalPot.toFixed(0)})</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; font-size:18px; font-weight:800;">
-                <div>🥇 1st (${pay.pct1}%): $${pay.first.toFixed(0)}</div>
-                <div>🥈 2nd (${pay.pct2}%): $${pay.second.toFixed(0)}</div>
-                <div>🥉 3rd (${pay.pct3}%): $${pay.third.toFixed(0)}</div>
-                <div style="color:#fbbf24;">🐟 Big: $${pay.bigFish.toFixed(0)}</div>
+                <div>1st (${pay.pct1}%): $${pay.first.toFixed(0)}</div>
+                <div>2nd (${pay.pct2}%): $${pay.second.toFixed(0)}</div>
+                <div>3rd (${pay.pct3}%): $${pay.third.toFixed(0)}</div>
+                <div class="flex" style="color:#fbbf24; gap:6px;">${svgFish} Big: $${pay.bigFish.toFixed(0)}</div>
             </div>
         `;
     } else {
@@ -608,14 +611,14 @@ async function generateSocialCard() {
     cardWrap.style.cssText = "position:fixed; left:-9999px; top:0; width:600px; padding:44px; background:#090d16; color:#ffffff; font-family:'Inter',sans-serif; border-radius:24px;";
     cardWrap.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px;">
-            <div style="font-weight:900; font-size:22px; letter-spacing:-0.5px; color:#38bdf8;">🎣 LUREBOARD OFFICIAL STANDINGS</div>
+            <div style="font-weight:900; font-size:22px; letter-spacing:-0.5px; color:#38bdf8; display:flex; align-items:center; gap:8px;">${svgFish} LUREBOARD OFFICIAL STANDINGS</div>
             <div style="font-size:13px; color:#94a3b8; font-weight:600;">${escapeHTML(ev.date || '')}</div>
         </div>
         <h1 style="font-size:36px; font-weight:900; margin:0 0 28px 0; line-height:1.15; color:#ffffff;">${escapeHTML(ev.name)}</h1>
         ${top3.map((p, i) => `
             <div style="background:${i === 0 ? '#1e293b' : '#111827'}; border:2px solid ${i === 0 ? '#fbbf24' : '#334155'}; padding:20px 24px; border-radius:18px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <div style="font-size:13px; font-weight:800; color:${i === 0 ? '#fbbf24' : '#94a3b8'}; text-transform:uppercase;">${i === 0 ? '🥇 1ST PLACE CHAMPION' : i === 1 ? '🥈 2ND PLACE' : '🥉 3RD PLACE'}</div>
+                    <div style="font-size:13px; font-weight:800; color:${i === 0 ? '#fbbf24' : '#94a3b8'}; text-transform:uppercase;">${i === 0 ? '1ST PLACE CHAMPION' : i === 1 ? '2ND PLACE' : '3RD PLACE'}</div>
                     <div style="font-size:24px; font-weight:900; margin-top:4px; color:#ffffff;">${escapeHTML(p.name)}</div>
                 </div>
                 <div style="text-align:right;">
@@ -627,7 +630,7 @@ async function generateSocialCard() {
         ${biggest && biggest.maxFishMeasure > 0 ? `
             <div style="background:#064e3b; border:2px solid #10b981; padding:18px 24px; border-radius:16px; margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <div style="font-size:12px; font-weight:800; color:#6ee7b7; text-transform:uppercase;">🏆 BIGGEST CATCH OF THE TOURNAMENT</div>
+                    <div style="font-size:12px; font-weight:800; color:#6ee7b7; text-transform:uppercase; display:flex; align-items:center; gap:6px;">${svgTrophy} BIGGEST CATCH OF THE TOURNAMENT</div>
                     <div style="font-size:20px; font-weight:800; margin-top:2px; color:#ffffff;">${escapeHTML(biggest.name)}</div>
                 </div>
                 <div style="font-size:26px; font-weight:900; color:#6ee7b7;">${biggest.maxFishMeasure}${unitText} ${escapeHTML(biggest.maxFishAbbr)}</div>
@@ -1243,13 +1246,13 @@ function openPublicEvent(eventId, pushHistory = true) {
         codeBanner.classList.add("hidden");
     }
 
-    let schedInfo = ev.date || '';
+    let schedInfo = escapeHTML(ev.date || '');
     if (ev.scheduleMode === 'auto' && ev.autoStartTime) {
-        let sStr = ev.autoStartTime.replace('T', ' ');
-        let eStr = ev.autoEndTime ? ev.autoEndTime.replace('T', ' ') : '';
-        schedInfo = `⏰ ${sStr}${eStr ? ' ➔ ' + eStr : ''}`;
+        let sStr = escapeHTML(ev.autoStartTime.replace('T', ' '));
+        let eStr = ev.autoEndTime ? escapeHTML(ev.autoEndTime.replace('T', ' ')) : '';
+        schedInfo = `<span class="flex" style="gap:4px; justify-content:flex-end;">${svgClock} ${sStr}${eStr ? ' ➔ ' + eStr : ''}</span>`;
     }
-    document.getElementById("pubHost").innerText = schedInfo;
+    document.getElementById("pubHost").innerHTML = schedInfo;
     document.getElementById("pubHostName").innerText = ev.hostFullName || evData.username;
     document.getElementById("pubHostAvatar").src = ev.hostAvatar || "https://via.placeholder.com/40";
     
@@ -1276,10 +1279,10 @@ function openPublicEvent(eventId, pushHistory = true) {
     document.getElementById("pubParticipantsDetail").innerHTML = (ev.participants||[]).map((p, i) => {
         let catches = (p.catches||[]).length > 0 ? p.catches.map((c, cIdx) => {
             let isPending = !c.size || c.size <= 0;
-            let sizeDisp = !isPending ? c.size + unitText : '⏳ Pending';
+            let sizeDisp = !isPending ? c.size + unitText : 'Pending';
             let badgeClass = isPending ? 'warning' : 'neutral';
             if (c.photo) {
-                return `<span class="badge ${badgeClass}" style="font-weight:700; display:inline-flex; align-items:center; gap:6px; padding:4px 10px 4px 5px; margin:2px 4px 2px 0; cursor:pointer; border:1px solid var(--border);" onclick="openPhotoPreviewByUrl('${c.photo}')" title="View Catch Photo"><img src="${c.photo}" style="width:22px; height:22px; border-radius:4px; object-fit:cover; border:1px solid rgba(0,0,0,0.15);"> ${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())} <span style="font-size:12px;">📷</span></span>`;
+                return `<span class="badge ${badgeClass}" style="font-weight:700; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; cursor:pointer;" onclick="openPhotoPreviewByUrl('${c.photo}')" title="View Catch Photo">${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())} ${svgCamera}</span>`;
             }
             return `<span class="badge ${badgeClass}" style="font-weight:600; display:inline-flex; align-items:center; margin:2px 4px 2px 0;">${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())}</span>`;
         }).join(' ') : 'None';
@@ -1525,7 +1528,7 @@ function renderPublicHub() {
         let registeredBadge = isParticipating ? `<span class="badge success">Registered</span>` : '';
         let evSponsors = getEventSponsors(ev.details);
         let sponsorBadge = evSponsors.length > 0
-            ? evSponsors.map(sp => `<span class="badge pro">💎 ${escapeHTML(sp.name || 'Sponsor')}</span>`).join('')
+            ? evSponsors.map(sp => `<span class="badge pro" style="gap:4px;">${svgStar} ${escapeHTML(sp.name || 'Sponsor')}</span>`).join('')
             : '';
 
         let thumbSrc = ev.details.thumbnail || "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=60";
@@ -1758,7 +1761,7 @@ function processDashboard() {
                 <div class="flex flex-between" style="flex-wrap: wrap; gap: 14px;">
                     <div style="flex: 1; min-width: 220px;">
                         <div class="flex" style="gap: 8px; margin-bottom: 8px;">
-                            <span class="aoty-medal-pill gold">🏆 SEASON STANDINGS</span>
+                            <span class="aoty-medal-pill gold">${svgTrophy} SEASON STANDINGS</span>
                             <span class="badge pro" style="font-size: 10px;">PRO CLUB SAAS</span>
                         </div>
                         <h3 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.4px;">Angler of the Year (${selectedYear})</h3>
@@ -1770,16 +1773,16 @@ function processDashboard() {
             aotyContainer.classList.remove("hidden");
         } else {
             let medalConfigs = [
-                { label: "🥇 1st", pillClass: "gold", rowClass: "rank-1", scoreColor: "#fbbf24" },
-                { label: "🥈 2nd", pillClass: "silver", rowClass: "rank-2", scoreColor: "#e2e8f0" },
-                { label: "🥉 3rd", pillClass: "bronze", rowClass: "rank-3", scoreColor: "#fdba74" }
+                { label: `${svgTrophy} 1st`, pillClass: "gold", rowClass: "rank-1", scoreColor: "#fbbf24" },
+                { label: "2nd", pillClass: "silver", rowClass: "rank-2", scoreColor: "#e2e8f0" },
+                { label: "3rd", pillClass: "bronze", rowClass: "rank-3", scoreColor: "#fdba74" }
             ];
             let evCountText = `${rankedFinishedEvents.length} Ranked Event${rankedFinishedEvents.length === 1 ? '' : 's'} • Best 5 Finishes Count`;
             let aotyHtml = `<div class="aoty-showcase-card">
                 <div class="flex flex-between" style="margin-bottom: 18px; align-items: flex-start;">
                     <div>
                         <div class="flex" style="gap: 8px; margin-bottom: 6px;">
-                            <span class="aoty-medal-pill gold">🏆 SEASON CHAMPIONSHIP</span>
+                            <span class="aoty-medal-pill gold">${svgTrophy} SEASON CHAMPIONSHIP</span>
                         </div>
                         <h3 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.5px;">Angler of the Year (${selectedYear})</h3>
                         <div style="font-size: 12px; color: #94a3b8; font-weight: 600; margin-top: 2px;">${evCountText}</div>
@@ -1994,7 +1997,7 @@ function handleCatchPhotoUpload(e) {
                 if (exifStatusEl) exifStatusEl.innerHTML = `<span style="color:var(--success);">✓ EXIF Verified: Taken ${tempCatchExifTime}</span>`;
             } else {
                 tempCatchExifTime = "No EXIF Date";
-                if (exifStatusEl) exifStatusEl.innerHTML = `<span style="color:var(--warning);">⚠️ No camera timestamp found (Screenshot/Edited?)</span>`;
+                if (exifStatusEl) exifStatusEl.innerHTML = `<span class="flex" style="color:var(--warning); gap:4px;">${svgWarning} No camera timestamp found (Screenshot/Edited?)</span>`;
             }
         });
     }
@@ -2231,7 +2234,7 @@ function renderSponsorsConfigUI() {
     container.innerHTML = list.map((sp, idx) => `
         <div class="card flex flex-between" style="padding: 12px 16px; margin-bottom: 8px; background: var(--bg);">
             <div class="flex" style="gap: 12px; align-items: center;">
-                ${sp.logo ? `<img src="${sp.logo}" style="height: 36px; max-width: 90px; object-fit: contain; background: #fff; padding: 3px; border-radius: 6px; border: 1px solid var(--border);">` : `<span class="badge pro" style="font-size:10px;">💎</span>`}
+                ${sp.logo ? `<img src="${sp.logo}" style="height: 36px; max-width: 90px; object-fit: contain; background: #fff; padding: 3px; border-radius: 6px; border: 1px solid var(--border);">` : `<span class="badge pro" style="font-size:10px;">${svgStar}</span>`}
                 <b style="font-size: 14px;">${escapeHTML(sp.name || "Logo Sponsor")}</b>
             </div>
             <button type="button" class="danger icon-btn" style="padding: 6px 10px;" onclick="removeSponsorFromEvent(${idx})">${svgTrash}</button>
@@ -2879,8 +2882,8 @@ function renderModalCatches() {
                 `<b>${c.size > 0 ? c.size + unitText : 'Pending'}</b>` :
                 `<div class="flex" style="margin-right:8px;"><input type="number" step="any" id="editCatchSize_${cIdx}" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px;"><button class="primary icon-btn" style="padding:4px 8px; box-shadow:none;" onclick="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, document.getElementById('editCatchSize_${cIdx}').value, this)">Save</button></div>`;
 
-            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:4px 8px; margin-left:4px; box-shadow:none; font-size:12px; gap:6px;" onclick="openPhotoPreviewByUrl('${c.photo}')"><img src="${c.photo}" style="width:20px; height:20px; border-radius:4px; object-fit:cover;"> 📷 Photo</button>` : '';
-            let exifTag = c.exifTime ? `<div style="font-size:11px; color:${c.exifTime === 'No EXIF Date' ? 'var(--warning)' : 'var(--text-muted)'}; width:100%; margin-top:2px;">📷 ${escapeHTML(c.exifTime)}</div>` : '';
+            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreviewByUrl('${c.photo}')" title="View Photo">${svgCamera}</button>` : '';
+            let exifTag = c.exifTime ? `<div class="flex" style="font-size:11px; color:${c.exifTime === 'No EXIF Date' ? 'var(--warning)' : 'var(--text-muted)'}; width:100%; margin-top:4px; gap:4px;">${svgCamera} ${escapeHTML(c.exifTime)}</div>` : '';
             
             let canDelete = (!isUserUpload) || (isUserUpload && currentEvent.status === 'ongoing');
             let deleteBtn = canDelete ? `<button class="danger icon-btn" style="padding:6px; box-shadow:none;" onclick="removeFish(${activeFishParticipantIndex}, ${cIdx})">${svgTrash}</button>` : '';
@@ -2934,7 +2937,7 @@ function renderJudgeQueue() {
     }
 
     if (pendingList.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:32px 16px; color:var(--text-muted);">🎉 All catch photos have been graded!</div>`;
+        container.innerHTML = `<div style="text-align:center; padding:32px 16px; color:var(--text-muted);">All catch photos have been graded!</div>`;
         return;
     }
 
@@ -2942,8 +2945,8 @@ function renderJudgeQueue() {
         let c = item.catchObj;
         let wrapId = `judgeWrap_${item.pIdx}_${item.cIdx}`;
         let exifBadge = c.exifTime === "No EXIF Date" 
-            ? `<span class="badge warning" style="font-size:10px;">⚠️ No EXIF Timestamp</span>`
-            : `<span class="badge success" style="font-size:10px;">📷 Taken: ${escapeHTML(c.exifTime || 'Unknown')}</span>`;
+            ? `<span class="badge warning" style="font-size:10px; gap:4px;">${svgWarning} No EXIF Timestamp</span>`
+            : `<span class="badge success" style="font-size:10px; gap:4px;">${svgCamera} Taken: ${escapeHTML(c.exifTime || 'Unknown')}</span>`;
 
         return `
         <div class="judge-card">
@@ -2954,7 +2957,7 @@ function renderJudgeQueue() {
                 </div>
                 <div class="flex" style="gap:6px;">
                     ${exifBadge}
-                    ${c.photo ? `<button class="secondary icon-btn" style="padding:4px 8px; font-size:11px;" onclick="toggleJudgeCardZoom('${wrapId}')">🔍 2.5x Loupe</button>` : ''}
+                    ${c.photo ? `<button class="secondary icon-btn" style="padding:4px 8px; font-size:11px; gap:4px;" onclick="toggleJudgeCardZoom('${wrapId}')">${svgSearch} 2.5x Loupe</button>` : ''}
                 </div>
             </div>
             ${c.photo ? `
@@ -3119,10 +3122,10 @@ function renderHubUI() {
         let catchesText = (p.catches||[]).length > 0 
             ? p.catches.map(c => {
                 let isPending = !c.size || c.size <= 0;
-                let sizeDisp = !isPending ? c.size + unitText : '⏳ Pending';
+                let sizeDisp = !isPending ? c.size + unitText : 'Pending';
                 let badgeClass = isPending ? 'warning' : 'neutral';
                 if (c.photo) {
-                    return `<span class="badge ${badgeClass}" style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px 4px 5px; margin:2px 4px 2px 0; cursor:pointer; border:1px solid var(--border);" onclick="openPhotoPreviewByUrl('${c.photo}')" title="View Catch Photo"><img src="${c.photo}" style="width:22px; height:22px; border-radius:4px; object-fit:cover; border:1px solid rgba(0,0,0,0.15);"> ${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())} <span style="font-size:12px;">📷</span></span>`;
+                    return `<span class="badge ${badgeClass}" style="display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; cursor:pointer;" onclick="openPhotoPreviewByUrl('${c.photo}')" title="View Catch Photo">${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())} ${svgCamera}</span>`;
                 }
                 return `<span class="badge ${badgeClass}" style="margin:2px 4px 2px 0;">${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())}</span>`;
             }).join(' ') 

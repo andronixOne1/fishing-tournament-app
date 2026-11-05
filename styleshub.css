@@ -234,8 +234,10 @@ tr:last-child td { border-bottom: none; }
 
 .text-center { text-align: center; }
 .mt-2 { margin-top: 12px; }
-svg { stroke-width: 2.5; width: 18px; height: 18px; }
-.svg-lg { width: 24px; height: 24px; stroke-width: 2.5; }
+svg { stroke-width: 2; width: 18px; height: 18px; stroke-linecap: round; stroke-linejoin: round; }
+.badge svg { width: 14px; height: 14px; }
+.aoty-medal-pill svg { width: 14px; height: 14px; }
+.svg-lg { width: 24px; height: 24px; stroke-width: 2; }
 
 /* Live Save Status Toast */
 #globalSaveBadge {
