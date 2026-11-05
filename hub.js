@@ -64,7 +64,7 @@ const svgCal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill
 const svgDownload = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 const svgEdit = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const svgTrash = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
-const svgWarning = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+const svgWarning = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7.5" x2="12" y2="12.5"/><circle cx="12" cy="16.5" r="1.25" fill="#ef4444" stroke="none"/></svg>`;
 const svgCamera = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
 
 const translations = { en: {}, ka: { login_btn: "შესვლა" } };
@@ -526,6 +526,53 @@ function renderTvBroadcastView(ev) {
     }
 }
 
+let lastGeneratedCardBlob = null;
+let lastGeneratedCardDataUrl = "";
+let lastGeneratedCardFilename = "social_card.png";
+
+function closeSocialCardModal() {
+    let modal = document.getElementById("socialCardModal");
+    if (modal) modal.classList.add("hidden");
+}
+
+function triggerSocialCardBlobDownload() {
+    if (lastGeneratedCardBlob) {
+        let blobUrl = URL.createObjectURL(lastGeneratedCardBlob);
+        let link = document.createElement("a");
+        link.download = lastGeneratedCardFilename;
+        link.href = blobUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    } else if (lastGeneratedCardDataUrl) {
+        let link = document.createElement("a");
+        link.download = lastGeneratedCardFilename;
+        link.href = lastGeneratedCardDataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+async function shareOrDownloadSocialCard() {
+    if (lastGeneratedCardBlob && navigator.share && navigator.canShare) {
+        try {
+            let file = new File([lastGeneratedCardBlob], lastGeneratedCardFilename, { type: "image/png" });
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: "Lureboard Standings"
+                });
+                return;
+            }
+        } catch (err) {
+            if (err && err.name === "AbortError") return;
+        }
+    }
+    triggerSocialCardBlobDownload();
+}
+
 async function generateSocialCard() {
     let ev = getActiveBroadcastEvent();
     if (!ev || !ev.participants || ev.participants.length === 0) {
@@ -593,11 +640,23 @@ async function generateSocialCard() {
     try {
         if (typeof html2canvas === "function") {
             let canvas = await html2canvas(cardWrap, { scale: 2, useCORS: true, backgroundColor: "#090d16" });
-            let link = document.createElement("a");
-            link.download = `${(ev.name || 'podium').replace(/[^a-z0-9]/gi, '_')}_social_card.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-            showSaveStatus("✓ Card Downloaded!", "#10b981");
+            lastGeneratedCardFilename = `${(ev.name || 'podium').replace(/[^a-z0-9]/gi, '_')}_social_card.png`;
+            lastGeneratedCardDataUrl = canvas.toDataURL("image/png");
+            lastGeneratedCardBlob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+
+            let previewImg = document.getElementById("socialCardPreviewImg");
+            let modal = document.getElementById("socialCardModal");
+            if (previewImg && modal) {
+                previewImg.src = lastGeneratedCardDataUrl;
+                modal.classList.remove("hidden");
+            }
+
+            let ua = navigator.userAgent || "";
+            let isInAppWebView = /FBAN|FBAV|Messenger|Instagram|Line|Wv/i.test(ua);
+            if (!isInAppWebView) {
+                triggerSocialCardBlobDownload();
+            }
+            showSaveStatus("✓ Card Ready!", "#10b981");
         } else {
             throw new Error("html2canvas script not loaded. Hard refresh (Ctrl+F5) your browser.");
         }
@@ -642,6 +701,7 @@ function handleOverlayClick(e, modalId) {
         if (modalId === 'rulesModal') closeRulesModal();
         if (modalId === 'smallFishWarningModal') cancelSmallFish();
         if (modalId === 'photoPreviewModal') closePhotoPreview();
+        if (modalId === 'socialCardModal') closeSocialCardModal();
         if (modalId === 'upgradeModal') closeUpgradeModal();
         if (modalId === 'qrModal') closeQrModal();
     }

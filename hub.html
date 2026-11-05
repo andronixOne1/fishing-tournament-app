@@ -725,6 +725,27 @@
     </div>
 </div>
 
+<div id="socialCardModal" class="modal-overlay hidden" style="align-items: center; justify-content: center; z-index: 1650;" onclick="handleOverlayClick(event, 'socialCardModal')">
+    <div class="card" style="width: 94%; max-width: 440px; padding: 20px; position: relative; margin: auto; border-radius: var(--radius-lg); text-align: center;">
+        <div class="flex flex-between" style="margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 17px;">Social Podium Card</h3>
+            <button class="secondary icon-btn" style="padding: 6px; border-radius: 50%;" onclick="closeSocialCardModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div style="background: #090d16; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); margin-bottom: 12px;">
+            <img id="socialCardPreviewImg" src="" alt="Social Podium Card" style="width: 100%; max-height: 55vh; object-fit: contain; display: block;">
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; font-weight: 600;">
+            💡 Tip: In Messenger or mobile browsers, tap <b>Share / Save</b> below or <b>long-press the image</b> above to save it to your photos.
+        </p>
+        <div class="flex" style="gap: 8px;">
+            <button class="secondary" onclick="closeSocialCardModal()">Close</button>
+            <button class="primary" onclick="shareOrDownloadSocialCard()">Share / Save Image</button>
+        </div>
+    </div>
+</div>
+
 <script src="hub.js"></script>
 
 </body>
