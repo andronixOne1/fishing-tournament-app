@@ -59,7 +59,7 @@ let initialEventsLoaded = false;
 const svgTrophy = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v8a5 5 0 0 1-10 0V4"/><path d="M4 9h3"/><path d="M17 9h3"/></svg>`;
 const svgCircle = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/></svg>`;
 const svgUsers = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
-const svgFish = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z"/><circle cx="15" cy="12" r="1"/><path d="M2 12c2 2 4 4 6 4s6-2 6-2"/></svg>`;
+const svgFish = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"/><path d="M18 12v.5"/><path d="M16 17.93a9.77 9.77 0 0 1 0-11.86"/><path d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33"/></svg>`;
 const svgCal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
 const svgDownload = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 const svgEdit = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
@@ -1215,12 +1215,16 @@ function openPublicEvent(eventId, pushHistory = true) {
     let unitText = ev.unit === 'imperial' ? (ev.measureType === 'weight' ? 'lbs' : 'in') : (ev.measureType === 'weight' ? 'kg' : 'cm');
     document.getElementById("pubParticipantsDetail").innerHTML = (ev.participants||[]).map((p, i) => {
         let catches = (p.catches||[]).length > 0 ? p.catches.map((c, cIdx) => {
-            let sizeDisp = c.size > 0 ? c.size + unitText : 'Pending';
-            let photoIcon = c.photo ? `<span style="cursor:pointer; color:var(--primary); margin-left:4px; display:inline-flex;" onclick="openPhotoPreviewByUrl('${c.photo}')">${svgCamera}</span>` : '';
-            return `<span class="badge neutral" style="font-weight:600; display:inline-flex; align-items:center;">${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())} ${photoIcon}</span>`;
+            let isPending = !c.size || c.size <= 0;
+            let sizeDisp = !isPending ? c.size + unitText : '⏳ Pending';
+            let badgeClass = isPending ? 'warning' : 'neutral';
+            if (c.photo) {
+                return `<span class="badge ${badgeClass}" style="font-weight:700; display:inline-flex; align-items:center; gap:6px; padding:4px 10px 4px 5px; margin:2px 4px 2px 0; cursor:pointer; border:1px solid var(--border);" onclick="openPhotoPreviewByUrl('${c.photo}')" title="View Catch Photo"><img src="${c.photo}" style="width:22px; height:22px; border-radius:4px; object-fit:cover; border:1px solid rgba(0,0,0,0.15);"> ${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())} <span style="font-size:12px;">📷</span></span>`;
+            }
+            return `<span class="badge ${badgeClass}" style="font-weight:600; display:inline-flex; align-items:center; margin:2px 4px 2px 0;">${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())}</span>`;
         }).join(' ') : 'None';
         let pens = (p.penalties && p.penalties.length>0) ? `<br><span style="color:var(--danger); font-size:12px; font-weight:600;">Penalties: -${p.penalties.reduce((sum,pn)=>sum+parseFloat(pn.points),0)} pts</span>` : '';
-        return `<div style="padding:12px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${escapeHTML(p.name)}</b><br><span style="color:var(--text-muted);">${catches}</span>${pens}</div>`;
+        return `<div style="padding:12px 0; border-bottom:1px solid var(--border);"><b>${i+1}. ${escapeHTML(p.name)}</b><div style="margin-top:6px; color:var(--text-muted); display:flex; flex-wrap:wrap; align-items:center;">${catches}</div>${pens}</div>`;
     }).join('');
 
     isLeaderboardExpanded = false;
@@ -2815,7 +2819,7 @@ function renderModalCatches() {
                 `<b>${c.size > 0 ? c.size + unitText : 'Pending'}</b>` :
                 `<div class="flex" style="margin-right:8px;"><input type="number" step="any" id="editCatchSize_${cIdx}" value="${c.size}" style="width:70px; padding:4px 8px; font-size:14px; border:1px solid var(--border); border-radius:4px;"><button class="primary icon-btn" style="padding:4px 8px; box-shadow:none;" onclick="updateCatchSize(${activeFishParticipantIndex}, ${cIdx}, document.getElementById('editCatchSize_${cIdx}').value, this)">Save</button></div>`;
 
-            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:6px; margin-left:4px; box-shadow:none;" onclick="openPhotoPreviewByUrl('${c.photo}')">${svgCamera}</button>` : '';
+            let photoBtn = c.photo ? `<button class="secondary icon-btn" style="padding:4px 8px; margin-left:4px; box-shadow:none; font-size:12px; gap:6px;" onclick="openPhotoPreviewByUrl('${c.photo}')"><img src="${c.photo}" style="width:20px; height:20px; border-radius:4px; object-fit:cover;"> 📷 Photo</button>` : '';
             let exifTag = c.exifTime ? `<div style="font-size:11px; color:${c.exifTime === 'No EXIF Date' ? 'var(--warning)' : 'var(--text-muted)'}; width:100%; margin-top:2px;">📷 ${escapeHTML(c.exifTime)}</div>` : '';
             
             let canDelete = (!isUserUpload) || (isUserUpload && currentEvent.status === 'ongoing');
@@ -3055,9 +3059,12 @@ function renderHubUI() {
         let catchesText = (p.catches||[]).length > 0 
             ? p.catches.map(c => {
                 let isPending = !c.size || c.size <= 0;
-                let sizeDisp = !isPending ? c.size + unitText : 'Pending';
+                let sizeDisp = !isPending ? c.size + unitText : '⏳ Pending';
                 let badgeClass = isPending ? 'warning' : 'neutral';
-                return `<span class="badge ${badgeClass}">${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())}</span>`;
+                if (c.photo) {
+                    return `<span class="badge ${badgeClass}" style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px 4px 5px; margin:2px 4px 2px 0; cursor:pointer; border:1px solid var(--border);" onclick="openPhotoPreviewByUrl('${c.photo}')" title="View Catch Photo"><img src="${c.photo}" style="width:22px; height:22px; border-radius:4px; object-fit:cover; border:1px solid rgba(0,0,0,0.15);"> ${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())} <span style="font-size:12px;">📷</span></span>`;
+                }
+                return `<span class="badge ${badgeClass}" style="margin:2px 4px 2px 0;">${sizeDisp} ${escapeHTML(c.abbr.toUpperCase())}</span>`;
             }).join(' ') 
             : `<span style="color:var(--text-muted); opacity: 0.7; font-style:italic;">No catches</span>`;
 
@@ -3068,8 +3075,8 @@ function renderHubUI() {
             actionButtons = `<span style="font-size:12px; color:var(--text-muted); font-weight:bold; padding-right:8px;">Announced</span>`;
         } else {
             actionButtons = `
-                <button onclick="openPenaltyModal(${pIndexReal})" class="secondary icon-btn" style="padding:10px;">${svgWarning}</button>
-                <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary" style="padding:10px 14px;">${svgFish}</button>
+                <button onclick="openPenaltyModal(${pIndexReal})" class="secondary icon-btn" title="Penalties" style="padding:10px;">${svgWarning}</button>
+                <button onclick="openFishModal(${pIndexReal})" class="icon-btn primary" title="Log or Edit Catches" style="padding:10px 14px;">${svgFish}</button>
             `;
         }
 
@@ -3093,7 +3100,7 @@ function renderHubUI() {
     if (isAnnounced) {
         actionBtnHtml = `<button onclick="startEventNow()" class="success" style="flex: 1;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Event</button>`;
     } else if (!isFinished) {
-        actionBtnHtml = `<button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 1;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg> Finish Event</button>`;
+        actionBtnHtml = `<button id="btnFinishEvent" onclick="promptFinishEvent()" class="danger" style="flex: 1;">Finish Event</button>`;
     } else {
         actionBtnHtml = `<button disabled class="danger" style="flex: 1;">Event Finished</button>`;
     }
