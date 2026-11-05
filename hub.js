@@ -12,6 +12,9 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+try {
+    db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+} catch (e) {}
 
 // Dedicated Hub collections so Hub NEVER mixes with regular Lureboard events
 const EVENTS_COL = "hub_events";
@@ -50,6 +53,7 @@ let isLeaderboardExpanded = false;
 let regRoleSelect = 'participant';
 let tempProfileAvatarBase64 = "";
 let initialDeepLinkHandled = false;
+let initialEventsLoaded = false;
 
 // Minimal SVGs
 const svgTrophy = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v8a5 5 0 0 1-10 0V4"/><path d="M4 9h3"/><path d="M17 9h3"/></svg>`;
@@ -154,13 +158,13 @@ function checkEventScheduleTransition(dataObj) {
         if (!evDet.finishedAt) evDet.finishedAt = endMs;
     } else if (startMs && !isNaN(startMs) && now >= startMs) {
         if (oldStatus === 'announced') newStatus = 'ongoing';
-    } else if (startMs && !isNaN(startMs) && now < startMs) {
-        newStatus = 'announced';
     }
 
     if (newStatus !== oldStatus) {
         evDet.status = newStatus;
-        db.collection(EVENTS_COL).doc(dataObj.id).set({ ...dataObj, details: evDet }).catch(e => console.warn(e));
+        if (loggedInUser && dataObj.username === loggedInUser) {
+            db.collection(EVENTS_COL).doc(dataObj.id).set({ ...dataObj, details: evDet }).catch(e => console.warn(e));
+        }
         return true;
     }
     return false;
@@ -176,7 +180,7 @@ setInterval(() => {
         if (!document.getElementById("dashboardSection").classList.contains("hidden")) renderPublicHub();
         if (!document.getElementById("myEventsSection").classList.contains("hidden")) processDashboard();
         if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
-        if (currentParticipationEventId && !document.getElementById("publicEventSection").classList.contains("hidden")) openPublicEvent(currentParticipationEventId);
+        if (currentParticipationEventId && !document.getElementById("publicEventSection").classList.contains("hidden")) openPublicEvent(currentParticipationEventId, false);
     }
 }, 15000);
 
@@ -660,27 +664,61 @@ function hideAllSections() {
 
 window.addEventListener("popstate", (event) => {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
-    let view = (event.state && event.state.view) ? event.state.view : "dashboardSection";
-    
+    let params = new URLSearchParams(window.location.search);
+    let urlEventId = params.get("event");
+    let view = (event.state && event.state.view) ? event.state.view : (urlEventId ? "publicEventSection" : "dashboardSection");
+    let evId = (event.state && event.state.eventId) ? event.state.eventId : urlEventId;
+
+    if (view === "publicEventSection" && evId && allPublicEvents.some(e => e.id === evId)) {
+        openPublicEvent(evId, false);
+        return;
+    }
+
     hideAllSections();
     let target = document.getElementById(view);
-    if(target) target.classList.remove("hidden");
+    if (target) target.classList.remove("hidden");
+    if (view === "dashboardSection") {
+        currentParticipationEventId = null;
+        try {
+            sessionStorage.setItem("lureboard_hub_active_view", "dashboardSection");
+            sessionStorage.removeItem("lureboard_hub_active_event");
+        } catch (e) {}
+        renderPublicHub();
+    } else if (view === "myEventsSection") {
+        try {
+            sessionStorage.setItem("lureboard_hub_active_view", "myEventsSection");
+            sessionStorage.removeItem("lureboard_hub_active_event");
+        } catch (e) {}
+        processDashboard();
+    }
     window.scrollTo(0, 0);
 });
 
-function showPublicHub() {
+function showPublicHub(pushHistory = true) {
+    currentParticipationEventId = null;
+    try {
+        sessionStorage.setItem("lureboard_hub_active_view", "dashboardSection");
+        sessionStorage.removeItem("lureboard_hub_active_event");
+    } catch (e) {}
     hideAllSections();
     let dbSec = document.getElementById("dashboardSection");
     if(dbSec) dbSec.classList.remove("hidden");
-    history.pushState({view: 'dashboardSection'}, "");
+    if (pushHistory) {
+        history.pushState({view: 'dashboardSection'}, "", window.location.pathname);
+    }
     renderPublicHub();
 }
 
 function showMyEvents() {
+    currentParticipationEventId = null;
+    try {
+        sessionStorage.setItem("lureboard_hub_active_view", "myEventsSection");
+        sessionStorage.removeItem("lureboard_hub_active_event");
+    } catch (e) {}
     hideAllSections();
     let myEv = document.getElementById("myEventsSection");
     if(myEv) myEv.classList.remove("hidden");
-    history.pushState({view: 'myEventsSection'}, "");
+    history.pushState({view: 'myEventsSection'}, "", window.location.pathname);
     processDashboard();
 }
 
@@ -930,114 +968,156 @@ function updateUIAfterAuth() {
 }
 
 // EVENTS SUBSCRIPTION, DEEP-LINKING & AUTOMATIC CLEANUP
-function subscribeToEventsRealtime() {
-    if (unsubscribeEventsListener) unsubscribeEventsListener();
+function cachePublicEventsToSession(eventsArr) {
+    try {
+        sessionStorage.setItem("lureboard_hub_events_cache", JSON.stringify(eventsArr));
+    } catch (e) {
+        try {
+            let light = eventsArr.map(ev => {
+                let d = { ...(ev.details || {}) };
+                if (d.participants) {
+                    d.participants = d.participants.map(p => ({
+                        ...p,
+                        catches: (p.catches || []).map(c => {
+                            let copy = { ...c };
+                            delete copy.photo;
+                            return copy;
+                        })
+                    }));
+                }
+                return { ...ev, details: d };
+            });
+            sessionStorage.setItem("lureboard_hub_events_cache", JSON.stringify(light));
+        } catch (err) {}
+    }
+}
+
+function handleEventsSnapshot(snapshot) {
+    loadedEvents = [];
+    allPublicEvents = [];
     
-    unsubscribeEventsListener = db.collection(EVENTS_COL).onSnapshot(snapshot => {
-        loadedEvents = [];
-        allPublicEvents = [];
+    snapshot.forEach(doc => { 
+        let data = { id: doc.id, ...doc.data() };
+        if (!data.details) data.details = {};
+        data.details.id = doc.id; 
         
-        snapshot.forEach(doc => { 
-            let data = { id: doc.id, ...doc.data() };
-            if (!data.details) data.details = {};
-            data.details.id = doc.id; 
-            
-            // Check automatic clock transitions
-            checkEventScheduleTransition(data);
+        // Check automatic clock transitions
+        checkEventScheduleTransition(data);
 
-            let isMyEvent = loggedInUser && data.username === loggedInUser;
+        let isMyEvent = loggedInUser && data.username === loggedInUser;
 
-            // AUTOMATIC 7-DAY PHOTO CLEANUP FOR FINISHED EVENTS
-            let evDet = data.details;
-            if (evDet.status === 'finished' && evDet.finishedAt) {
-                let daysSince = (Date.now() - evDet.finishedAt) / (1000 * 3600 * 24);
-                if (daysSince > 7) {
-                    let changed = false;
-                    (evDet.participants || []).forEach(p => {
-                        (p.catches || []).forEach(c => {
-                            if (c.photo) { delete c.photo; changed = true; }
-                        });
+        // AUTOMATIC 7-DAY PHOTO CLEANUP FOR FINISHED EVENTS
+        let evDet = data.details;
+        if (evDet.status === 'finished' && evDet.finishedAt) {
+            let daysSince = (Date.now() - evDet.finishedAt) / (1000 * 3600 * 24);
+            if (daysSince > 7) {
+                let changed = false;
+                (evDet.participants || []).forEach(p => {
+                    (p.catches || []).forEach(c => {
+                        if (c.photo) { delete c.photo; changed = true; }
                     });
-                    if (changed && isMyEvent) {
-                        db.collection(EVENTS_COL).doc(data.id).set({ ...data, details: evDet });
-                    }
+                });
+                if (changed && isMyEvent) {
+                    db.collection(EVENTS_COL).doc(data.id).set({ ...data, details: evDet });
                 }
             }
+        }
 
-            if (isMyEvent) {
-                loadedEvents.push(data);
-            }
-            
-            let isPub = data.details.isPublic;
-            if (isPub === true || String(isPub) === "true" || isPub === undefined) {
-                allPublicEvents.push(data);
-            }
-        });
-
-        // Handle QR / Direct URL Deep Link (?event=ev_12345) on initial load
-        if (!initialDeepLinkHandled && allPublicEvents.length > 0) {
-            let params = new URLSearchParams(window.location.search);
-            let targetEv = params.get("event");
-            if (targetEv && allPublicEvents.some(e => e.id === targetEv)) {
-                initialDeepLinkHandled = true;
-                openPublicEvent(targetEv);
-                return;
-            }
-            initialDeepLinkHandled = true;
+        if (isMyEvent) {
+            loadedEvents.push(data);
         }
         
-        let myEvSec = document.getElementById("myEventsSection");
-        if (loggedInUser && myEvSec && !myEvSec.classList.contains("hidden")) {
-            processDashboard();
+        let isPub = data.details.isPublic;
+        if (isPub === true || String(isPub) === "true" || isPub === undefined) {
+            allPublicEvents.push(data);
         }
-        
-        let histSec = document.getElementById("historyView");
-        if (loggedInUser && histSec && !histSec.classList.contains("hidden")) {
-            renderHistoryTab();
-        }
-        
-        let dbSec = document.getElementById("dashboardSection");
-        if (dbSec && !dbSec.classList.contains("hidden")) {
-            renderPublicHub();
-        }
+    });
 
-        let hubSection = document.getElementById("hubSection");
-        if (currentEvent && hubSection && !hubSection.classList.contains("hidden")) {
-            let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id) || allPublicEvents.find(e => e.id === currentEvent.id);
-            if (activeUpdated) {
-                currentEvent = activeUpdated.details;
-                currentEvent.id = activeUpdated.id; 
-                renderHubUI();
-            }
-        }
+    initialEventsLoaded = true;
+    cachePublicEventsToSession(allPublicEvents);
 
-        let setupSection = document.getElementById("setupSection");
-        if (currentEvent && setupSection && !setupSection.classList.contains("hidden")) {
-            let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id) || allPublicEvents.find(e => e.id === currentEvent.id);
-            if (activeUpdated) {
-                // Keep live self-registered participants synced in memory even while organizer is on Setup page
-                currentEvent.participants = activeUpdated.details.participants || currentEvent.participants;
-            }
-        }
+    // Always keep Public Hub list rendered in the DOM so navigating Back is never empty
+    renderPublicHub();
 
-        let pubSection = document.getElementById("publicEventSection");
-        if (currentParticipationEventId && pubSection && !pubSection.classList.contains("hidden")) {
-            let activeUpdated = allPublicEvents.find(e => e.id === currentParticipationEventId);
-            if (activeUpdated) {
-                activeUpdated.details.id = activeUpdated.id;
-                renderPublicLeaderboardList(activeUpdated.details);
-                renderPayoutWidget(activeUpdated.details, "pubPayoutCard", "pubTotalPotBadge", "pubPayoutGrid");
-                if (activeUpdated.details.eventType === 'cpr') renderPublicGallery(activeUpdated.details);
-            }
+    // Handle QR / Direct URL Deep Link (?event=ev_12345) or restored session event on initial load
+    if (!initialDeepLinkHandled && allPublicEvents.length > 0) {
+        let params = new URLSearchParams(window.location.search);
+        let savedView = "";
+        let savedEv = "";
+        try {
+            savedView = sessionStorage.getItem("lureboard_hub_active_view") || "";
+            savedEv = sessionStorage.getItem("lureboard_hub_active_event") || "";
+        } catch (e) {}
+        let targetEv = params.get("event") || (savedView === "publicEventSection" ? savedEv : "");
+        initialDeepLinkHandled = true;
+        if (targetEv && allPublicEvents.some(e => e.id === targetEv)) {
+            openPublicEvent(targetEv, false);
         }
+    }
+    
+    let myEvSec = document.getElementById("myEventsSection");
+    if (loggedInUser && myEvSec && !myEvSec.classList.contains("hidden")) {
+        processDashboard();
+    }
+    
+    let histSec = document.getElementById("historyView");
+    if (loggedInUser && histSec && !histSec.classList.contains("hidden")) {
+        renderHistoryTab();
+    }
 
-        // Live Auto-Refresh TV Broadcast Mode if open
-        let tvEv = getActiveBroadcastEvent();
-        if (tvEv && !document.getElementById("tvBroadcastModal").classList.contains("hidden")) {
-            renderTvBroadcastView(tvEv);
+    let hubSection = document.getElementById("hubSection");
+    if (currentEvent && hubSection && !hubSection.classList.contains("hidden")) {
+        let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id) || allPublicEvents.find(e => e.id === currentEvent.id);
+        if (activeUpdated) {
+            currentEvent = activeUpdated.details;
+            currentEvent.id = activeUpdated.id; 
+            renderHubUI();
         }
+    }
+
+    let setupSection = document.getElementById("setupSection");
+    if (currentEvent && setupSection && !setupSection.classList.contains("hidden")) {
+        let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id) || allPublicEvents.find(e => e.id === currentEvent.id);
+        if (activeUpdated) {
+            // Keep live self-registered participants synced in memory even while organizer is on Setup page
+            currentEvent.participants = activeUpdated.details.participants || currentEvent.participants;
+        }
+    }
+
+    let pubSection = document.getElementById("publicEventSection");
+    if (currentParticipationEventId && pubSection && !pubSection.classList.contains("hidden")) {
+        let activeUpdated = allPublicEvents.find(e => e.id === currentParticipationEventId);
+        if (activeUpdated) {
+            activeUpdated.details.id = activeUpdated.id;
+            renderPublicLeaderboardList(activeUpdated.details);
+            renderPayoutWidget(activeUpdated.details, "pubPayoutCard", "pubTotalPotBadge", "pubPayoutGrid");
+            if (activeUpdated.details.eventType === 'cpr') renderPublicGallery(activeUpdated.details);
+        }
+    }
+
+    // Live Auto-Refresh TV Broadcast Mode if open
+    let tvEv = getActiveBroadcastEvent();
+    if (tvEv && !document.getElementById("tvBroadcastModal").classList.contains("hidden")) {
+        renderTvBroadcastView(tvEv);
+    }
+}
+
+function subscribeToEventsRealtime() {
+    if (unsubscribeEventsListener) unsubscribeEventsListener();
+
+    // Fast one-time fetch fallback for mobile browsers where WebChannel streaming may lag on refresh
+    db.collection(EVENTS_COL).get().then(snapshot => {
+        if (!initialEventsLoaded || allPublicEvents.length === 0) {
+            handleEventsSnapshot(snapshot);
+        }
+    }).catch(err => console.warn("Initial fetch fallback warning:", err));
+    
+    unsubscribeEventsListener = db.collection(EVENTS_COL).onSnapshot(snapshot => {
+        handleEventsSnapshot(snapshot);
     }, error => {
         console.error("Firebase Read Error: ", error);
+        initialEventsLoaded = true;
+        renderPublicHub();
     });
 }
 
@@ -1055,12 +1135,16 @@ function sortEventsArray(eventsArr, sortMode) {
 // PUBLIC EVENT VIEWER LOGIC 
 // ---------------------------------------------------------
 
-function openPublicEvent(eventId) {
+function openPublicEvent(eventId, pushHistory = true) {
     let evData = allPublicEvents.find(e => e.id === eventId);
     if(!evData) return;
     let ev = evData.details;
     ev.id = evData.id; 
     currentParticipationEventId = eventId;
+    try {
+        sessionStorage.setItem("lureboard_hub_active_view", "publicEventSection");
+        sessionStorage.setItem("lureboard_hub_active_event", eventId);
+    } catch (e) {}
 
     document.getElementById("pubTitle").innerText = evData.name;
     document.getElementById("pubEvTypeBadge").innerText = ev.eventType === 'cpr' ? "CPR" : "STD";
@@ -1187,7 +1271,12 @@ function openPublicEvent(eventId) {
     hideAllSections();
     document.getElementById("publicEventSection").classList.remove("hidden");
     window.scrollTo(0, 0);
-    history.pushState({view: 'publicEventSection'}, "");
+    let targetUrl = "?event=" + encodeURIComponent(eventId);
+    if (pushHistory) {
+        history.pushState({view: 'publicEventSection', eventId: eventId}, "", targetUrl);
+    } else {
+        history.replaceState({view: 'publicEventSection', eventId: eventId}, "", targetUrl);
+    }
 }
 
 function switchPubTab(tab) {
@@ -1306,7 +1395,7 @@ async function joinEventDirectly() {
                 await db.collection(EVENTS_COL).doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
                 showSaveStatus("✓ Saved", "#10b981");
                 alert("You have left the event.");
-                openPublicEvent(currentParticipationEventId);
+                openPublicEvent(currentParticipationEventId, false);
             } catch(e) {
                 showSaveStatus("✕ Error", "#ef4444");
             }
@@ -1330,7 +1419,7 @@ async function joinEventDirectly() {
             await db.collection(EVENTS_COL).doc(currentParticipationEventId).set({ ...evData, details: safeDetails });
             showSaveStatus("✓ Saved", "#10b981");
             alert("Successfully joined the event!");
-            openPublicEvent(currentParticipationEventId);
+            openPublicEvent(currentParticipationEventId, false);
         } catch(e) {
             showSaveStatus("✕ Error", "#ef4444");
         }
@@ -1343,7 +1432,11 @@ function renderPublicHub() {
     if (!container) return;
     
     if (allPublicEvents.length === 0) {
-        container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No public tournaments right now.</div>`;
+        if (!initialEventsLoaded) {
+            container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">Loading tournaments...</div>`;
+        } else {
+            container.innerHTML = `<div class="card" style="text-align:center; padding:40px 16px; color:var(--text-muted);">No public tournaments right now.</div>`;
+        }
         return;
     }
 
@@ -2643,7 +2736,7 @@ async function executeAddFish(abbr, size) {
             showSaveStatus("✓ Saved", "#10b981");
             alert("Catch logged! Sent to Judge's Queue for verification.");
             closeFishModal();
-            openPublicEvent(currentParticipationEventId); 
+            openPublicEvent(currentParticipationEventId, false); 
         } catch (err) {
             console.error("Save error:", err);
             showSaveStatus("✕ Error", "#ef4444");
@@ -3359,8 +3452,45 @@ if (savedUser && savedData) {
 
 updateUIAfterAuth();
 
+// Hydrate cached public events from sessionStorage for instant mobile refresh rendering
+try {
+    let cachedEventsJson = sessionStorage.getItem("lureboard_hub_events_cache");
+    if (cachedEventsJson) {
+        let parsedCache = JSON.parse(cachedEventsJson);
+        if (Array.isArray(parsedCache) && parsedCache.length > 0) {
+            allPublicEvents = parsedCache;
+            if (loggedInUser) {
+                loadedEvents = parsedCache.filter(d => d.username === loggedInUser);
+            }
+        }
+    }
+} catch (e) {}
+
 hideAllSections();
-document.getElementById("dashboardSection").classList.remove("hidden");
-history.replaceState({view: 'dashboardSection'}, "");
+renderPublicHub();
+
+let initParams = new URLSearchParams(window.location.search);
+let initSavedView = "";
+let initSavedEvent = "";
+try {
+    initSavedView = sessionStorage.getItem("lureboard_hub_active_view") || "";
+    initSavedEvent = sessionStorage.getItem("lureboard_hub_active_event") || "";
+} catch (e) {}
+
+let initTargetEventId = initParams.get("event") || (initSavedView === "publicEventSection" ? initSavedEvent : "");
+
+if (initTargetEventId && allPublicEvents.some(e => e.id === initTargetEventId)) {
+    initialDeepLinkHandled = true;
+    openPublicEvent(initTargetEventId, false);
+} else if (initSavedView === "myEventsSection" && loggedInUser) {
+    document.getElementById("myEventsSection").classList.remove("hidden");
+    history.replaceState({view: 'myEventsSection'}, "", window.location.pathname);
+    processDashboard();
+} else {
+    document.getElementById("dashboardSection").classList.remove("hidden");
+    if (!initTargetEventId) {
+        history.replaceState({view: 'dashboardSection'}, "", window.location.pathname);
+    }
+}
 
 subscribeToEventsRealtime();
