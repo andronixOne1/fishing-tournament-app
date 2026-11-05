@@ -13,36 +13,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="styleshub.css">
 </head>
 <body>
 
-    <!-- ULTRA-CLEAN MOBILE HEADER (Icon Only + Avatar Dropdown) -->
+    <!-- MINIMAL MOBILE-FRIENDLY TOP HEADER (Icon Only + Avatar Dropdown) -->
     <div class="header-bar">
-        <div class="flex" style="gap: 12px; align-items: center;">
+        <div class="flex" style="gap: 10px; align-items: center;">
             <div class="flex" style="cursor: pointer; color: var(--primary); padding: 4px;" onclick="showPublicHub()" title="Public Hub">
-                <svg xmlns="http://www.w3.org/2000/svg" class="svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/><circle cx="12" cy="3" r="1.5"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="svg-lg" style="width: 28px; height: 28px;" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/><circle cx="12" cy="3" r="1.5"/></svg>
             </div>
             <span id="globalSaveBadge">Saved</span>
         </div>
         
         <div class="flex" style="gap: 10px; align-items: center;">
+            <!-- Shown only when logged out -->
+            <select id="guestLangSelect" onchange="changeLanguage(this.value)" style="width: auto; padding: 6px 10px; font-size: 13px;">
+                <option value="en">EN</option>
+                <option value="ka">KA</option>
+            </select>
             <button id="headerLoginBtn" class="primary icon-btn" onclick="openLogin()">Login</button>
-            
-            <!-- Avatar Trigger & Dropdown Menu -->
+
+            <!-- Shown when logged in: Avatar Only + Dropdown Menu -->
             <div id="headerUserWrap" class="user-menu-wrap hidden">
                 <img id="headerAvatar" class="avatar-trigger" src="https://via.placeholder.com/40" onclick="toggleUserDropdown(event)">
                 
                 <div id="userDropdownMenu" class="user-dropdown hidden" onclick="event.stopPropagation()">
                     <div class="user-dropdown-header">
-                        <div class="flex flex-between">
-                            <span id="dropdownUserName" style="font-weight: 800; font-size: 15px; color: var(--text-main);">Name</span>
-                            <span id="dropdownPlanBadge" class="badge neutral" style="font-size: 9px; padding: 2px 6px;">FREE</span>
+                        <div id="dropdownUserName" style="font-weight: 800; font-size: 15px; color: var(--text-main);">Name</div>
+                        <div class="flex" style="margin-top: 4px; gap: 6px;">
+                            <span id="dropdownRoleBadge" class="badge neutral" style="font-size: 10px; padding: 2px 6px;">ROLE</span>
+                            <span id="dropdownPlanBadge" class="badge pro hidden" style="font-size: 10px; padding: 2px 6px;">PRO</span>
                         </div>
-                        <div id="dropdownUserRole" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-top: 2px;">Member</div>
                     </div>
 
                     <button id="dropdownMyEventsBtn" class="user-dropdown-item hidden" onclick="closeUserDropdown(); showMyEvents();">
@@ -51,7 +55,7 @@
 
                     <button id="dropdownWalletBtn" class="user-dropdown-item hidden" onclick="closeUserDropdown(); openUpgradeModal();">
                         <span>🪙 Wallet & Plan</span>
-                        <span class="credits-pill" style="padding: 2px 8px; font-size: 11px;"><span id="dropdownCreditsAmount">50</span> CR</span>
+                        <span id="dropdownCreditsAmount" class="badge warning" style="font-size: 11px;">50 CR</span>
                     </button>
 
                     <button class="user-dropdown-item" onclick="closeUserDropdown(); showProfilePage();">
@@ -66,9 +70,7 @@
                         </select>
                     </div>
 
-                    <div style="border-top: 1px solid var(--border); margin: 4px 0;"></div>
-
-                    <button class="user-dropdown-item danger-text" onclick="closeUserDropdown(); handleLogout();">
+                    <button class="user-dropdown-item danger-item" style="border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px;" onclick="closeUserDropdown(); handleLogout();">
                         <span>🚪 Logout</span>
                     </button>
                 </div>
@@ -141,7 +143,6 @@
             <div id="tabHistory" class="dash-tab hidden" onclick="switchProfileTab('history')">My Events</div>
         </div>
 
-        <!-- PROFILE SETTINGS -->
         <div id="profileView">
             <div class="card">
                 <div class="text-center" style="margin-bottom: 24px;">
@@ -162,7 +163,6 @@
             </div>
         </div>
 
-        <!-- HISTORY TAB -->
         <div id="historyView" class="hidden">
             <div class="flex flex-between" style="margin-bottom: 16px;">
                 <h3 style="margin:0;">Participation History</h3>
@@ -177,7 +177,7 @@
         <div class="flex flex-between" style="margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <div class="flex" style="gap: 8px;">
                 <span id="pubEvTypeBadge" class="badge neutral" style="font-size:10px; padding: 2px 6px;">STD</span>
-                <h2 id="pubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;">Event Title</h2>
+                <h2 id="pubTitle" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;">Event Title</h2>
             </div>
             <div class="flex" style="gap: 6px;">
                 <button class="secondary icon-btn" onclick="openQrModal()" title="Share QR & Invite Link">🔗 QR</button>
@@ -225,7 +225,7 @@
                         <div id="pubHostName" style="font-size:14px; color:var(--text-main); font-weight: 600;">...</div>
                     </div>
                 </div>
-                <div id="pubHost" style="font-size:13px; color:var(--text-muted); font-weight: 500; text-align: right;">...</div>
+                <div id="pubHost" style="font-size:12px; color:var(--text-muted); font-weight: 600; text-align: right;">...</div>
             </div>
             <img id="pubThumb" class="event-hub-thumb hidden" style="margin-bottom: 16px; border-radius: var(--radius-sm);">
             <div id="pubDesc" style="font-size:14px; color:var(--text-muted); white-space:pre-wrap;"></div>
@@ -268,7 +268,7 @@
         <div id="pubActionBar" class="bottom-action-bar hidden">
             <div class="flex">
                 <button class="secondary" onclick="showPublicHub()" style="flex:1;">Back to Hub</button>
-                <button id="pubParticipateBtn" class="success hidden" onclick="joinEventDirectly()" style="flex:1;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Join Event</button>
+                <button id="pubParticipateBtn" class="success hidden" onclick="joinEventDirectly()" style="flex:1;">Join Event</button>
                 <button id="pubUploadCatchBtn" class="primary hidden" onclick="openUserUploadModal()" style="flex:1;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Log Catch
                 </button>
@@ -304,54 +304,51 @@
             </div>
 
             <div class="form-group">
-                <label>Header Image <span style="color: var(--danger); font-weight: 800;">* (Mandatory)</span></label>
+                <label>Header Image <span style="color: var(--danger);">* (Mandatory)</span></label>
                 <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
                 <img id="thumbnailPreview" class="thumb-preview">
             </div>
             <div class="form-group"><label>Description & Rules</label><textarea id="eventDescInput" placeholder="Enter rules..."></textarea></div>
         </div>
 
-        <!-- Event Timing & Schedule Mode (Manual vs Automatic) -->
+        <!-- Automatic vs Manual Event Schedule Card -->
         <div class="card">
-            <div class="flex flex-between" style="margin-bottom: 12px;">
-                <div>
-                    <h3 style="margin:0;">⏱️ Event Start & Finish Schedule</h3>
-                    <p style="font-size:12px; color:var(--text-muted); margin:0;">Choose manual button control or automatic local time</p>
+            <h3 style="margin-bottom: 12px;">⏰ Event Start & Finish Schedule</h3>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <div class="flex">
+                    <button type="button" id="schedBtnManual" class="primary" onclick="setScheduleMode('manual')">Manual (Button Trigger)</button>
+                    <button type="button" id="schedBtnAuto" class="secondary" onclick="setScheduleMode('auto')">Automatic (Local Time)</button>
                 </div>
             </div>
-            <div class="flex" style="margin-bottom: 16px;">
-                <button type="button" id="schedBtnManual" class="primary" onclick="setScheduleMode('manual')">Manual Control</button>
-                <button type="button" id="schedBtnAuto" class="secondary" onclick="setScheduleMode('auto')">Automatic Schedule</button>
-            </div>
-            <div id="autoScheduleGroup" class="tier-grid hidden" style="margin-bottom: 0;">
-                <div class="full-width">
-                    <label>Automatic Start Date & Time (Local)</label>
+            <div id="autoScheduleDetails" class="tier-grid hidden" style="margin-bottom: 0;">
+                <div>
+                    <label>Auto-Start Date & Time</label>
                     <input type="datetime-local" id="eventAutoStartInput">
                 </div>
-                <div class="full-width">
-                    <label>Automatic Finish Date & Time (Local)</label>
+                <div>
+                    <label>Auto-Finish Date & Time</label>
                     <input type="datetime-local" id="eventAutoEndInput">
+                </div>
+                <div class="full-width" style="font-size: 12px; color: var(--text-muted);">
+                    The tournament will automatically switch from <b>Announced</b> ➔ <b>Ongoing</b> ➔ <b>Finished</b> based on your local clock.
                 </div>
             </div>
         </div>
 
-        <!-- Minimized Collapsible Pro SaaS: Prize Pool & Sponsor Integration -->
+        <!-- Minimized Collapsible Sponsor & Prize Pool Card -->
         <div class="card" style="border-color: #c7d2fe;">
-            <div class="flex flex-between" style="cursor: pointer;" onclick="document.getElementById('enableSponsorPayoutToggle').click()">
+            <div class="flex flex-between" style="cursor: pointer;" onclick="document.getElementById('enableSponsorPrizeToggle').click()">
                 <div>
                     <div class="flex" style="gap: 8px;">
                         <h3 style="margin:0;">💰 Prize Pool & Sponsor Branding</h3>
                         <span class="badge pro" style="font-size: 10px;">Paid / Pro Feature</span>
                     </div>
-                    <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">Tick to add sponsor banners, entry fees, and custom payout percentages.</p>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">Tick to add sponsor banners and automated prize payouts (Requires Event Pass or Pro).</p>
                 </div>
-                <label class="switch" onclick="event.stopPropagation()">
-                    <input type="checkbox" id="enableSponsorPayoutToggle" onchange="toggleSponsorPayoutSection(this.checked)">
-                    <span class="slider"></span>
-                </label>
+                <input type="checkbox" id="enableSponsorPrizeToggle" onclick="event.stopPropagation()" onchange="toggleSponsorPrizeSection(this.checked)">
             </div>
 
-            <div id="sponsorPayoutBody" class="hidden" style="margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border);">
+            <div id="sponsorPrizeDetailsWrap" class="hidden" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
                 <div class="tier-grid" style="margin-bottom: 12px;">
                     <div>
                         <label>Entry Fee ($ / GEL)</label>
@@ -367,24 +364,24 @@
                     </div>
                 </div>
 
-                <label>Podium Payout Split (%) — Auto-Balances to 100%</label>
-                <div class="pct-grid">
+                <label>Podium Payout Split Percentages (Auto-Balances to 100%)</label>
+                <div class="tier-grid-3">
                     <div>
-                        <label style="font-size: 10px;">1st Place %</label>
-                        <input type="number" id="pct1Input" value="50" min="0" max="100" oninput="autoAdjustPayoutSplits(1)">
+                        <label>🥇 1st %</label>
+                        <input type="number" id="payoutPct1" value="50" onchange="autoBalancePayoutSplits(1)">
                     </div>
                     <div>
-                        <label style="font-size: 10px;">2nd Place %</label>
-                        <input type="number" id="pct2Input" value="30" min="0" max="100" oninput="autoAdjustPayoutSplits(2)">
+                        <label>🥈 2nd %</label>
+                        <input type="number" id="payoutPct2" value="30" onchange="autoBalancePayoutSplits(2)">
                     </div>
                     <div>
-                        <label style="font-size: 10px;">3rd Place %</label>
-                        <input type="number" id="pct3Input" value="20" min="0" max="100" oninput="autoAdjustPayoutSplits(3)">
+                        <label>🥉 3rd %</label>
+                        <input type="number" id="payoutPct3" value="20" onchange="autoBalancePayoutSplits(3)">
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 12px;">
-                    <label>Official Sponsor Name (Shown on Thumbnail Corner & PDF)</label>
+                    <label>Official Sponsor Name (Shown on Thumbnails, Live Board & PDF)</label>
                     <input type="text" id="eventSponsorNameInput" placeholder="e.g. Shimano Georgia / Local Tackle Co.">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
@@ -421,7 +418,7 @@
                     <span id="participantCountStatus" class="badge neutral">0</span>
                 </div>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names here. Self-registered anglers from the Public Hub are automatically preserved.</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names here. Self-registered anglers are automatically preserved.</p>
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
                 <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.8); backdrop-filter: blur(2px); border-radius: var(--radius-sm); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 13px; font-weight:600; color:var(--text-muted); z-index: 10;">Editing disabled. Edit in Hub.</div>
@@ -508,7 +505,6 @@
 
 <!-- ================= MODALS ================= -->
 
-<!-- Fictional Payment, Credits & Pro SaaS Upgrade Modal -->
 <div id="upgradeModal" class="modal-overlay hidden" style="z-index: 1600;" onclick="handleOverlayClick(event, 'upgradeModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
@@ -574,7 +570,6 @@
     </div>
 </div>
 
-<!-- Zero-Friction QR Code & Invite Link Modal -->
 <div id="qrModal" class="modal-overlay hidden" style="z-index: 1550; align-items: center;" onclick="handleOverlayClick(event, 'qrModal')">
     <div class="card" style="width: 90%; max-width: 360px; text-align: center; padding: 28px 24px; margin: auto; border-radius: var(--radius-lg);">
         <h3 id="qrModalTitle" style="font-size: 18px; margin-bottom: 4px;">Scan to Join Tournament</h3>
@@ -587,7 +582,6 @@
     </div>
 </div>
 
-<!-- Live Weigh-In TV Broadcast Mode Overlay -->
 <div id="tvBroadcastModal" class="tv-overlay hidden">
     <div>
         <div class="tv-header">
@@ -641,7 +635,6 @@
     </div>
 </div>
 
-<!-- Wet-Hand 3-Tap Log Catch Modal -->
 <div id="fishModal" class="modal-overlay hidden" style="z-index: 1100;" onclick="handleOverlayClick(event, 'fishModal')">
     <div class="modal-card">
         <div class="modal-indicator"></div>
@@ -711,7 +704,6 @@
     </div>
 </div>
 
-<!-- Photo Preview Modal with Interactive Zoom Toggle -->
 <div id="photoPreviewModal" class="modal-overlay hidden" style="align-items: center; justify-content: center; z-index: 1500;" onclick="handleOverlayClick(event, 'photoPreviewModal')">
     <div class="card" style="width: 92%; max-width: 560px; padding: 16px; position: relative; margin: auto; border-radius: var(--radius-lg);">
         <div class="flex" style="position: absolute; top: 16px; right: 16px; z-index: 10; gap: 8px;">
