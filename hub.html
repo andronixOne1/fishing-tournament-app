@@ -19,11 +19,12 @@
 </head>
 <body>
 
-    <!-- MINIMAL MOBILE-FRIENDLY TOP HEADER (Icon Only + Avatar Dropdown) -->
+    <!-- RESPONSIVE TOP HEADER (Icon + Text on Desktop, Icon Only on Mobile + Avatar Dropdown) -->
     <div class="header-bar">
         <div class="flex" style="gap: 10px; align-items: center;">
-            <div class="flex" style="cursor: pointer; color: var(--primary); padding: 4px;" onclick="showPublicHub()" title="Public Hub">
+            <div class="flex" style="gap: 8px; cursor: pointer; color: var(--primary); padding: 4px;" onclick="showPublicHub()" title="Public Hub">
                 <svg xmlns="http://www.w3.org/2000/svg" class="svg-lg" style="width: 28px; height: 28px;" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/><circle cx="12" cy="3" r="1.5"/></svg>
+                <span class="header-logo-text">Lureboard</span>
             </div>
             <span id="globalSaveBadge">Saved</span>
         </div>
@@ -189,13 +190,10 @@
             </div>
         </div>
 
-        <!-- Sponsor Banner Slot -->
+        <!-- Sponsor Banner Slot (Supports Single & Multiple Sponsors) -->
         <div id="pubSponsorBanner" class="sponsor-banner-box hidden">
-            <div>
-                <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Official Event Sponsor</div>
-                <div id="pubSponsorName" style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-top: 2px;">Sponsor Name</div>
-            </div>
-            <img id="pubSponsorLogo" src="" class="hidden">
+            <div id="pubSponsorHeaderLabel" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Official Event Sponsors</div>
+            <div id="pubSponsorsList" class="sponsor-items-wrap"></div>
         </div>
 
         <!-- Dynamic CPR Secret Code Banner -->
@@ -380,14 +378,23 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label>Official Sponsor Name (Shown on Thumbnails, Live Board & PDF)</label>
-                    <input type="text" id="eventSponsorNameInput" placeholder="e.g. Shimano Georgia / Local Tackle Co.">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label>Sponsor Banner / Logo</label>
-                    <input type="file" id="eventSponsorLogoInput" accept="image/*" onchange="handleSponsorLogoUpload(event)">
-                    <img id="sponsorLogoPreview" class="thumb-preview" style="height: 80px; object-fit: contain; background: var(--bg); padding: 8px;">
+                <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 4px;">
+                    <label style="margin-bottom: 10px;">Official Event Sponsors (Shown on Thumbnails, Live Board, TV & PDF)</label>
+                    <div class="tier-grid" style="margin-bottom: 12px;">
+                        <div class="full-width">
+                            <label>Sponsor Name</label>
+                            <input type="text" id="eventSponsorNameInput" placeholder="e.g. Shimano Georgia / Local Tackle Co.">
+                        </div>
+                        <div class="full-width">
+                            <label>Sponsor Banner / Logo (Optional)</label>
+                            <input type="file" id="eventSponsorLogoInput" accept="image/*" onchange="handleSponsorLogoUpload(event)">
+                            <img id="sponsorLogoPreview" class="thumb-preview" style="height: 70px; object-fit: contain; background: var(--surface); padding: 8px; border: 1px solid var(--border);">
+                        </div>
+                        <button type="button" onclick="addSponsorToEvent()" class="secondary full-width">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Sponsor
+                        </button>
+                    </div>
+                    <div id="sponsorsConfigContainer"></div>
                 </div>
             </div>
         </div>

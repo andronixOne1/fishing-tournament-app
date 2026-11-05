@@ -1,13 +1,13 @@
 // =========================================================================
-// FIREBASE FIRESTORE CONFIGURATION (Paste your new Hub Firebase keys here!)
+// FIREBASE FIRESTORE CONFIGURATION
 // =========================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyAN16rU1v-7dOvgOAZuxbqHjbuwBeF7k6k",
-  authDomain: "lureboard-hub.firebaseapp.com",
-  projectId: "lureboard-hub",
-  storageBucket: "lureboard-hub.firebasestorage.app",
-  messagingSenderId: "565191004647",
-  appId: "1:565191004647:web:74cb548055e0695053ad42"
+    apiKey: "AIzaSyAN16rU1v-7dOvgOAZuxbqHjbuwBeF7k6k",
+    authDomain: "lureboard-hub.firebaseapp.com",
+    projectId: "lureboard-hub",
+    storageBucket: "lureboard-hub.firebasestorage.app",
+    messagingSenderId: "565191004647",
+    appId: "1:565191004647:web:74cb548055e0695053ad42"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -358,6 +358,18 @@ function renderPayoutWidget(ev, cardId, badgeId, gridId) {
     `;
 }
 
+// Returns normalized array of { name, logo } sponsors for an event (supports multiple sponsors + legacy single sponsor)
+function getEventSponsors(ev) {
+    if (!ev || !ev.enableSponsorPrize) return [];
+    if (Array.isArray(ev.sponsors) && ev.sponsors.length > 0) {
+        return ev.sponsors.filter(s => s && (s.name || s.logo));
+    }
+    if (ev.sponsorName || ev.sponsorLogo) {
+        return [{ name: ev.sponsorName || "", logo: ev.sponsorLogo || "" }];
+    }
+    return [];
+}
+
 // =========================================================================
 // ZERO-FRICTION QR CODE & DEEP-LINK ONBOARDING
 // =========================================================================
@@ -491,12 +503,19 @@ function renderTvBroadcastView(ev) {
     }
 
     let spBox = document.getElementById("tvSponsorBox");
-    if (ev.enableSponsorPrize && (ev.sponsorName || ev.sponsorLogo)) {
+    let tvSponsors = getEventSponsors(ev);
+    if (tvSponsors.length > 0) {
         spBox.classList.remove("hidden");
         spBox.innerHTML = `
-            <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">OFFICIAL TOURNAMENT SPONSOR</div>
-            ${ev.sponsorLogo ? `<img src="${ev.sponsorLogo}" style="max-height:80px; max-width:100%; object-fit:contain; margin-bottom:8px; background:#fff; padding:8px; border-radius:8px;">` : ''}
-            <div style="font-size:20px; font-weight:800; color:#fff;">${escapeHTML(ev.sponsorName || '')}</div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">${tvSponsors.length > 1 ? 'OFFICIAL TOURNAMENT SPONSORS' : 'OFFICIAL TOURNAMENT SPONSOR'}</div>
+            <div style="display:flex; flex-wrap:wrap; gap:14px; justify-content:center; align-items:center;">
+                ${tvSponsors.map(sp => `
+                    <div style="background:#1e293b; border:1px solid #334155; border-radius:12px; padding:12px 16px; display:flex; flex-direction:column; align-items:center; min-width:140px; flex:1;">
+                        ${sp.logo ? `<img src="${sp.logo}" style="max-height:64px; max-width:100%; object-fit:contain; margin-bottom:8px; background:#fff; padding:6px; border-radius:6px;">` : ''}
+                        ${sp.name ? `<div style="font-size:17px; font-weight:800; color:#fff;">${escapeHTML(sp.name)}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
         `;
     } else {
         spBox.classList.add("hidden");
@@ -531,6 +550,8 @@ async function generateSocialCard() {
     processed.sort((a, b) => b.totalPts - a.totalPts);
     let biggest = [...processed].sort((a, b) => b.maxFishMeasure - a.maxFishMeasure)[0];
     let top3 = processed.slice(0, 3);
+    let cardSponsors = getEventSponsors(ev);
+    let cardSponsorNames = cardSponsors.map(s => s.name).filter(Boolean);
 
     let cardWrap = document.createElement("div");
     cardWrap.style.cssText = "position:fixed; left:-9999px; top:0; width:600px; padding:44px; background:#090d16; color:#ffffff; font-family:'Inter',sans-serif; border-radius:24px;";
@@ -561,7 +582,7 @@ async function generateSocialCard() {
                 <div style="font-size:26px; font-weight:900; color:#6ee7b7;">${biggest.maxFishMeasure}${unitText} ${escapeHTML(biggest.maxFishAbbr)}</div>
             </div>
         ` : ''}
-        ${(ev.enableSponsorPrize && ev.sponsorName) ? `<div style="margin-top:28px; text-align:center; padding-top:18px; border-top:1px solid #334155; font-size:13px; color:#94a3b8;">Sponsored by <b style="color:#fff;">${escapeHTML(ev.sponsorName)}</b> • lureboard.com</div>` : `<div style="margin-top:28px; text-align:center; font-size:12px; color:#64748b; font-weight:700;">lureboard.com</div>`}
+        ${cardSponsorNames.length > 0 ? `<div style="margin-top:28px; text-align:center; padding-top:18px; border-top:1px solid #334155; font-size:13px; color:#94a3b8;">Sponsored by <b style="color:#fff;">${cardSponsorNames.map(n => escapeHTML(n)).join(' • ')}</b> • lureboard.com</div>` : `<div style="margin-top:28px; text-align:center; font-size:12px; color:#64748b; font-weight:700;">lureboard.com</div>`}
     `;
     document.body.appendChild(cardWrap);
 
@@ -1046,17 +1067,21 @@ function openPublicEvent(eventId) {
     if (ev.eventType === 'cpr') document.getElementById("pubEvTypeBadge").className = "badge warning";
     else document.getElementById("pubEvTypeBadge").className = "badge neutral";
 
-    // Sponsor Banner (Only shown if organizer enabled the Sponsor & Prize checkbox)
+    // Sponsor Banner (Supports Single & Multiple Sponsors)
     let spBanner = document.getElementById("pubSponsorBanner");
-    if (ev.enableSponsorPrize && (ev.sponsorName || ev.sponsorLogo)) {
+    let pubSponsors = getEventSponsors(ev);
+    if (pubSponsors.length > 0) {
         spBanner.classList.remove("hidden");
-        document.getElementById("pubSponsorName").innerText = ev.sponsorName || "Official Partner";
-        let spLogo = document.getElementById("pubSponsorLogo");
-        if (ev.sponsorLogo) {
-            spLogo.src = ev.sponsorLogo;
-            spLogo.classList.remove("hidden");
-        } else {
-            spLogo.classList.add("hidden");
+        let lbl = document.getElementById("pubSponsorHeaderLabel");
+        if (lbl) lbl.innerText = pubSponsors.length > 1 ? "Official Event Sponsors" : "Official Event Sponsor";
+        let listEl = document.getElementById("pubSponsorsList");
+        if (listEl) {
+            listEl.innerHTML = pubSponsors.map(sp => `
+                <div class="sponsor-item-chip">
+                    <div style="font-size: 15px; font-weight: 800; color: var(--text-main);">${escapeHTML(sp.name || "Official Partner")}</div>
+                    ${sp.logo ? `<img src="${sp.logo}" alt="${escapeHTML(sp.name || 'Sponsor')}">` : ''}
+                </div>
+            `).join('');
         }
     } else {
         spBanner.classList.add("hidden");
@@ -1341,7 +1366,10 @@ function renderPublicHub() {
 
         let isParticipating = loggedInUser && myName && pList.some(p => p.name.toLowerCase() === myName);
         let registeredBadge = isParticipating ? `<span class="badge success">Registered</span>` : '';
-        let sponsorBadge = (ev.details.enableSponsorPrize && ev.details.sponsorName) ? `<span class="badge pro">💎 ${escapeHTML(ev.details.sponsorName)}</span>` : '';
+        let evSponsors = getEventSponsors(ev.details);
+        let sponsorBadge = evSponsors.length > 0
+            ? evSponsors.map(sp => `<span class="badge pro">💎 ${escapeHTML(sp.name || 'Sponsor')}</span>`).join('')
+            : '';
 
         let thumbSrc = ev.details.thumbnail || "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=60";
 
@@ -1569,34 +1597,56 @@ function processDashboard() {
     if(aotyArray.length > 0) {
         if (!isUserPro()) {
             aotyContainer.innerHTML = `
-            <div class="card" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; border:none;">
-                <div class="flex flex-between">
-                    <div>
-                        <span class="badge pro" style="margin-bottom:6px;">PRO CLUB SAAS FEATURE</span>
-                        <h3 style="color:white; margin:0; font-size:18px;">🏆 Angler of the Year (${selectedYear}) Standings</h3>
-                        <p style="font-size:13px; opacity:0.85; margin:6px 0 0 0;">Unlock automated multi-tournament circuit standings & Season PDF exports.</p>
+            <div class="aoty-showcase-card">
+                <div class="flex flex-between" style="flex-wrap: wrap; gap: 14px;">
+                    <div style="flex: 1; min-width: 220px;">
+                        <div class="flex" style="gap: 8px; margin-bottom: 8px;">
+                            <span class="aoty-medal-pill gold">🏆 SEASON STANDINGS</span>
+                            <span class="badge pro" style="font-size: 10px;">PRO CLUB SAAS</span>
+                        </div>
+                        <h3 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.4px;">Angler of the Year (${selectedYear})</h3>
+                        <p style="font-size: 13px; color: #cbd5e1; margin: 6px 0 0 0;">Unlock automated multi-tournament circuit standings, podium tracking & Season PDF exports.</p>
                     </div>
-                    <button class="pro-btn icon-btn" onclick="openUpgradeModal('Upgrade to Pro Club SaaS to unlock Season-Long Angler of the Year (AOTY) standings.')" style="white-space:nowrap;">Unlock AOTY (100 CR)</button>
+                    <button class="pro-btn icon-btn" onclick="openUpgradeModal('Upgrade to Pro Club SaaS to unlock Season-Long Angler of the Year (AOTY) standings.')" style="white-space: nowrap; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);">Unlock AOTY (100 CR)</button>
                 </div>
             </div>`;
             aotyContainer.classList.remove("hidden");
         } else {
-            let medals = ["1st", "2nd", "3rd"];
-            let aotyHtml = `<div class="card" style="background: var(--primary); color: white; border:none;">
-                <div class="flex flex-between" style="margin-bottom: 16px;">
-                    <h3 style="color:white; margin:0; font-size:16px;">Angler of the Year (${selectedYear})</h3>
-                    <button class="secondary icon-btn" onclick="downloadSeasonChart()" style="padding:4px 8px; width:auto; border:none; background:rgba(255,255,255,0.2); color:white;">${svgDownload}</button>
+            let medalConfigs = [
+                { label: "🥇 1st", pillClass: "gold", rowClass: "rank-1", scoreColor: "#fbbf24" },
+                { label: "🥈 2nd", pillClass: "silver", rowClass: "rank-2", scoreColor: "#e2e8f0" },
+                { label: "🥉 3rd", pillClass: "bronze", rowClass: "rank-3", scoreColor: "#fdba74" }
+            ];
+            let evCountText = `${rankedFinishedEvents.length} Ranked Event${rankedFinishedEvents.length === 1 ? '' : 's'} • Best 5 Finishes Count`;
+            let aotyHtml = `<div class="aoty-showcase-card">
+                <div class="flex flex-between" style="margin-bottom: 18px; align-items: flex-start;">
+                    <div>
+                        <div class="flex" style="gap: 8px; margin-bottom: 6px;">
+                            <span class="aoty-medal-pill gold">🏆 SEASON CHAMPIONSHIP</span>
+                        </div>
+                        <h3 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.5px;">Angler of the Year (${selectedYear})</h3>
+                        <div style="font-size: 12px; color: #94a3b8; font-weight: 600; margin-top: 2px;">${evCountText}</div>
+                    </div>
+                    <button class="secondary icon-btn" onclick="downloadSeasonChart()" title="Download Full Season Standings PDF" style="padding: 8px 12px; width: auto; border: 1px solid rgba(251, 191, 36, 0.4); background: rgba(251, 191, 36, 0.14); color: #fde68a; font-size: 12px; font-weight: 700;">
+                        ${svgDownload} <span>Season PDF</span>
+                    </button>
                 </div>`;
             
             aotyArray.slice(0, 3).forEach((angler, idx) => {
+                let cfg = medalConfigs[idx] || medalConfigs[2];
+                let playedNum = Math.min(angler.validEventsCount, 5);
                 aotyHtml += `
-                <div class="flex flex-between" style="background: rgba(255,255,255,0.1); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 8px;">
-                    <div class="flex" style="gap: 12px;">
-                        <span style="font-size: 14px; font-weight: bold; opacity:0.8;">${medals[idx]}</span>
-                        <b style="font-size: 15px;">${escapeHTML(angler.name)}</b>
+                <div class="aoty-row ${cfg.rowClass}">
+                    <div class="flex" style="gap: 12px; align-items: center;">
+                        <span class="aoty-medal-pill ${cfg.pillClass}">${cfg.label}</span>
+                        <div>
+                            <div style="font-size: 16px; font-weight: 800; color: #ffffff; line-height: 1.2;">${escapeHTML(angler.name)}</div>
+                            <div style="font-size: 11px; color: #cbd5e1; font-weight: 600; margin-top: 2px;">${playedNum} Tournament${playedNum === 1 ? '' : 's'} Counted</div>
+                        </div>
                     </div>
-                    <div style="text-align:right;">
-                        <b style="font-size: 15px;">${angler.totalRankPts} <span style="font-size:11px; font-weight:normal;">pts</span></b>
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: 900; color: ${cfg.scoreColor}; line-height: 1.1;">${angler.totalRankPts} <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; opacity: 0.85;">pts</span></div>
+                        <div style="font-size: 10px; color: #94a3b8; font-weight: 600;">Low Score Wins</div>
                     </div>
                 </div>`;
             });
@@ -1839,7 +1889,16 @@ function openEventEditor(eventObj = null) {
         document.getElementById("eventAutoEndInput").value = currentEvent.autoEndTime || "";
 
         // Sponsor & Prize Toggle
-        let hasSponsorPrize = Boolean(currentEvent.enableSponsorPrize || currentEvent.sponsorName || currentEvent.sponsorLogo || parseFloat(currentEvent.entryFee) > 0 || parseFloat(currentEvent.bigFishFee) > 0);
+        if (!Array.isArray(currentEvent.sponsors)) {
+            currentEvent.sponsors = [];
+            if (currentEvent.sponsorName || currentEvent.sponsorLogo) {
+                currentEvent.sponsors.push({
+                    name: currentEvent.sponsorName || "",
+                    logo: currentEvent.sponsorLogo || ""
+                });
+            }
+        }
+        let hasSponsorPrize = Boolean(currentEvent.enableSponsorPrize || currentEvent.sponsors.length > 0 || currentEvent.sponsorName || currentEvent.sponsorLogo || parseFloat(currentEvent.entryFee) > 0 || parseFloat(currentEvent.bigFishFee) > 0);
         document.getElementById("enableSponsorPrizeToggle").checked = hasSponsorPrize;
         toggleSponsorPrizeSection(hasSponsorPrize);
 
@@ -1849,7 +1908,10 @@ function openEventEditor(eventObj = null) {
         document.getElementById("payoutPct1").value = currentEvent.payoutPct1 !== undefined ? currentEvent.payoutPct1 : 50;
         document.getElementById("payoutPct2").value = currentEvent.payoutPct2 !== undefined ? currentEvent.payoutPct2 : 30;
         document.getElementById("payoutPct3").value = currentEvent.payoutPct3 !== undefined ? currentEvent.payoutPct3 : 20;
-        document.getElementById("eventSponsorNameInput").value = currentEvent.sponsorName || "";
+        document.getElementById("eventSponsorNameInput").value = "";
+        document.getElementById("eventSponsorLogoInput").value = "";
+        spPrev.removeAttribute('src');
+        spPrev.style.display = 'none';
         
         if(currentEvent.thumbnail) {
             thumbPrev.src = currentEvent.thumbnail;
@@ -1857,14 +1919,6 @@ function openEventEditor(eventObj = null) {
         } else {
             thumbPrev.removeAttribute('src');
             thumbPrev.style.display = 'none';
-        }
-
-        if(currentEvent.sponsorLogo) {
-            spPrev.src = currentEvent.sponsorLogo;
-            spPrev.style.display = 'block';
-        } else {
-            spPrev.removeAttribute('src');
-            spPrev.style.display = 'none';
         }
 
         setEventType(currentEvent.eventType || 'standard');
@@ -1899,6 +1953,7 @@ function openEventEditor(eventObj = null) {
             payoutPct1: 50,
             payoutPct2: 30,
             payoutPct3: 20,
+            sponsors: [],
             sponsorName: "",
             sponsorLogo: "",
             unit: 'metric',
@@ -1975,8 +2030,61 @@ function addSpecies() {
 
 function removeSpecies(sIdx) { currentEvent.species.splice(sIdx, 1); refreshSetupUI(); }
 
+function addSponsorToEvent() {
+    if (!currentEvent) return;
+    if (!Array.isArray(currentEvent.sponsors)) currentEvent.sponsors = [];
+
+    let nameInput = document.getElementById("eventSponsorNameInput");
+    let logoInput = document.getElementById("eventSponsorLogoInput");
+    let spPrev = document.getElementById("sponsorLogoPreview");
+
+    let name = nameInput ? nameInput.value.trim() : "";
+    let logo = tempSponsorLogoBase64 || (spPrev && spPrev.getAttribute('src') && spPrev.getAttribute('src').startsWith('data:') ? spPrev.getAttribute('src') : "");
+
+    if (!name && !logo) {
+        alert("Please enter a sponsor name or upload a sponsor logo.");
+        return;
+    }
+
+    currentEvent.sponsors.push({ name, logo });
+    if (nameInput) nameInput.value = "";
+    if (logoInput) logoInput.value = "";
+    if (spPrev) {
+        spPrev.removeAttribute('src');
+        spPrev.style.display = 'none';
+    }
+    tempSponsorLogoBase64 = "";
+    renderSponsorsConfigUI();
+}
+
+function removeSponsorFromEvent(spIdx) {
+    if (!currentEvent || !Array.isArray(currentEvent.sponsors)) return;
+    currentEvent.sponsors.splice(spIdx, 1);
+    renderSponsorsConfigUI();
+}
+
+function renderSponsorsConfigUI() {
+    let container = document.getElementById("sponsorsConfigContainer");
+    if (!container || !currentEvent) return;
+    let list = Array.isArray(currentEvent.sponsors) ? currentEvent.sponsors : [];
+    if (list.length === 0) {
+        container.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:8px;">No sponsors added yet. Enter a sponsor above and click "Add Sponsor".</div>`;
+        return;
+    }
+    container.innerHTML = list.map((sp, idx) => `
+        <div class="card flex flex-between" style="padding: 12px 16px; margin-bottom: 8px; background: var(--bg);">
+            <div class="flex" style="gap: 12px; align-items: center;">
+                ${sp.logo ? `<img src="${sp.logo}" style="height: 36px; max-width: 90px; object-fit: contain; background: #fff; padding: 3px; border-radius: 6px; border: 1px solid var(--border);">` : `<span class="badge pro" style="font-size:10px;">💎</span>`}
+                <b style="font-size: 14px;">${escapeHTML(sp.name || "Logo Sponsor")}</b>
+            </div>
+            <button type="button" class="danger icon-btn" style="padding: 6px 10px;" onclick="removeSponsorFromEvent(${idx})">${svgTrash}</button>
+        </div>
+    `).join('');
+}
+
 function refreshSetupUI() {
     try {
+        renderSponsorsConfigUI();
         let container = document.getElementById("speciesConfigContainer");
         container.innerHTML = currentEvent.species.map((s, sIdx) => {
             let rulesSummary = s.tiers.map(t => {
@@ -2209,7 +2317,7 @@ async function goToEventHub() {
             return;
         }
 
-        // Sponsor & Prize Pool Checkbox Handling (Prevents Sponsor Bleed)
+        // Sponsor & Prize Pool Checkbox Handling (Supports Multiple Sponsors & Prevents Sponsor Bleed)
         let enableSponsorPrize = document.getElementById("enableSponsorPrizeToggle").checked;
         if (enableSponsorPrize) {
             if (!isEventUnlocked(currentEvent)) {
@@ -2223,17 +2331,33 @@ async function goToEventHub() {
             currentEvent.payoutPct1 = parseFloat(document.getElementById("payoutPct1").value) || 50;
             currentEvent.payoutPct2 = parseFloat(document.getElementById("payoutPct2").value) || 30;
             currentEvent.payoutPct3 = parseFloat(document.getElementById("payoutPct3").value) || 20;
-            currentEvent.sponsorName = document.getElementById("eventSponsorNameInput").value.trim();
 
+            if (!Array.isArray(currentEvent.sponsors)) currentEvent.sponsors = [];
+
+            // Auto-capture any pending sponsor input that the user typed/selected without clicking "+ Add Sponsor"
+            let pendingName = document.getElementById("eventSponsorNameInput").value.trim();
             let spPreview = document.getElementById('sponsorLogoPreview');
-            if (spPreview && spPreview.getAttribute('src') && spPreview.getAttribute('src').startsWith('data:')) {
-                currentEvent.sponsorLogo = spPreview.getAttribute('src');
+            let pendingLogo = tempSponsorLogoBase64 || (spPreview && spPreview.getAttribute('src') && spPreview.getAttribute('src').startsWith('data:') ? spPreview.getAttribute('src') : "");
+            if (pendingName || pendingLogo) {
+                currentEvent.sponsors.push({ name: pendingName, logo: pendingLogo });
+                document.getElementById("eventSponsorNameInput").value = "";
+                document.getElementById("eventSponsorLogoInput").value = "";
+                if (spPreview) {
+                    spPreview.removeAttribute('src');
+                    spPreview.style.display = 'none';
+                }
+                tempSponsorLogoBase64 = "";
             }
+
+            // Keep legacy single-sponsor fields synced with the first sponsor
+            currentEvent.sponsorName = (currentEvent.sponsors[0] && currentEvent.sponsors[0].name) || "";
+            currentEvent.sponsorLogo = (currentEvent.sponsors[0] && currentEvent.sponsors[0].logo) || "";
         } else {
             currentEvent.enableSponsorPrize = false;
             currentEvent.entryFee = 0;
             currentEvent.clubCutPct = 10;
             currentEvent.bigFishFee = 0;
+            currentEvent.sponsors = [];
             currentEvent.sponsorName = "";
             currentEvent.sponsorLogo = "";
         }
@@ -3008,10 +3132,18 @@ async function downloadChart(eventId = null) {
     });
 
     let pay = calculatePayoutBreakdown(ev);
-    let sponsorHeader = (ev.enableSponsorPrize && (ev.sponsorName || ev.sponsorLogo)) ? `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; padding:12px 16px; border-radius:10px; margin-bottom:16px;">
-            <div><span style="font-size:10px; color:#64748b; text-transform:uppercase; font-weight:700;">Official Event Sponsor</span><div style="font-size:16px; font-weight:800; color:#0f172a;">${escapeHTML(ev.sponsorName || '')}</div></div>
-            ${ev.sponsorLogo ? `<img src="${ev.sponsorLogo}" style="max-height:45px; object-fit:contain;">` : ''}
+    let pdfSponsors = getEventSponsors(ev);
+    let sponsorHeader = pdfSponsors.length > 0 ? `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:12px 16px; border-radius:10px; margin-bottom:16px;">
+            <div style="font-size:10px; color:#64748b; text-transform:uppercase; font-weight:700; margin-bottom:8px;">${pdfSponsors.length > 1 ? 'Official Event Sponsors' : 'Official Event Sponsor'}</div>
+            <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center;">
+                ${pdfSponsors.map(sp => `
+                    <div style="display:flex; align-items:center; gap:10px; background:#ffffff; border:1px solid #e2e8f0; padding:6px 12px; border-radius:8px;">
+                        ${sp.logo ? `<img src="${sp.logo}" style="max-height:38px; max-width:110px; object-fit:contain;">` : ''}
+                        ${sp.name ? `<span style="font-size:15px; font-weight:800; color:#0f172a;">${escapeHTML(sp.name)}</span>` : ''}
+                    </div>
+                `).join('')}
+            </div>
         </div>` : '';
 
     let payoutSub = pay.hasPayouts ? ` | Prize Pool: $${pay.totalPot.toFixed(0)} (1st: $${pay.first.toFixed(0)}, 2nd: $${pay.second.toFixed(0)}, 3rd: $${pay.third.toFixed(0)}, Big Fish: $${pay.bigFish.toFixed(0)})` : '';
