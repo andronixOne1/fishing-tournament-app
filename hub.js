@@ -42,6 +42,7 @@ let confUnit = 'metric';
 let confMeasure = 'size';
 let confLimit = 'all';
 let confEventType = 'standard';
+let confScheduleMode = 'manual';
 let activeHubTab = 'part';
 
 let currentParticipationEventId = null;
@@ -83,6 +84,101 @@ function showSaveStatus(text, bg) {
         setTimeout(() => { el.style.display = "none"; }, 2200);
     }
 }
+
+// =========================================================================
+// HEADER AVATAR DROPDOWN & AUTOMATIC CLOCK SCHEDULER
+// =========================================================================
+function toggleUserDropdown(e) {
+    if (e) e.stopPropagation();
+    let menu = document.getElementById("userDropdownMenu");
+    if (menu) menu.classList.toggle("hidden");
+}
+
+function closeUserDropdown() {
+    let menu = document.getElementById("userDropdownMenu");
+    if (menu) menu.classList.add("hidden");
+}
+
+window.addEventListener("click", () => {
+    closeUserDropdown();
+});
+
+function setScheduleMode(mode) {
+    confScheduleMode = mode;
+    document.getElementById("schedBtnManual").className = mode === 'manual' ? 'primary' : 'secondary';
+    document.getElementById("schedBtnAuto").className = mode === 'auto' ? 'primary' : 'secondary';
+    let details = document.getElementById("autoScheduleDetails");
+    if (details) details.classList.toggle("hidden", mode !== 'auto');
+}
+
+function toggleSponsorPrizeSection(checked) {
+    let wrap = document.getElementById("sponsorPrizeDetailsWrap");
+    if (wrap) wrap.classList.toggle("hidden", !checked);
+}
+
+function autoBalancePayoutSplits(changedSlot) {
+    let p1 = Math.max(0, Math.min(100, parseFloat(document.getElementById("payoutPct1").value) || 0));
+    let p2 = Math.max(0, Math.min(100, parseFloat(document.getElementById("payoutPct2").value) || 0));
+    let p3 = Math.max(0, Math.min(100, parseFloat(document.getElementById("payoutPct3").value) || 0));
+
+    if (changedSlot === 1) {
+        let rem = Math.max(0, 100 - p1);
+        p2 = Math.round(rem * 0.6);
+        p3 = rem - p2;
+    } else if (changedSlot === 2) {
+        if (p1 + p2 > 100) p2 = 100 - p1;
+        p3 = Math.max(0, 100 - p1 - p2);
+    } else if (changedSlot === 3) {
+        if (p1 + p3 > 100) p3 = 100 - p1;
+        p2 = Math.max(0, 100 - p1 - p3);
+    }
+
+    document.getElementById("payoutPct1").value = p1;
+    document.getElementById("payoutPct2").value = p2;
+    document.getElementById("payoutPct3").value = p3;
+}
+
+// Evaluates if an event with Automatic Schedule needs to transition状态
+function checkEventScheduleTransition(dataObj) {
+    let evDet = dataObj.details;
+    if (!evDet || evDet.scheduleMode !== 'auto') return false;
+
+    let now = Date.now();
+    let startMs = evDet.autoStartTime ? new Date(evDet.autoStartTime).getTime() : null;
+    let endMs = evDet.autoEndTime ? new Date(evDet.autoEndTime).getTime() : null;
+    let oldStatus = evDet.status || 'announced';
+    let newStatus = oldStatus;
+
+    if (endMs && !isNaN(endMs) && now >= endMs) {
+        newStatus = 'finished';
+        if (!evDet.finishedAt) evDet.finishedAt = endMs;
+    } else if (startMs && !isNaN(startMs) && now >= startMs) {
+        if (oldStatus === 'announced') newStatus = 'ongoing';
+    } else if (startMs && !isNaN(startMs) && now < startMs) {
+        newStatus = 'announced';
+    }
+
+    if (newStatus !== oldStatus) {
+        evDet.status = newStatus;
+        db.collection(EVENTS_COL).doc(dataObj.id).set({ ...dataObj, details: evDet }).catch(e => console.warn(e));
+        return true;
+    }
+    return false;
+}
+
+// Background 15-second heartbeat for Automatic Schedule transitions
+setInterval(() => {
+    let changed = false;
+    allPublicEvents.forEach(ev => {
+        if (checkEventScheduleTransition(ev)) changed = true;
+    });
+    if (changed) {
+        if (!document.getElementById("dashboardSection").classList.contains("hidden")) renderPublicHub();
+        if (!document.getElementById("myEventsSection").classList.contains("hidden")) processDashboard();
+        if (currentEvent && !document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
+        if (currentParticipationEventId && !document.getElementById("publicEventSection").classList.contains("hidden")) openPublicEvent(currentParticipationEventId);
+    }
+}, 15000);
 
 // =========================================================================
 // FICTIONAL CREDITS, EVENT PASS & PRO SAAS ENGINE
@@ -209,10 +305,17 @@ async function purchaseProSubscription() {
 // AUTOMATED PAYOUT CALCULATOR & SPONSOR BANNERS
 // =========================================================================
 function calculatePayoutBreakdown(ev) {
+    if (!ev || ev.enableSponsorPrize === false) {
+        return { hasPayouts: false, pCount: 0, totalPot: 0, clubKeep: 0, first: 0, second: 0, third: 0, bigFish: 0, pct1: 50, pct2: 30, pct3: 20 };
+    }
     let pCount = (ev.participants || []).length;
     let entryFee = parseFloat(ev.entryFee) || 0;
     let clubCutPct = parseFloat(ev.clubCutPct) || 0;
     let bigFishFee = parseFloat(ev.bigFishFee) || 0;
+
+    let pct1 = ev.payoutPct1 !== undefined ? parseFloat(ev.payoutPct1) : 50;
+    let pct2 = ev.payoutPct2 !== undefined ? parseFloat(ev.payoutPct2) : 30;
+    let pct3 = ev.payoutPct3 !== undefined ? parseFloat(ev.payoutPct3) : 20;
 
     let grossEntry = pCount * entryFee;
     let clubKeep = grossEntry * (clubCutPct / 100);
@@ -225,9 +328,10 @@ function calculatePayoutBreakdown(ev) {
         pCount,
         totalPot,
         clubKeep,
-        first: netTournamentPot * 0.50,
-        second: netTournamentPot * 0.30,
-        third: netTournamentPot * 0.20,
+        pct1, pct2, pct3,
+        first: netTournamentPot * (pct1 / 100),
+        second: netTournamentPot * (pct2 / 100),
+        third: netTournamentPot * (pct3 / 100),
         bigFish: bigFishPot
     };
 }
@@ -247,9 +351,9 @@ function renderPayoutWidget(ev, cardId, badgeId, gridId) {
     card.classList.remove("hidden");
     badge.innerText = `$${pay.totalPot.toFixed(0)} Total Pool (${pay.pCount} Anglers)`;
     grid.innerHTML = `
-        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">1ST (50%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.first.toFixed(0)}</div></div>
-        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">2ND (30%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.second.toFixed(0)}</div></div>
-        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">3RD (20%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.third.toFixed(0)}</div></div>
+        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">1ST (${pay.pct1}%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.first.toFixed(0)}</div></div>
+        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">2ND (${pay.pct2}%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.second.toFixed(0)}</div></div>
+        <div class="payout-box"><div style="font-size:10px; color:var(--text-muted); font-weight:700;">3RD (${pay.pct3}%)</div><div style="font-size:15px; font-weight:800; color:var(--text-main);">$${pay.third.toFixed(0)}</div></div>
         <div class="payout-box"><div style="font-size:10px; color:#b45309; font-weight:700;">BIG FISH</div><div style="font-size:15px; font-weight:800; color:#b45309;">$${pay.bigFish.toFixed(0)}</div></div>
     `;
 }
@@ -376,9 +480,9 @@ function renderTvBroadcastView(ev) {
         payBox.innerHTML = `
             <div style="font-size:13px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:1px;">💰 LIVE PRIZE PURSE ($${pay.totalPot.toFixed(0)})</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; font-size:18px; font-weight:800;">
-                <div>🥇 1st: $${pay.first.toFixed(0)}</div>
-                <div>🥈 2nd: $${pay.second.toFixed(0)}</div>
-                <div>🥉 3rd: $${pay.third.toFixed(0)}</div>
+                <div>🥇 1st (${pay.pct1}%): $${pay.first.toFixed(0)}</div>
+                <div>🥈 2nd (${pay.pct2}%): $${pay.second.toFixed(0)}</div>
+                <div>🥉 3rd (${pay.pct3}%): $${pay.third.toFixed(0)}</div>
                 <div style="color:#fbbf24;">🐟 Big: $${pay.bigFish.toFixed(0)}</div>
             </div>
         `;
@@ -387,7 +491,7 @@ function renderTvBroadcastView(ev) {
     }
 
     let spBox = document.getElementById("tvSponsorBox");
-    if (ev.sponsorName || ev.sponsorLogo) {
+    if (ev.enableSponsorPrize && (ev.sponsorName || ev.sponsorLogo)) {
         spBox.classList.remove("hidden");
         spBox.innerHTML = `
             <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">OFFICIAL TOURNAMENT SPONSOR</div>
@@ -399,7 +503,6 @@ function renderTvBroadcastView(ev) {
     }
 }
 
-// Fixed Social Card Generator (Works with standalone html2canvas)
 async function generateSocialCard() {
     let ev = getActiveBroadcastEvent();
     if (!ev || !ev.participants || ev.participants.length === 0) {
@@ -458,7 +561,7 @@ async function generateSocialCard() {
                 <div style="font-size:26px; font-weight:900; color:#6ee7b7;">${biggest.maxFishMeasure}${unitText} ${escapeHTML(biggest.maxFishAbbr)}</div>
             </div>
         ` : ''}
-        ${ev.sponsorName ? `<div style="margin-top:28px; text-align:center; padding-top:18px; border-top:1px solid #334155; font-size:13px; color:#94a3b8;">Sponsored by <b style="color:#fff;">${escapeHTML(ev.sponsorName)}</b> • lureboard.com</div>` : `<div style="margin-top:28px; text-align:center; font-size:12px; color:#64748b; font-weight:700;">lureboard.com</div>`}
+        ${(ev.enableSponsorPrize && ev.sponsorName) ? `<div style="margin-top:28px; text-align:center; padding-top:18px; border-top:1px solid #334155; font-size:13px; color:#94a3b8;">Sponsored by <b style="color:#fff;">${escapeHTML(ev.sponsorName)}</b> • lureboard.com</div>` : `<div style="margin-top:28px; text-align:center; font-size:12px; color:#64748b; font-weight:700;">lureboard.com</div>`}
     `;
     document.body.appendChild(cardWrap);
 
@@ -484,6 +587,11 @@ async function generateSocialCard() {
 
 function changeLanguage(lang) {
     currentLang = lang;
+    let s1 = document.getElementById("langSelect");
+    let s2 = document.getElementById("guestLangSelect");
+    if (s1) s1.value = lang;
+    if (s2) s2.value = lang;
+
     if(!document.getElementById("setupSection").classList.contains("hidden")) refreshSetupUI();
     if(!document.getElementById("hubSection").classList.contains("hidden")) renderHubUI();
     if(!document.getElementById("rulesModal").classList.contains("hidden") && activeSpeciesIndex !== null) renderRules();
@@ -644,7 +752,7 @@ async function saveProfile() {
 }
 
 // =========================================================================
-// HUB USERNAME + PASSWORD + ROLE AUTHENTICATION (RESTORED)
+// HUB USERNAME + PASSWORD + ROLE AUTHENTICATION
 // =========================================================================
 function toggleAuth(view) {
     hideAllSections();
@@ -758,48 +866,45 @@ function openLogin() {
 
 function updateUIAfterAuth() {
     let btnLogin = document.getElementById("headerLoginBtn");
+    let guestLang = document.getElementById("guestLangSelect");
     let userWrap = document.getElementById("headerUserWrap");
     let avatarEl = document.getElementById("headerAvatar");
-    let nameEl = document.getElementById("headerUserName");
-    let myEventsBtn = document.getElementById("headerMyEventsBtn");
-    let creditsPill = document.getElementById("headerCreditsPill");
-    let creditsAmt = document.getElementById("headerCreditsAmount");
-    let planBadge = document.getElementById("headerPlanBadge");
+
+    let dropName = document.getElementById("dropdownUserName");
+    let dropRole = document.getElementById("dropdownRoleBadge");
+    let dropPlan = document.getElementById("dropdownPlanBadge");
+    let dropMyEv = document.getElementById("dropdownMyEventsBtn");
+    let dropWallet = document.getElementById("dropdownWalletBtn");
+    let dropCredits = document.getElementById("dropdownCreditsAmount");
 
     if (loggedInUser && loggedInUserData) {
         if (btnLogin) btnLogin.classList.add("hidden");
+        if (guestLang) guestLang.classList.add("hidden");
         if (userWrap) userWrap.classList.remove("hidden");
         if (avatarEl) {
-            avatarEl.style.display = "block";
             avatarEl.src = loggedInUserData.avatar || "https://via.placeholder.com/40";
         }
-        if (nameEl) {
-            let dispName = loggedInUserData.fullName || loggedInUser;
-            nameEl.innerText = dispName.length > 5 ? dispName.substring(0, 5) + "..." : dispName;
-        }
+        if (dropName) dropName.innerText = loggedInUserData.fullName || loggedInUser;
+
         let isOrg = (loggedInUserData.role === 'organization' || !loggedInUserData.role);
-        if (myEventsBtn) myEventsBtn.classList.toggle("hidden", !isOrg);
-        if (creditsPill) {
-            creditsPill.classList.toggle("hidden", !isOrg);
-            if (creditsAmt) creditsAmt.innerText = loggedInUserData.credits !== undefined ? loggedInUserData.credits : 50;
+        if (dropRole) {
+            dropRole.innerText = isOrg ? "ORGANIZER" : "ANGLER";
+            dropRole.className = isOrg ? "badge warning" : "badge success";
         }
-        if (planBadge) {
-            planBadge.classList.toggle("hidden", !isOrg);
-            if (isUserPro()) {
-                planBadge.innerText = "PRO CLUB";
-                planBadge.className = "badge pro";
-            } else {
-                planBadge.innerText = "FREE TIER";
-                planBadge.className = "badge neutral";
-            }
+        if (dropPlan) {
+            dropPlan.classList.toggle("hidden", !isOrg);
+            dropPlan.innerText = isUserPro() ? "PRO CLUB" : "FREE TIER";
+            dropPlan.className = isUserPro() ? "badge pro" : "badge neutral";
+        }
+        if (dropMyEv) dropMyEv.classList.toggle("hidden", !isOrg);
+        if (dropWallet) {
+            dropWallet.classList.toggle("hidden", !isOrg);
+            if (dropCredits) dropCredits.innerText = `${loggedInUserData.credits !== undefined ? loggedInUserData.credits : 50} CR`;
         }
     } else {
         if (btnLogin) btnLogin.classList.remove("hidden");
+        if (guestLang) guestLang.classList.remove("hidden");
         if (userWrap) userWrap.classList.add("hidden");
-        if (avatarEl) avatarEl.style.display = "none";
-        if (myEventsBtn) myEventsBtn.classList.add("hidden");
-        if (creditsPill) creditsPill.classList.add("hidden");
-        if (planBadge) planBadge.classList.add("hidden");
     }
 }
 
@@ -816,6 +921,9 @@ function subscribeToEventsRealtime() {
             if (!data.details) data.details = {};
             data.details.id = doc.id; 
             
+            // Check automatic clock transitions
+            checkEventScheduleTransition(data);
+
             let isMyEvent = loggedInUser && data.username === loggedInUser;
 
             // AUTOMATIC 7-DAY PHOTO CLEANUP FOR FINISHED EVENTS
@@ -882,6 +990,15 @@ function subscribeToEventsRealtime() {
             }
         }
 
+        let setupSection = document.getElementById("setupSection");
+        if (currentEvent && setupSection && !setupSection.classList.contains("hidden")) {
+            let activeUpdated = loadedEvents.find(e => e.id === currentEvent.id) || allPublicEvents.find(e => e.id === currentEvent.id);
+            if (activeUpdated) {
+                // Keep live self-registered participants synced in memory even while organizer is on Setup page
+                currentEvent.participants = activeUpdated.details.participants || currentEvent.participants;
+            }
+        }
+
         let pubSection = document.getElementById("publicEventSection");
         if (currentParticipationEventId && pubSection && !pubSection.classList.contains("hidden")) {
             let activeUpdated = allPublicEvents.find(e => e.id === currentParticipationEventId);
@@ -929,9 +1046,9 @@ function openPublicEvent(eventId) {
     if (ev.eventType === 'cpr') document.getElementById("pubEvTypeBadge").className = "badge warning";
     else document.getElementById("pubEvTypeBadge").className = "badge neutral";
 
-    // Sponsor Banner
+    // Sponsor Banner (Only shown if organizer enabled the Sponsor & Prize checkbox)
     let spBanner = document.getElementById("pubSponsorBanner");
-    if (ev.sponsorName || ev.sponsorLogo) {
+    if (ev.enableSponsorPrize && (ev.sponsorName || ev.sponsorLogo)) {
         spBanner.classList.remove("hidden");
         document.getElementById("pubSponsorName").innerText = ev.sponsorName || "Official Partner";
         let spLogo = document.getElementById("pubSponsorLogo");
@@ -957,7 +1074,13 @@ function openPublicEvent(eventId) {
         codeBanner.classList.add("hidden");
     }
 
-    document.getElementById("pubHost").innerText = ev.date || '';
+    let schedInfo = ev.date || '';
+    if (ev.scheduleMode === 'auto' && ev.autoStartTime) {
+        let sStr = ev.autoStartTime.replace('T', ' ');
+        let eStr = ev.autoEndTime ? ev.autoEndTime.replace('T', ' ') : '';
+        schedInfo = `⏰ ${sStr}${eStr ? ' ➔ ' + eStr : ''}`;
+    }
+    document.getElementById("pubHost").innerText = schedInfo;
     document.getElementById("pubHostName").innerText = ev.hostFullName || evData.username;
     document.getElementById("pubHostAvatar").src = ev.hostAvatar || "https://via.placeholder.com/40";
     
@@ -1168,12 +1291,12 @@ async function joinEventDirectly() {
             alert(`This tournament has reached the 15-Angler Free Tier limit. Please ask the tournament organizer to unlock the Event Pass (25 CR) or Pro Plan.`);
             return;
         }
-        let feeMsg = parseFloat(ev.entryFee) > 0 ? `Join this tournament? (Entry Fee: $${ev.entryFee})` : "Join this tournament?";
+        let feeMsg = (ev.enableSponsorPrize && parseFloat(ev.entryFee) > 0) ? `Join this tournament? (Entry Fee: $${ev.entryFee})` : "Join this tournament?";
         if (!confirm(feeMsg)) return;
 
         ev.participants.push({
             id: 'p_' + Math.random().toString(36).substr(2, 9),
-            name: myName, catches: [], penalties: [], registeredBy: loggedInUser
+            name: myName, catches: [], penalties: [], registeredBy: loggedInUser, selfRegistered: true
         });
         let safeDetails;
         try { safeDetails = JSON.parse(JSON.stringify(ev)); } catch(e) { return; }
@@ -1189,6 +1312,7 @@ async function joinEventDirectly() {
     }
 }
 
+// Public Hub with Thumbnail Corner Badges
 function renderPublicHub() {
     let container = document.getElementById("publicEventsList");
     if (!container) return;
@@ -1207,34 +1331,43 @@ function renderPublicHub() {
         let pList = ev.details.participants || [];
         let pCount = pList.length;
         let cCount = pList.reduce((sum, p) => sum + (p.catches || []).length, 0);
-        let thumb = ev.details.thumbnail ? `<img src="${ev.details.thumbnail}" class="event-hub-thumb">` : '';
         
         let status = ev.details.status || 'finished';
-        let stBadge = status === 'finished' ? 'neutral' : (status === 'ongoing' ? 'success' : 'primary-light');
+        let stBadge = status === 'finished' ? 'neutral' : (status === 'ongoing' ? 'success' : 'warning');
 
         let hostName = ev.details.hostFullName || ev.username;
         let hostAvatar = ev.details.hostAvatar || "https://via.placeholder.com/40";
-        let evTypeBadge = ev.details.eventType === 'cpr' ? `<span class="badge warning" style="margin-right:6px; font-size:10px;">CPR</span>` : '';
+        let evTypeBadge = ev.details.eventType === 'cpr' ? `<span class="badge warning">CPR</span>` : `<span class="badge neutral">STD</span>`;
 
         let isParticipating = loggedInUser && myName && pList.some(p => p.name.toLowerCase() === myName);
-        let registeredBadge = isParticipating ? `<span class="badge success" style="margin-right:6px; font-size:10px;">Registered</span>` : '';
-        let sponsorPill = ev.details.sponsorName ? `<span class="badge pro" style="font-size:10px;">Sponsored by ${escapeHTML(ev.details.sponsorName)}</span>` : '';
+        let registeredBadge = isParticipating ? `<span class="badge success">Registered</span>` : '';
+        let sponsorBadge = (ev.details.enableSponsorPrize && ev.details.sponsorName) ? `<span class="badge pro">💎 ${escapeHTML(ev.details.sponsorName)}</span>` : '';
+
+        let thumbSrc = ev.details.thumbnail || "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=60";
 
         html += `
         <div class="card" style="padding:16px; cursor:pointer; transition: transform 0.2s;" onclick="openPublicEvent('${ev.id}')">
-            ${thumb}
+            <div class="thumb-wrap">
+                <img src="${thumbSrc}">
+                <div class="thumb-corner-tl">
+                    ${evTypeBadge}
+                    ${registeredBadge}
+                </div>
+                <div class="thumb-corner-tr">
+                    <span class="badge ${stBadge}">${status}</span>
+                </div>
+                ${sponsorBadge ? `<div class="thumb-corner-br">${sponsorBadge}</div>` : ''}
+            </div>
             <div class="flex flex-between" style="align-items:flex-start;">
                 <div>
-                    <h3 style="margin-bottom:8px;">${evTypeBadge}${registeredBadge}${escapeHTML(ev.name)}</h3>
+                    <h3 style="margin-bottom:6px; font-size:18px;">${escapeHTML(ev.name)}</h3>
                     <div class="flex" style="font-size:13px; color:var(--text-muted);">
                         <img src="${hostAvatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">
                         <b style="font-weight:600;">${escapeHTML(hostName)}</b>
-                        ${sponsorPill}
                     </div>
                 </div>
-                <span class="badge ${stBadge}">${status}</span>
             </div>
-            <div style="margin-top:16px; font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
+            <div style="margin-top:14px; font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
                 <span class="flex">${svgUsers} ${pCount} Participants</span>
                 <span class="flex">${svgFish} ${cCount} Catches</span>
             </div>
@@ -1688,6 +1821,9 @@ function openEventEditor(eventObj = null) {
 
     tempSponsorLogoBase64 = "";
 
+    let thumbPrev = document.getElementById('thumbnailPreview');
+    let spPrev = document.getElementById('sponsorLogoPreview');
+
     if (eventObj) {
         currentEvent = JSON.parse(JSON.stringify(eventObj));
         
@@ -1696,25 +1832,39 @@ function openEventEditor(eventObj = null) {
         document.getElementById("isPublicToggle").checked = currentEvent.isPublic !== false && currentEvent.isPublic !== "false";
         document.getElementById("isRankedToggle").checked = currentEvent.isRanked !== false;
         document.getElementById("eventSecretCodeInput").value = currentEvent.secretCode || "";
+
+        // Schedule Mode
+        setScheduleMode(currentEvent.scheduleMode || 'manual');
+        document.getElementById("eventAutoStartInput").value = currentEvent.autoStartTime || "";
+        document.getElementById("eventAutoEndInput").value = currentEvent.autoEndTime || "";
+
+        // Sponsor & Prize Toggle
+        let hasSponsorPrize = Boolean(currentEvent.enableSponsorPrize || currentEvent.sponsorName || currentEvent.sponsorLogo || parseFloat(currentEvent.entryFee) > 0 || parseFloat(currentEvent.bigFishFee) > 0);
+        document.getElementById("enableSponsorPrizeToggle").checked = hasSponsorPrize;
+        toggleSponsorPrizeSection(hasSponsorPrize);
+
         document.getElementById("eventEntryFeeInput").value = currentEvent.entryFee || 0;
         document.getElementById("eventClubCutInput").value = currentEvent.clubCutPct !== undefined ? currentEvent.clubCutPct : 10;
         document.getElementById("eventBigFishFeeInput").value = currentEvent.bigFishFee || 0;
+        document.getElementById("payoutPct1").value = currentEvent.payoutPct1 !== undefined ? currentEvent.payoutPct1 : 50;
+        document.getElementById("payoutPct2").value = currentEvent.payoutPct2 !== undefined ? currentEvent.payoutPct2 : 30;
+        document.getElementById("payoutPct3").value = currentEvent.payoutPct3 !== undefined ? currentEvent.payoutPct3 : 20;
         document.getElementById("eventSponsorNameInput").value = currentEvent.sponsorName || "";
         
         if(currentEvent.thumbnail) {
-            document.getElementById('thumbnailPreview').src = currentEvent.thumbnail;
-            document.getElementById('thumbnailPreview').style.display = 'block';
+            thumbPrev.src = currentEvent.thumbnail;
+            thumbPrev.style.display = 'block';
         } else {
-            document.getElementById('thumbnailPreview').style.display = 'none';
-            document.getElementById('thumbnailPreview').src = '';
+            thumbPrev.removeAttribute('src');
+            thumbPrev.style.display = 'none';
         }
 
         if(currentEvent.sponsorLogo) {
-            document.getElementById('sponsorLogoPreview').src = currentEvent.sponsorLogo;
-            document.getElementById('sponsorLogoPreview').style.display = 'block';
+            spPrev.src = currentEvent.sponsorLogo;
+            spPrev.style.display = 'block';
         } else {
-            document.getElementById('sponsorLogoPreview').style.display = 'none';
-            document.getElementById('sponsorLogoPreview').src = '';
+            spPrev.removeAttribute('src');
+            spPrev.style.display = 'none';
         }
 
         setEventType(currentEvent.eventType || 'standard');
@@ -1733,15 +1883,22 @@ function openEventEditor(eventObj = null) {
             date: new Date().toLocaleDateString(),
             year: new Date().getFullYear().toString(),
             status: "announced",
+            scheduleMode: "manual",
+            autoStartTime: "",
+            autoEndTime: "",
             isRanked: true,
             isPublic: true,
             isStarted: false,
             isUnlocked: isUserPro(),
             eventType: 'standard',
             secretCode: "",
+            enableSponsorPrize: false,
             entryFee: 0,
             clubCutPct: 10,
             bigFishFee: 0,
+            payoutPct1: 50,
+            payoutPct2: 30,
+            payoutPct3: 20,
             sponsorName: "",
             sponsorLogo: "",
             unit: 'metric',
@@ -1758,15 +1915,27 @@ function openEventEditor(eventObj = null) {
         document.getElementById("isPublicToggle").checked = true;
         document.getElementById("isRankedToggle").checked = true;
         document.getElementById("eventThumbnailInput").value = "";
-        document.getElementById('thumbnailPreview').style.display = 'none';
+        thumbPrev.removeAttribute('src');
+        thumbPrev.style.display = 'none';
+        
+        document.getElementById("enableSponsorPrizeToggle").checked = false;
+        toggleSponsorPrizeSection(false);
         document.getElementById("eventSponsorLogoInput").value = "";
-        document.getElementById('sponsorLogoPreview').style.display = 'none';
+        spPrev.removeAttribute('src');
+        spPrev.style.display = 'none';
         document.getElementById("bulkParticipantsInput").value = "";
         document.getElementById("eventSecretCodeInput").value = "";
         document.getElementById("eventEntryFeeInput").value = "0";
         document.getElementById("eventClubCutInput").value = "10";
         document.getElementById("eventBigFishFeeInput").value = "0";
+        document.getElementById("payoutPct1").value = "50";
+        document.getElementById("payoutPct2").value = "30";
+        document.getElementById("payoutPct3").value = "20";
         document.getElementById("eventSponsorNameInput").value = "";
+
+        setScheduleMode('manual');
+        document.getElementById("eventAutoStartInput").value = "";
+        document.getElementById("eventAutoEndInput").value = "";
         
         setEventType('standard');
         setUnit('metric');
@@ -1971,42 +2140,108 @@ async function saveCurrentEvent(redirect = true) {
 
 async function goToEventHub() {
     try {
+        // Mandatory Event Image Check
+        let thumbPreview = document.getElementById('thumbnailPreview');
+        let hasThumb = (thumbPreview && thumbPreview.getAttribute('src') && thumbPreview.getAttribute('src').startsWith('data:')) || Boolean(currentEvent.thumbnail);
+        if (!hasThumb) {
+            alert("Please upload a Mandatory Header Image for your tournament before continuing.");
+            return;
+        }
+        if (thumbPreview && thumbPreview.getAttribute('src') && thumbPreview.getAttribute('src').startsWith('data:')) {
+            currentEvent.thumbnail = thumbPreview.getAttribute('src');
+        }
+
+        // Schedule Check
+        currentEvent.scheduleMode = confScheduleMode;
+        if (confScheduleMode === 'auto') {
+            let sVal = document.getElementById("eventAutoStartInput").value;
+            let eVal = document.getElementById("eventAutoEndInput").value;
+            if (!sVal || !eVal) {
+                alert("Please select both Auto-Start and Auto-Finish dates/times, or switch to Manual schedule mode.");
+                return;
+            }
+            if (new Date(eVal).getTime() <= new Date(sVal).getTime()) {
+                alert("Auto-Finish time must be after Auto-Start time.");
+                return;
+            }
+            currentEvent.autoStartTime = sVal;
+            currentEvent.autoEndTime = eVal;
+            // Immediately compute current status from local time
+            let now = Date.now();
+            if (now >= new Date(eVal).getTime()) currentEvent.status = 'finished';
+            else if (now >= new Date(sVal).getTime()) currentEvent.status = 'ongoing';
+            else currentEvent.status = 'announced';
+        } else {
+            currentEvent.autoStartTime = "";
+            currentEvent.autoEndTime = "";
+        }
+
+        // Pull latest live participants from cloud cache so self-registered users are never overwritten
+        let latestCloudEv = allPublicEvents.find(e => e.id === currentEvent.id) || loadedEvents.find(e => e.id === currentEvent.id);
+        let liveParticipants = (latestCloudEv && latestCloudEv.details && latestCloudEv.details.participants) 
+            ? latestCloudEv.details.participants 
+            : (currentEvent.participants || []);
+
         let isStarted = ['ongoing', 'finished'].includes(currentEvent.status);
         let bulkEl = document.getElementById("bulkParticipantsInput");
-        let items = isStarted ? (currentEvent.participants || []).map(p => p.name) : parseParticipants(bulkEl ? bulkEl.value : "");
+        let pastedNames = parseParticipants(bulkEl ? bulkEl.value : "");
+
+        // Merge pasted names with any self-registered participants so nobody gets wiped out
+        let existingMap = {};
+        liveParticipants.forEach(p => {
+            existingMap[p.name.toLowerCase()] = p;
+        });
+
+        let finalParticipantNames = [...pastedNames];
+        liveParticipants.forEach(p => {
+            if ((p.selfRegistered || p.registeredBy !== loggedInUser) && !finalParticipantNames.some(n => n.toLowerCase() === p.name.toLowerCase())) {
+                finalParticipantNames.push(p.name);
+            }
+        });
+
+        if (isStarted) {
+            finalParticipantNames = liveParticipants.map(p => p.name);
+        }
 
         // Enforce 15-Angler Trojan Horse Free Tier Cap
-        if (!isEventUnlocked(currentEvent) && items.length > FREE_ANGLER_CAP) {
-            openUpgradeModal(`You entered ${items.length} participants. The Free Tier supports up to ${FREE_ANGLER_CAP} anglers. Unlock this tournament with a 25 CR Event Pass or upgrade to PRO Club!`);
+        if (!isEventUnlocked(currentEvent) && finalParticipantNames.length > FREE_ANGLER_CAP) {
+            openUpgradeModal(`Your tournament has ${finalParticipantNames.length} participants. The Free Tier supports up to ${FREE_ANGLER_CAP} anglers. Unlock this tournament with a 25 CR Event Pass or upgrade to PRO Club!`);
             return;
         }
 
-        let sponsorNameVal = document.getElementById("eventSponsorNameInput").value.trim();
-        let entryFeeVal = parseFloat(document.getElementById("eventEntryFeeInput").value) || 0;
-        if (!isEventUnlocked(currentEvent) && (sponsorNameVal !== "" || tempSponsorLogoBase64 !== "" || entryFeeVal > 0)) {
-            openUpgradeModal("Sponsor Banner Integration and Automated Payout Calculators require a Single Event Pass (25 CR) or Pro Club Plan (100 CR).");
-            return;
+        // Sponsor & Prize Pool Checkbox Handling (Prevents Sponsor Bleed)
+        let enableSponsorPrize = document.getElementById("enableSponsorPrizeToggle").checked;
+        if (enableSponsorPrize) {
+            if (!isEventUnlocked(currentEvent)) {
+                openUpgradeModal("Sponsor Banner Integration and Automated Payout Calculators require a Single Event Pass (25 CR) or Pro Club Plan (100 CR).");
+                return;
+            }
+            currentEvent.enableSponsorPrize = true;
+            currentEvent.entryFee = parseFloat(document.getElementById("eventEntryFeeInput").value) || 0;
+            currentEvent.clubCutPct = parseFloat(document.getElementById("eventClubCutInput").value) || 0;
+            currentEvent.bigFishFee = parseFloat(document.getElementById("eventBigFishFeeInput").value) || 0;
+            currentEvent.payoutPct1 = parseFloat(document.getElementById("payoutPct1").value) || 50;
+            currentEvent.payoutPct2 = parseFloat(document.getElementById("payoutPct2").value) || 30;
+            currentEvent.payoutPct3 = parseFloat(document.getElementById("payoutPct3").value) || 20;
+            currentEvent.sponsorName = document.getElementById("eventSponsorNameInput").value.trim();
+
+            let spPreview = document.getElementById('sponsorLogoPreview');
+            if (spPreview && spPreview.getAttribute('src') && spPreview.getAttribute('src').startsWith('data:')) {
+                currentEvent.sponsorLogo = spPreview.getAttribute('src');
+            }
+        } else {
+            currentEvent.enableSponsorPrize = false;
+            currentEvent.entryFee = 0;
+            currentEvent.clubCutPct = 10;
+            currentEvent.bigFishFee = 0;
+            currentEvent.sponsorName = "";
+            currentEvent.sponsorLogo = "";
         }
 
         currentEvent.name = document.getElementById("eventNameInput").value.trim() || "Untitled Event";
         currentEvent.description = document.getElementById("eventDescInput").value.trim();
         currentEvent.isPublic = document.getElementById("isPublicToggle").checked;
         let wantsRanked = document.getElementById("isRankedToggle").checked;
-        
-        let thumbPreview = document.getElementById('thumbnailPreview');
-        if (thumbPreview && thumbPreview.src && thumbPreview.src.startsWith('data:')) {
-            currentEvent.thumbnail = thumbPreview.src;
-        }
-
-        let spPreview = document.getElementById('sponsorLogoPreview');
-        if (spPreview && spPreview.src && spPreview.src.startsWith('data:')) {
-            currentEvent.sponsorLogo = spPreview.src;
-        }
-
-        currentEvent.entryFee = entryFeeVal;
-        currentEvent.clubCutPct = parseFloat(document.getElementById("eventClubCutInput").value) || 0;
-        currentEvent.bigFishFee = parseFloat(document.getElementById("eventBigFishFeeInput").value) || 0;
-        currentEvent.sponsorName = sponsorNameVal;
 
         currentEvent.eventType = confEventType;
         currentEvent.secretCode = document.getElementById("eventSecretCodeInput").value.trim() || "LB-2026";
@@ -2037,19 +2272,20 @@ async function goToEventHub() {
         currentEvent.isRanked = wantsRanked;
 
         if (!isStarted) {
-            let existingMap = {};
-            (currentEvent.participants||[]).forEach(p => existingMap[p.name.toLowerCase()] = { catches: p.catches, id: p.id, penalties: p.penalties || [], registeredBy: p.registeredBy });
-
-            currentEvent.participants = items.map(name => {
+            currentEvent.participants = finalParticipantNames.map(name => {
                 let lowerName = name.toLowerCase();
+                let prev = existingMap[lowerName];
                 return {
-                    id: existingMap[lowerName] ? existingMap[lowerName].id : 'p_' + Math.random().toString(36).substr(2, 9),
-                    name: name,
-                    catches: existingMap[lowerName] ? existingMap[lowerName].catches : [],
-                    penalties: existingMap[lowerName] ? existingMap[lowerName].penalties : [],
-                    registeredBy: existingMap[lowerName] ? existingMap[lowerName].registeredBy : loggedInUser
+                    id: prev ? prev.id : 'p_' + Math.random().toString(36).substr(2, 9),
+                    name: prev ? prev.name : name,
+                    catches: prev ? (prev.catches || []) : [],
+                    penalties: prev ? (prev.penalties || []) : [],
+                    registeredBy: prev ? prev.registeredBy : loggedInUser,
+                    selfRegistered: prev ? Boolean(prev.selfRegistered) : false
                 };
             });
+        } else {
+            currentEvent.participants = liveParticipants;
         }
         
         await saveCurrentEvent(false); 
@@ -2067,7 +2303,19 @@ async function goToEventHub() {
     }
 }
 
+// Syncs live participants into the Setup textarea before showing Setup so nobody gets lost!
 function backToSetup() {
+    if (currentEvent) {
+        let latestCloudEv = allPublicEvents.find(e => e.id === currentEvent.id) || loadedEvents.find(e => e.id === currentEvent.id);
+        if (latestCloudEv && latestCloudEv.details && latestCloudEv.details.participants) {
+            currentEvent.participants = latestCloudEv.details.participants;
+        }
+        let bulkEl = document.getElementById("bulkParticipantsInput");
+        if (bulkEl) {
+            bulkEl.value = (currentEvent.participants || []).map(p => p.name).join("\n");
+            updateParticipantCountStatus();
+        }
+    }
     hideAllSections();
     document.getElementById("setupSection").classList.remove("hidden");
     refreshSetupUI();
@@ -2702,7 +2950,7 @@ function renderLeaderboard() {
     document.getElementById("leaderboardContainer").innerHTML = html;
 }
 
-// Native HTML2PDF Engine (Includes Sponsor Banner & Payouts)
+// Native HTML2PDF Engine (Includes Sponsor Banner & Custom Payouts)
 async function downloadChart(eventId = null) {
     let ev = currentEvent;
     if (eventId) { 
@@ -2760,7 +3008,7 @@ async function downloadChart(eventId = null) {
     });
 
     let pay = calculatePayoutBreakdown(ev);
-    let sponsorHeader = (ev.sponsorName || ev.sponsorLogo) ? `
+    let sponsorHeader = (ev.enableSponsorPrize && (ev.sponsorName || ev.sponsorLogo)) ? `
         <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; padding:12px 16px; border-radius:10px; margin-bottom:16px;">
             <div><span style="font-size:10px; color:#64748b; text-transform:uppercase; font-weight:700;">Official Event Sponsor</span><div style="font-size:16px; font-weight:800; color:#0f172a;">${escapeHTML(ev.sponsorName || '')}</div></div>
             ${ev.sponsorLogo ? `<img src="${ev.sponsorLogo}" style="max-height:45px; object-fit:contain;">` : ''}
