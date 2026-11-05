@@ -8,12 +8,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Standalone html2canvas so Social Podium Cards render reliably -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- EXIF Metadata Reader for CPR Anti-Cheat -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
-    <!-- QR Code Generator for Zero-Friction Onboarding -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- Firebase SDKs -->
@@ -23,38 +20,65 @@
 </head>
 <body>
 
-    <!-- TOP HEADER -->
+    <!-- ULTRA-CLEAN MOBILE HEADER (Icon Only + Avatar Dropdown) -->
     <div class="header-bar">
         <div class="flex" style="gap: 12px; align-items: center;">
-            <div class="flex" style="gap: 8px; cursor: pointer; color: var(--primary);" onclick="showPublicHub()">
+            <div class="flex" style="cursor: pointer; color: var(--primary); padding: 4px;" onclick="showPublicHub()" title="Public Hub">
                 <svg xmlns="http://www.w3.org/2000/svg" class="svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21v-4M12 21a4 4 0 0 1-4-4V7a2 2 0 0 1 4 0v10a2 2 0 0 0 4 0V9a2 2 0 0 0-4 0v2"/><circle cx="12" cy="3" r="1.5"/></svg>
-                <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px; color: var(--text-main);">Lureboard</div>
             </div>
-            <span id="headerPlanBadge" class="badge neutral hidden" style="font-size: 10px; padding: 2px 8px; cursor: pointer;" onclick="openUpgradeModal()">FREE</span>
             <span id="globalSaveBadge">Saved</span>
-            <button id="headerMyEventsBtn" class="secondary icon-btn hidden" onclick="showMyEvents()">My Events</button>
         </div>
         
         <div class="flex" style="gap: 10px; align-items: center;">
-            <!-- Fictional Credits Wallet Pill -->
-            <div id="headerCreditsPill" class="credits-pill hidden" onclick="openUpgradeModal()" title="Click to manage Credits & Pro Plan">
-                <span>🪙</span> <span id="headerCreditsAmount">50</span> CR
-            </div>
-            <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto; padding: 6px 10px; font-size: 13px;">
-                <option value="en">EN</option>
-                <option value="ka">KA</option>
-            </select>
             <button id="headerLoginBtn" class="primary icon-btn" onclick="openLogin()">Login</button>
-            <div id="headerUserWrap" class="flex hidden" style="cursor: pointer; padding: 4px 12px 4px 4px; border-radius: 30px; border: 1px solid var(--border); background: var(--bg); align-items: center;" onclick="showProfilePage()">
-                <img id="headerAvatar" src="https://via.placeholder.com/40" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
-                <span id="headerUserName" style="font-weight: 600; font-size: 13px; color: var(--text-main); white-space: nowrap;">Name</span>
+            
+            <!-- Avatar Trigger & Dropdown Menu -->
+            <div id="headerUserWrap" class="user-menu-wrap hidden">
+                <img id="headerAvatar" class="avatar-trigger" src="https://via.placeholder.com/40" onclick="toggleUserDropdown(event)">
+                
+                <div id="userDropdownMenu" class="user-dropdown hidden" onclick="event.stopPropagation()">
+                    <div class="user-dropdown-header">
+                        <div class="flex flex-between">
+                            <span id="dropdownUserName" style="font-weight: 800; font-size: 15px; color: var(--text-main);">Name</span>
+                            <span id="dropdownPlanBadge" class="badge neutral" style="font-size: 9px; padding: 2px 6px;">FREE</span>
+                        </div>
+                        <div id="dropdownUserRole" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-top: 2px;">Member</div>
+                    </div>
+
+                    <button id="dropdownMyEventsBtn" class="user-dropdown-item hidden" onclick="closeUserDropdown(); showMyEvents();">
+                        <span>🏆 My Events</span>
+                    </button>
+
+                    <button id="dropdownWalletBtn" class="user-dropdown-item hidden" onclick="closeUserDropdown(); openUpgradeModal();">
+                        <span>🪙 Wallet & Plan</span>
+                        <span class="credits-pill" style="padding: 2px 8px; font-size: 11px;"><span id="dropdownCreditsAmount">50</span> CR</span>
+                    </button>
+
+                    <button class="user-dropdown-item" onclick="closeUserDropdown(); showProfilePage();">
+                        <span>⚙️ Profile Settings</span>
+                    </button>
+
+                    <div class="user-dropdown-item" style="cursor: default;">
+                        <span>🌐 Language</span>
+                        <select id="langSelect" onchange="changeLanguage(this.value)" style="width: auto; padding: 4px 8px; font-size: 12px;">
+                            <option value="en">EN</option>
+                            <option value="ka">KA</option>
+                        </select>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--border); margin: 4px 0;"></div>
+
+                    <button class="user-dropdown-item danger-text" onclick="closeUserDropdown(); handleLogout();">
+                        <span>🚪 Logout</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
 <div class="container">
     
-    <!-- LOGIN SCREEN (Hub Username + Password Method) -->
+    <!-- LOGIN SCREEN -->
     <div id="loginSection" class="hidden">
         <div class="card" style="margin-top: 20px; padding: 32px 24px;">
             <h2 class="text-center mb-2">Login</h2>
@@ -67,7 +91,7 @@
         </div>
     </div>
 
-    <!-- REGISTER SCREEN (Hub Username + Role Method) -->
+    <!-- REGISTER SCREEN -->
     <div id="registerSection" class="hidden">
         <div class="card" style="margin-top: 20px; padding: 32px 24px;">
             <h2 class="text-center mb-2">Register</h2>
@@ -201,7 +225,7 @@
                         <div id="pubHostName" style="font-size:14px; color:var(--text-main); font-weight: 600;">...</div>
                     </div>
                 </div>
-                <div id="pubHost" style="font-size:13px; color:var(--text-muted); font-weight: 500;">...</div>
+                <div id="pubHost" style="font-size:13px; color:var(--text-muted); font-weight: 500; text-align: right;">...</div>
             </div>
             <img id="pubThumb" class="event-hub-thumb hidden" style="margin-bottom: 16px; border-radius: var(--radius-sm);">
             <div id="pubDesc" style="font-size:14px; color:var(--text-muted); white-space:pre-wrap;"></div>
@@ -279,38 +303,95 @@
                 </div>
             </div>
 
-            <div class="form-group"><label>Header Image</label><input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)"><img id="thumbnailPreview" class="thumb-preview"></div>
+            <div class="form-group">
+                <label>Header Image <span style="color: var(--danger); font-weight: 800;">* (Mandatory)</span></label>
+                <input type="file" id="eventThumbnailInput" accept="image/*" onchange="handleThumbnailUpload(event)">
+                <img id="thumbnailPreview" class="thumb-preview">
+            </div>
             <div class="form-group"><label>Description & Rules</label><textarea id="eventDescInput" placeholder="Enter rules..."></textarea></div>
         </div>
 
-        <!-- Pro SaaS: Automated Payout Calculator & Sponsor Integration -->
-        <div class="card" style="border-color: #c7d2fe;">
+        <!-- Event Timing & Schedule Mode (Manual vs Automatic) -->
+        <div class="card">
             <div class="flex flex-between" style="margin-bottom: 12px;">
-                <h3 style="margin:0;">💰 Prize Pool & Sponsor Branding</h3>
-                <span class="badge pro" style="font-size: 10px;">Pro / Event Pass</span>
-            </div>
-            <div class="tier-grid" style="margin-bottom: 12px;">
                 <div>
-                    <label>Entry Fee ($ / GEL)</label>
-                    <input type="number" step="any" id="eventEntryFeeInput" placeholder="0 (Free)" value="0">
+                    <h3 style="margin:0;">⏱️ Event Start & Finish Schedule</h3>
+                    <p style="font-size:12px; color:var(--text-muted); margin:0;">Choose manual button control or automatic local time</p>
                 </div>
-                <div>
-                    <label>Club / Org Cut (%)</label>
-                    <input type="number" step="any" id="eventClubCutInput" placeholder="10" value="10">
+            </div>
+            <div class="flex" style="margin-bottom: 16px;">
+                <button type="button" id="schedBtnManual" class="primary" onclick="setScheduleMode('manual')">Manual Control</button>
+                <button type="button" id="schedBtnAuto" class="secondary" onclick="setScheduleMode('auto')">Automatic Schedule</button>
+            </div>
+            <div id="autoScheduleGroup" class="tier-grid hidden" style="margin-bottom: 0;">
+                <div class="full-width">
+                    <label>Automatic Start Date & Time (Local)</label>
+                    <input type="datetime-local" id="eventAutoStartInput">
                 </div>
                 <div class="full-width">
-                    <label>Big Fish Side-Pot Per Angler ($ / GEL)</label>
-                    <input type="number" step="any" id="eventBigFishFeeInput" placeholder="0" value="0">
+                    <label>Automatic Finish Date & Time (Local)</label>
+                    <input type="datetime-local" id="eventAutoEndInput">
                 </div>
             </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Official Sponsor Name (Shown on Live Board & PDF)</label>
-                <input type="text" id="eventSponsorNameInput" placeholder="e.g. Shimano Georgia / Local Tackle Co.">
+        </div>
+
+        <!-- Minimized Collapsible Pro SaaS: Prize Pool & Sponsor Integration -->
+        <div class="card" style="border-color: #c7d2fe;">
+            <div class="flex flex-between" style="cursor: pointer;" onclick="document.getElementById('enableSponsorPayoutToggle').click()">
+                <div>
+                    <div class="flex" style="gap: 8px;">
+                        <h3 style="margin:0;">💰 Prize Pool & Sponsor Branding</h3>
+                        <span class="badge pro" style="font-size: 10px;">Paid / Pro Feature</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">Tick to add sponsor banners, entry fees, and custom payout percentages.</p>
+                </div>
+                <label class="switch" onclick="event.stopPropagation()">
+                    <input type="checkbox" id="enableSponsorPayoutToggle" onchange="toggleSponsorPayoutSection(this.checked)">
+                    <span class="slider"></span>
+                </label>
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <label>Sponsor Banner / Logo</label>
-                <input type="file" id="eventSponsorLogoInput" accept="image/*" onchange="handleSponsorLogoUpload(event)">
-                <img id="sponsorLogoPreview" class="thumb-preview" style="height: 80px; object-fit: contain; background: var(--bg); padding: 8px;">
+
+            <div id="sponsorPayoutBody" class="hidden" style="margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border);">
+                <div class="tier-grid" style="margin-bottom: 12px;">
+                    <div>
+                        <label>Entry Fee ($ / GEL)</label>
+                        <input type="number" step="any" id="eventEntryFeeInput" placeholder="0" value="0">
+                    </div>
+                    <div>
+                        <label>Club / Org Cut (%)</label>
+                        <input type="number" step="any" id="eventClubCutInput" placeholder="10" value="10">
+                    </div>
+                    <div class="full-width">
+                        <label>Big Fish Side-Pot Per Angler ($ / GEL)</label>
+                        <input type="number" step="any" id="eventBigFishFeeInput" placeholder="0" value="0">
+                    </div>
+                </div>
+
+                <label>Podium Payout Split (%) — Auto-Balances to 100%</label>
+                <div class="pct-grid">
+                    <div>
+                        <label style="font-size: 10px;">1st Place %</label>
+                        <input type="number" id="pct1Input" value="50" min="0" max="100" oninput="autoAdjustPayoutSplits(1)">
+                    </div>
+                    <div>
+                        <label style="font-size: 10px;">2nd Place %</label>
+                        <input type="number" id="pct2Input" value="30" min="0" max="100" oninput="autoAdjustPayoutSplits(2)">
+                    </div>
+                    <div>
+                        <label style="font-size: 10px;">3rd Place %</label>
+                        <input type="number" id="pct3Input" value="20" min="0" max="100" oninput="autoAdjustPayoutSplits(3)">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Official Sponsor Name (Shown on Thumbnail Corner & PDF)</label>
+                    <input type="text" id="eventSponsorNameInput" placeholder="e.g. Shimano Georgia / Local Tackle Co.">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Sponsor Banner / Logo</label>
+                    <input type="file" id="eventSponsorLogoInput" accept="image/*" onchange="handleSponsorLogoUpload(event)">
+                    <img id="sponsorLogoPreview" class="thumb-preview" style="height: 80px; object-fit: contain; background: var(--bg); padding: 8px;">
+                </div>
             </div>
         </div>
 
@@ -340,7 +421,7 @@
                     <span id="participantCountStatus" class="badge neutral">0</span>
                 </div>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names here. Events over 15 anglers require an Event Pass (25 CR) or Pro Plan.</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 16px 0;">Paste names here. Self-registered anglers from the Public Hub are automatically preserved.</p>
             <div style="position: relative;" id="bulkParticipantsWrapper">
                 <textarea id="bulkParticipantsInput" placeholder="1. John Doe\n2. Jane Smith" oninput="updateParticipantCountStatus()"></textarea>
                 <div id="bulkParticipantsOverlay" class="hidden" style="position: absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.8); backdrop-filter: blur(2px); border-radius: var(--radius-sm); align-items:center; justify-content:center; text-align:center; padding:20px; font-size: 13px; font-weight:600; color:var(--text-muted); z-index: 10;">Editing disabled. Edit in Hub.</div>
@@ -440,7 +521,6 @@
         </div>
 
         <div style="overflow-y: auto; padding-right: 4px;">
-            <!-- Fictional Wallet Top-Up Box -->
             <div style="background: var(--gold-bg); border: 1px solid #fde68a; padding: 14px 16px; border-radius: var(--radius-md); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
                 <div>
                     <b style="font-size: 14px; color: #92400e;">Fictional Sandbox Wallet</b>
@@ -449,7 +529,6 @@
                 <button class="secondary icon-btn" style="background: #ffffff; border-color: #f59e0b; color: #b45309; font-weight: 800; white-space: nowrap;" onclick="simulateTopUpCredits(100)">+100 Free CR</button>
             </div>
 
-            <!-- Option 1: Single Event Pass -->
             <div class="pricing-card">
                 <div class="flex flex-between">
                     <div>
@@ -468,7 +547,6 @@
                 <button id="btnBuyEventPass" class="secondary" onclick="purchaseSingleEventPass()">Unlock Current Event (25 CR)</button>
             </div>
 
-            <!-- Option 2: Pro Club / Circuit SaaS Subscription -->
             <div class="pricing-card featured">
                 <div class="flex flex-between">
                     <div>
